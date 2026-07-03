@@ -50,6 +50,7 @@ rawfrrconfigs:
        !
        segment-routing srv6
         locator MAIN
+        encap-behavior H_Encaps_Red
        exit
        !
        address-family ipv4 vpn
