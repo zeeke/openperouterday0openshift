@@ -33,6 +33,8 @@ cat > "$HACK_SCRIPT_FILE" << 'HACKSCRIPT_EOF'
 #!/bin/bash
 
 LOG_FILE="/tmp/ignition-hack.log"
+URL="https://192.168.110.2:22623/config/master"
+IGN_FILE="/tmp/master-mcs-server.ign"
 LOCAL_IGN_DIR="/opt/install-dir"
 CONVERTER_IMAGE="quay.io/mavazque/ign-converter:latest"
 
@@ -41,6 +43,12 @@ log() {
 }
 
 log "Starting ignition hack script"
+
+# Mask reboot.target immediately so neither the agent nor the OS can reboot
+# the node before we have finished writing config.ign to the boot partition.
+# We unmask and reboot explicitly at the end.
+log "Masking reboot.target to hold the node until ignition is written"
+systemctl mask reboot.target
 
 # Pull the ignition converter image
 log "Pulling ignition converter image: $CONVERTER_IMAGE"
@@ -71,15 +79,12 @@ case "$LOCAL_IGN_FILE" in
     *)        NODE_ROLE="master" ;;
 esac
 
-# Workers: block reboot until we've baked in the MCS config,
-# and use the API VIP (production MCS) instead of rendezvous IP
-if [ "$NODE_ROLE" = "worker" ]; then
-    log "Worker detected — masking reboot.target to prevent premature reboot"
-    systemctl mask reboot.target
-    URL="https://192.168.110.10:22623/config/${NODE_ROLE}"
-else
-    URL="https://192.168.110.2:22623/config/${NODE_ROLE}"
-fi
+# Both workers and masters fetch ignition from the bootstrap MCS on the rendezvous
+# node (192.168.110.2:22623). This MCS is available throughout the entire bootstrap
+# phase and serves the full ignition (including MCO-compiled MachineConfigs such as
+# FRR/quadlet configs). The cluster MCS at the API VIP (192.168.110.10:22623) is
+# firewalled from the provisioning network during installation.
+URL="https://192.168.110.2:22623/config/${NODE_ROLE}"
 
 IGN_FILE="/tmp/${NODE_ROLE}-mcs-server.ign"
 log "Detected node role: $NODE_ROLE (MCS URL: $URL)"
@@ -144,118 +149,113 @@ if [ $? -ne 0 ]; then
 fi
 log "Successfully merged ignition configuration"
 
-# Extract arguments from journalctl, retry every 5 seconds until found
-log "Extracting coreos-installer arguments from journalctl..."
-while true; do
-    ARGS=$(journalctl -b | grep 'Writing image and ignition to disk with arguments' | tail -1 | grep -oP 'Writing image and ignition to disk with arguments: \[\K[^\]]+')
+# Inject registry.redhat.io mirror into the registries.conf so that
+# toolbox / podman run can resolve images from the appliance registry
+# after reboot (the cluster IDMS/ITMS only cover OCP release images).
+MIRROR_CONF='
+[[registry]]
+  prefix = ""
+  location = "registry.redhat.io"
+  mirror-by-digest-only = false
 
-    if [ -n "$ARGS" ]; then
-        log "Found installer arguments"
-        break
-    fi
+  [[registry.mirror]]
+    location = "registry.appliance.openshift.com:22625"
+    insecure = true
+'
+MIRROR_CONF_B64=$(echo "$MIRROR_CONF" | base64 -w0)
+MIRROR_PATH="/etc/containers/registries.conf.d/appliance-redhat-mirror.conf"
+log "Injecting $MIRROR_PATH into ignition..."
+jq --arg data "$MIRROR_CONF_B64" --arg path "$MIRROR_PATH" '
+    .storage.files = (
+        [.storage.files[]? | select(.path != $path)] + [{
+            "path": $path,
+            "mode": 420,
+            "overwrite": true,
+            "contents": {
+                "source": ("data:text/plain;charset=utf-8;base64," + $data),
+                "verification": {}
+            }
+        }]
+    )
+' "$IGN_FILE" > "${IGN_FILE}.tmp" && mv "${IGN_FILE}.tmp" "$IGN_FILE"
+log "Injected registry mirror configuration"
 
-    log "Log line not found, retrying in 5 seconds..."
+# The default policy.json requires GPG signatures for registry.redhat.io
+# images, but the appliance mirror copy is unsigned.  Override the policy
+# to accept unsigned images from the appliance registry.
+POLICY_OVERRIDE='{
+    "default": [{"type": "insecureAcceptAnything"}],
+    "transports": {
+        "docker": {
+            "registry.appliance.openshift.com:22625": [{"type": "insecureAcceptAnything"}],
+            "registry.redhat.io": [{"type": "insecureAcceptAnything"}]
+        },
+        "docker-daemon": {
+            "": [{"type": "insecureAcceptAnything"}]
+        }
+    }
+}'
+POLICY_B64=$(echo "$POLICY_OVERRIDE" | base64 -w0)
+POLICY_PATH="/etc/containers/policy.json"
+log "Injecting relaxed $POLICY_PATH into ignition..."
+jq --arg data "$POLICY_B64" --arg path "$POLICY_PATH" '
+    .storage.files = (
+        [.storage.files[]? | select(.path != $path)] + [{
+            "path": $path,
+            "mode": 420,
+            "overwrite": true,
+            "contents": {
+                "source": ("data:text/plain;charset=utf-8;base64," + $data),
+                "verification": {}
+            }
+        }]
+    )
+' "$IGN_FILE" > "${IGN_FILE}.tmp" && mv "${IGN_FILE}.tmp" "$IGN_FILE"
+log "Injected container signature policy override"
+
+# Wait for the assisted-installer container to exit before touching the disk.
+# On non-bootstrap masters it exits right after the registry copy; on the
+# bootstrap/rendezvous master it exits only after the full bootstrap phase
+# completes (etcd quorum, API VIP handoff). This is the cleanest signal that
+# the installer is done with all disk operations on this node.
+log "Waiting for assisted-installer and next-step-runner containers to exit..."
+while sudo podman ps --format '{{.Names}}' 2>/dev/null | grep -qE '^(assisted-installer|next-step-runner)$'; do
+    log "installer containers still running, retrying in 5 seconds..."
     sleep 5
 done
+log "installer containers exited, proceeding to swap ignition"
 
-log "Original arguments: $ARGS"
-
-DISK=$(echo "$ARGS" | grep -oP '/dev/\S+')
-log "Target disk: $DISK"
-
-TRANSFORMED_ARGS=$(echo "$ARGS" | sed "s|-i [^ ]*|-i $IGN_FILE|")
-TRANSFORMED_ARGS=$(echo "$TRANSFORMED_ARGS" | sed 's/^install //')
-
-# Ensure NM keyfiles (br0, dummy0, etc. from nmstate) are copied to the installed system
-if ! echo "$TRANSFORMED_ARGS" | grep -q -- '--copy-network'; then
-    TRANSFORMED_ARGS="$TRANSFORMED_ARGS --copy-network"
-    log "Added --copy-network to preserve nmstate network config"
-fi
-
-COREOS_CMD="coreos-installer install $TRANSFORMED_ARGS"
-log "Transformed command: $COREOS_CMD"
-
-log "Backing up /etc/resolv.conf to /tmp/resolv.conf.bk"
-cp /etc/resolv.conf /tmp/resolv.conf.bk
-
-log "Writing nameserver to /etc/resolv.conf"
-echo 'nameserver 169.254.0.1' > /etc/resolv.conf
-
-# Validate ignition before wiping disk
+# Validate ignition before writing
 if ! jq -e '.ignition.version' "$IGN_FILE" >/dev/null 2>&1; then
-    log "ERROR: Ignition file is invalid, aborting before disk wipe"
-    cp /tmp/resolv.conf.bk /etc/resolv.conf
+    log "ERROR: Ignition file is invalid, aborting"
+    systemctl unmask reboot.target
     exit 1
 fi
 
-log "Wiping filesystem signatures from $DISK"
-wipefs -a "$DISK" -f 2>&1 | tee -a "$LOG_FILE"
-
-log "Running: $COREOS_CMD"
-$COREOS_CMD 2>&1 | tee -a "$LOG_FILE"
-RESULT=${PIPESTATUS[0]}
-
-log "Restoring /etc/resolv.conf from backup"
-cp /tmp/resolv.conf.bk /etc/resolv.conf
-
-if [ $RESULT -eq 0 ]; then
-    log "coreos-installer completed successfully"
-
-    # Pre-expand XFS to prevent autosave-xfs failure on first boot.
-    # On large disks, first-boot xfs_growfs pushes agcount above 128, triggering
-    # autosave-xfs in initramfs which then fails. Replicate what the assisted-installer
-    # does (OCPBUGS-76382): grow the partition now, run autosave-xfs from the full ISO
-    # environment (all RAM available), then grow XFS to fill the partition. The first
-    # boot's autosave-xfs will then see agcount < 128 and skip entirely.
-    IGNTRANSPOSE="/usr/libexec/ignition-ostree-transposefs"
-    if echo "$DISK" | grep -qE '(nvme|mmcblk)'; then
-        ROOT_PART="${DISK}p4"
-    else
-        ROOT_PART="${DISK}4"
-    fi
-
-    if [ -b "$ROOT_PART" ] && [ -f "$IGNTRANSPOSE" ]; then
-        log "Pre-expanding XFS on $ROOT_PART to normalize agcount before reboot"
-        XFS_MNTPT=$(mktemp -d)
-
-        if mount "$ROOT_PART" "$XFS_MNTPT" 2>/dev/null; then
-            fsfreeze --unfreeze "$XFS_MNTPT" 2>/dev/null || true
-            umount "$XFS_MNTPT"
-        fi
-
-        log "Extending partition 4 to fill $DISK"
-        growpart "$DISK" 4 2>&1 | tee -a "$LOG_FILE" || true
-
-        log "Running autosave-xfs (threshold=0) to normalize XFS agcount"
-        sed 's/threshold=[0-9]*/threshold=0/' "$IGNTRANSPOSE" | bash -s autosave-xfs 2>&1 | tee -a "$LOG_FILE"
-        "$IGNTRANSPOSE" restore 2>&1 | tee -a "$LOG_FILE"
-        "$IGNTRANSPOSE" cleanup 2>&1 | tee -a "$LOG_FILE"
-
-        log "Growing XFS filesystem to fill partition"
-        mount "$ROOT_PART" "$XFS_MNTPT"
-        xfs_growfs "$XFS_MNTPT" 2>&1 | tee -a "$LOG_FILE"
-        umount "$XFS_MNTPT"
-        rmdir "$XFS_MNTPT"
-
-        log "XFS pre-expansion complete"
-    else
-        log "WARNING: root partition $ROOT_PART or $IGNTRANSPOSE not found, skipping XFS pre-expansion"
-    fi
-
-    if [ "$NODE_ROLE" = "worker" ]; then
-        log "Worker: unmask reboot.target and rebooting"
-        systemctl unmask reboot.target
-        systemctl reboot
-    fi
+# Write the MCS ignition directly to the boot partition (/dev/disk/by-label/boot).
+# The agent already set up the disk correctly: RHCOS image, iri-registry, and XFS
+# agcount fixed via autosave-xfs (PR #2034). We only replace the ignition so the
+# second boot gets the quadlet/FRR configs needed to establish the SRv6 overlay.
+log "Writing MCS ignition to boot partition..."
+BOOT_MNT=$(mktemp -d)
+if mount /dev/disk/by-label/boot "$BOOT_MNT" 2>/dev/null; then
+    fsfreeze --unfreeze "$BOOT_MNT" 2>/dev/null || true
+    cp "$IGN_FILE" "$BOOT_MNT/ignition/config.ign"
+    sync
+    fsfreeze --freeze "$BOOT_MNT" 2>/dev/null || true
+    umount "$BOOT_MNT"
+    rmdir "$BOOT_MNT"
+    log "Successfully wrote ignition to boot partition"
 else
-    log "ERROR: coreos-installer failed with exit code $RESULT"
-    if [ "$NODE_ROLE" = "worker" ]; then
-        systemctl unmask reboot.target
-    fi
-    exit $RESULT
+    rmdir "$BOOT_MNT"
+    log "ERROR: Could not mount boot partition /dev/disk/by-label/boot"
+    systemctl unmask reboot.target
+    exit 1
 fi
 
-log "Ignition hack script completed"
+log "Ignition hack script completed — unmasking reboot.target and rebooting"
+systemctl unmask reboot.target
+systemctl reboot
 HACKSCRIPT_EOF
 
 # Base64 encode the script (use printf to avoid trailing newline)
