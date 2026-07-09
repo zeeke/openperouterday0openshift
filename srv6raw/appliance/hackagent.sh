@@ -260,6 +260,48 @@ cp /tmp/resolv.conf.bk /etc/resolv.conf
 
 if [ $RESULT -eq 0 ]; then
     log "coreos-installer completed successfully"
+
+    # Pre-expand XFS to prevent autosave-xfs failure on first boot.
+    # On large disks, first-boot xfs_growfs pushes agcount above 128, triggering
+    # autosave-xfs in initramfs which then fails. Replicate what the assisted-installer
+    # does (OCPBUGS-76382): grow the partition now, run autosave-xfs from the full ISO
+    # environment (all RAM available), then grow XFS to fill the partition. The first
+    # boot's autosave-xfs will then see agcount < 128 and skip entirely.
+    IGNTRANSPOSE="/usr/libexec/ignition-ostree-transposefs"
+    if echo "$DISK" | grep -qE '(nvme|mmcblk)'; then
+        ROOT_PART="${DISK}p4"
+    else
+        ROOT_PART="${DISK}4"
+    fi
+
+    if [ -b "$ROOT_PART" ] && [ -f "$IGNTRANSPOSE" ]; then
+        log "Pre-expanding XFS on $ROOT_PART to normalize agcount before reboot"
+        XFS_MNTPT=$(mktemp -d)
+
+        if mount "$ROOT_PART" "$XFS_MNTPT" 2>/dev/null; then
+            fsfreeze --unfreeze "$XFS_MNTPT" 2>/dev/null || true
+            umount "$XFS_MNTPT"
+        fi
+
+        log "Extending partition 4 to fill $DISK"
+        growpart "$DISK" 4 2>&1 | tee -a "$LOG_FILE" || true
+
+        log "Running autosave-xfs (threshold=0) to normalize XFS agcount"
+        sed 's/threshold=[0-9]*/threshold=0/' "$IGNTRANSPOSE" | bash -s autosave-xfs 2>&1 | tee -a "$LOG_FILE"
+        "$IGNTRANSPOSE" restore 2>&1 | tee -a "$LOG_FILE"
+        "$IGNTRANSPOSE" cleanup 2>&1 | tee -a "$LOG_FILE"
+
+        log "Growing XFS filesystem to fill partition"
+        mount "$ROOT_PART" "$XFS_MNTPT"
+        xfs_growfs "$XFS_MNTPT" 2>&1 | tee -a "$LOG_FILE"
+        umount "$XFS_MNTPT"
+        rmdir "$XFS_MNTPT"
+
+        log "XFS pre-expansion complete"
+    else
+        log "WARNING: root partition $ROOT_PART or $IGNTRANSPOSE not found, skipping XFS pre-expansion"
+    fi
+
     if [ "$NODE_ROLE" = "worker" ]; then
         log "Worker: unmask reboot.target and rebooting"
         systemctl unmask reboot.target
