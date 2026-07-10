@@ -59,19 +59,17 @@ else
     exit 1
 fi
 
-# Wait for a local ignition file (master or worker) to be created.
-# The agent installer creates /opt/install-dir/ minutes after boot.
+MASTER_IGN_FILE="/tmp/master-mcs-server.ign"
+
+# Wait for the local ignition file — needed for role detection and hostname.
 log "Waiting for local ignition file in $LOCAL_IGN_DIR..."
+LOCAL_IGN_FILE=""
 while true; do
     LOCAL_IGN_FILE=$(find "$LOCAL_IGN_DIR" -maxdepth 1 \( -name 'master-*.ign' -o -name 'worker-*.ign' \) -type f 2>/dev/null | head -1)
-
-    if [ -n "$LOCAL_IGN_FILE" ]; then
-        log "Found local ignition file: $LOCAL_IGN_FILE"
-        break
-    fi
-
-    sleep 1
+    [ -n "$LOCAL_IGN_FILE" ] && break
+    sleep 5
 done
+log "Found local ignition file: $LOCAL_IGN_FILE"
 
 # Detect role from filename
 case "$LOCAL_IGN_FILE" in
@@ -79,15 +77,8 @@ case "$LOCAL_IGN_FILE" in
     *)        NODE_ROLE="master" ;;
 esac
 
-# Both workers and masters fetch ignition from the bootstrap MCS on the rendezvous
-# node (192.168.110.2:22623). This MCS is available throughout the entire bootstrap
-# phase and serves the full ignition (including MCO-compiled MachineConfigs such as
-# FRR/quadlet configs). The cluster MCS at the API VIP (192.168.110.10:22623) is
-# firewalled from the provisioning network during installation.
-URL="https://192.168.110.2:22623/config/${NODE_ROLE}"
-
-IGN_FILE="/tmp/${NODE_ROLE}-mcs-server.ign"
-log "Detected node role: $NODE_ROLE (MCS URL: $URL)"
+IGN_FILE="/tmp/final-${NODE_ROLE}.ign"
+log "Detected node role: $NODE_ROLE"
 
 # Extract ignition version from local file
 IGN_VERSION=$(jq -r '.ignition.version' "$LOCAL_IGN_FILE")
@@ -106,48 +97,75 @@ else
     log "Found hostname configuration in local ignition file"
 fi
 
-# Poll URL until MCS returns a valid ignition response
-log "Waiting for valid ignition from $URL..."
-while true; do
-    if curl -k -s --connect-timeout 1 --max-time 5 -o "$IGN_FILE" "$URL"; then
-        if [ -s "$IGN_FILE" ] && jq -e '.ignition.version' "$IGN_FILE" >/dev/null 2>&1; then
-            log "Got valid ignition file from MCS ($(wc -c < "$IGN_FILE") bytes)"
+if [ "$NODE_ROLE" = "master" ]; then
+    # Masters: fetch from bootstrap MCS (available throughout bootstrap).
+    log "Fetching master ignition from bootstrap MCS..."
+    while true; do
+        if curl -k -s --connect-timeout 5 --max-time 30 -o "$MASTER_IGN_FILE" "https://192.168.110.2:22623/config/master" 2>/dev/null && \
+           [ -s "$MASTER_IGN_FILE" ] && jq -e '.ignition.version' "$MASTER_IGN_FILE" >/dev/null 2>&1; then
+            log "Got master ignition from bootstrap MCS ($(wc -c < "$MASTER_IGN_FILE") bytes)"
             break
-        else
-            rm -f "$IGN_FILE"
         fi
+        rm -f "$MASTER_IGN_FILE"
+        log "Bootstrap MCS not ready, retrying in 5 s..."
+        sleep 5
+    done
+
+    log "Converting master ignition to spec v3..."
+    if podman run --privileged --rm -v /tmp:/tmp "$CONVERTER_IMAGE" -input "$MASTER_IGN_FILE" -output "${MASTER_IGN_FILE%.ign}-v3.ign" 2>&1 | tee -a "$LOG_FILE"; then
+        mv "${MASTER_IGN_FILE%.ign}-v3.ign" "$MASTER_IGN_FILE"
+        log "Successfully converted master ignition to v3"
+    else
+        log "ERROR: Failed to convert master ignition to v3"
+        exit 1
     fi
-    sleep 1
-done
 
-# Convert downloaded ignition from v2 to v3
-log "Converting downloaded ignition file to spec v3..."
-if podman run --privileged --rm -v /tmp:/tmp "$CONVERTER_IMAGE" -input "$IGN_FILE" -output "${IGN_FILE%.ign}-v3.ign" 2>&1 | tee -a "$LOG_FILE"; then
-    mv "${IGN_FILE%.ign}-v3.ign" "$IGN_FILE"
-    log "Successfully converted ignition to v3"
+    log "Building master ignition..."
+    if [ -n "$HOSTNAME_CONFIG" ]; then
+        jq --argjson hostname "$HOSTNAME_CONFIG" --arg version "$IGN_VERSION" '
+            .ignition.version = $version |
+            .storage.files = (
+                [.storage.files[]? | select(.path != "/etc/hostname")] + [$hostname]
+            )
+        ' "$MASTER_IGN_FILE" > "$IGN_FILE"
+    else
+        jq --arg version "$IGN_VERSION" '.ignition.version = $version' \
+            "$MASTER_IGN_FILE" > "$IGN_FILE"
+    fi
 else
-    log "ERROR: Failed to convert ignition file to v3"
+    # Workers: fetch full ignition from the production MCS at the API VIP.
+    # By the time workers see "Rebooting node", the cluster is up and the
+    # production MCS is serving /config/worker.
+    WORKER_IGN_FILE="/tmp/worker-mcs.ign"
+    log "Fetching worker ignition from production MCS..."
+    while true; do
+        if curl -k -s --connect-timeout 5 --max-time 30 -o "$WORKER_IGN_FILE" "https://192.168.110.10:22623/config/worker" 2>/dev/null && \
+           [ -s "$WORKER_IGN_FILE" ] && jq -e '.ignition.version' "$WORKER_IGN_FILE" >/dev/null 2>&1; then
+            log "Got worker ignition from production MCS ($(wc -c < "$WORKER_IGN_FILE") bytes)"
+            break
+        fi
+        rm -f "$WORKER_IGN_FILE"
+        log "Production MCS not ready, retrying in 10 s..."
+        sleep 10
+    done
+
+    log "Converting worker ignition to spec v3..."
+    if podman run --privileged --rm -v /tmp:/tmp "$CONVERTER_IMAGE" -input "$WORKER_IGN_FILE" -output "${WORKER_IGN_FILE%.ign}-v3.ign" 2>&1 | tee -a "$LOG_FILE"; then
+        mv "${WORKER_IGN_FILE%.ign}-v3.ign" "$WORKER_IGN_FILE"
+        log "Successfully converted worker ignition to v3"
+    else
+        log "ERROR: Failed to convert worker ignition to v3"
+        exit 1
+    fi
+
+    cp "$WORKER_IGN_FILE" "$IGN_FILE"
+fi
+
+if [ $? -ne 0 ] || ! jq -e '.ignition.version' "$IGN_FILE" >/dev/null 2>&1; then
+    log "ERROR: Failed to build ignition"
     exit 1
 fi
-
-# Merge the hostname config and update version in downloaded ignition
-log "Merging hostname config and updating ignition version..."
-if [ -n "$HOSTNAME_CONFIG" ]; then
-    jq --argjson hostname "$HOSTNAME_CONFIG" --arg version "$IGN_VERSION" '
-        .ignition.version = $version |
-        .storage.files = (
-            [.storage.files[]? | select(.path != "/etc/hostname")] + [$hostname]
-        )
-    ' "$IGN_FILE" > "${IGN_FILE}.tmp" && mv "${IGN_FILE}.tmp" "$IGN_FILE"
-else
-    jq --arg version "$IGN_VERSION" '.ignition.version = $version' "$IGN_FILE" > "${IGN_FILE}.tmp" && mv "${IGN_FILE}.tmp" "$IGN_FILE"
-fi
-
-if [ $? -ne 0 ]; then
-    log "ERROR: Failed to merge ignition configurations"
-    exit 1
-fi
-log "Successfully merged ignition configuration"
+log "Successfully built ignition ($(wc -c < "$IGN_FILE") bytes)"
 
 # Inject registry.redhat.io mirror into the registries.conf so that
 # toolbox / podman run can resolve images from the appliance registry
@@ -213,17 +231,28 @@ jq --arg data "$POLICY_B64" --arg path "$POLICY_PATH" '
 ' "$IGN_FILE" > "${IGN_FILE}.tmp" && mv "${IGN_FILE}.tmp" "$IGN_FILE"
 log "Injected container signature policy override"
 
-# Wait for the assisted-installer container to exit before touching the disk.
-# On non-bootstrap masters it exits right after the registry copy; on the
-# bootstrap/rendezvous master it exits only after the full bootstrap phase
-# completes (etcd quorum, API VIP handoff). This is the cleanest signal that
-# the installer is done with all disk operations on this node.
-log "Waiting for assisted-installer and next-step-runner containers to exit..."
-while sudo podman ps --format '{{.Names}}' 2>/dev/null | grep -qE '^(assisted-installer|next-step-runner)$'; do
-    log "installer containers still running, retrying in 5 seconds..."
-    sleep 5
-done
-log "installer containers exited, proceeding to swap ignition"
+# Detect whether this is the bootstrap/rendezvous node by checking if the
+# assisted-service container is running locally.  The bootstrap node must stay
+# up until waitForBootstrapComplete; the other nodes only need to wait until
+# their own disk operations are done.
+if sudo podman ps --format '{{.Names}}' 2>/dev/null | grep -q '^service$'; then
+    log "Bootstrap node detected — waiting for assisted-installer to exit (implies bootstrap complete)"
+    while sudo podman ps --format '{{.Names}}' 2>/dev/null | grep -q '^assisted-installer$'; do
+        log "assisted-installer still running, retrying in 5 seconds..."
+        sleep 5
+    done
+    log "assisted-installer exited, proceeding to write ignition"
+else
+    # Non-bootstrap node: wait for "Rebooting node" in the journal.
+    # The local assisted-installer logs this just before calling shutdown -r,
+    # after all disk operations (image write + ostree deployment) are complete.
+    # Exclude ignition-hack lines to prevent matching our own log messages.
+    log "Waiting for installer reboot signal..."
+    while ! journalctl -b --no-pager -q 2>/dev/null | grep -v 'ignition-hack' | grep -q 'Rebooting node'; do
+        sleep 5
+    done
+    log "Rebooting node seen, proceeding to fetch MCS ignition and write"
+fi
 
 # Validate ignition before writing
 if ! jq -e '.ignition.version' "$IGN_FILE" >/dev/null 2>&1; then
@@ -232,30 +261,46 @@ if ! jq -e '.ignition.version' "$IGN_FILE" >/dev/null 2>&1; then
     exit 1
 fi
 
-# Write the MCS ignition directly to the boot partition (/dev/disk/by-label/boot).
-# The agent already set up the disk correctly: RHCOS image, iri-registry, and XFS
-# agcount fixed via autosave-xfs (PR #2034). We only replace the ignition so the
-# second boot gets the quadlet/FRR configs needed to establish the SRv6 overlay.
+# Write the MCS ignition to the boot partition.
+# The installer mounts sda3 (labeled "boot") via nsenter --mount into the host
+# namespace at /var/mnt, then freezes it with FIFREEZE before unmounting its own
+# /mnt/boot handle.  Because /var/mnt still holds a reference to the superblock,
+# the freeze persists.  Find the existing mount with findmnt instead of trying to
+# create a new one (which would fail with EBUSY or succeed on a stale tmpdir).
 log "Writing MCS ignition to boot partition..."
-BOOT_MNT=$(mktemp -d)
-if mount /dev/disk/by-label/boot "$BOOT_MNT" 2>/dev/null; then
-    fsfreeze --unfreeze "$BOOT_MNT" 2>/dev/null || true
-    cp "$IGN_FILE" "$BOOT_MNT/ignition/config.ign"
-    sync
-    fsfreeze --freeze "$BOOT_MNT" 2>/dev/null || true
+BOOT_MNT=$(findmnt -n -o TARGET /dev/disk/by-label/boot 2>/dev/null | head -1)
+_OWN_BOOT_MOUNT=0
+if [ -z "$BOOT_MNT" ]; then
+    BOOT_MNT=$(mktemp -d)
+    if mount /dev/disk/by-label/boot "$BOOT_MNT" 2>/dev/null; then
+        _OWN_BOOT_MOUNT=1
+    else
+        rmdir "$BOOT_MNT"
+        log "ERROR: Boot partition not found or mountable"
+        systemctl unmask reboot.target
+        exit 1
+    fi
+else
+    log "Boot partition already mounted at $BOOT_MNT"
+fi
+fsfreeze --unfreeze "$BOOT_MNT" 2>/dev/null || true
+cp "$IGN_FILE" "$BOOT_MNT/ignition/config.ign"
+sync
+if [ "$_OWN_BOOT_MOUNT" -eq 1 ]; then
     umount "$BOOT_MNT"
     rmdir "$BOOT_MNT"
-    log "Successfully wrote ignition to boot partition"
-else
-    rmdir "$BOOT_MNT"
-    log "ERROR: Could not mount boot partition /dev/disk/by-label/boot"
-    systemctl unmask reboot.target
-    exit 1
 fi
+log "Successfully wrote ignition to boot partition"
 
-log "Ignition hack script completed — unmasking reboot.target and rebooting"
+# Wait for "Rebooting node" before triggering the actual reboot.
+# The local assisted-installer logs this just before calling shutdown -r,
+# meaning it has already sent the "Rebooting" stage update to the
+# assisted-service.  Rebooting before this point causes the service to
+# mark the node as disconnected/error.
+log "Rebooting node seen — unmasking reboot.target and rebooting"
 systemctl unmask reboot.target
 systemctl reboot
+systemctl unmask reboot.target
 HACKSCRIPT_EOF
 
 # Base64 encode the script (use printf to avoid trailing newline)
