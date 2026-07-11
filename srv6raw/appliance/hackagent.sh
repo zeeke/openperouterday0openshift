@@ -59,19 +59,16 @@ rebuild_xfs_agsize() {
     umount "$TMP_MNT"
 
     # Force-unmount sda4 from ALL remaining mounts (installer holds /sysroot).
-    # mkfs.xfs fails with "contains a mounted filesystem" if any mount remains.
     while mp=$(findmnt -n -o TARGET "${DISK}${ROOT_PART_NUM}" 2>/dev/null | head -1) && [ -n "$mp" ]; do
         log "XFS fix: force-unmounting ${DISK}${ROOT_PART_NUM} from $mp..."
         umount -l "$mp" || break
     done
 
     # Move secondary GPT to true disk end BEFORE extending sda4.
-    # The appliance image places the secondary GPT at the 89 GB mark; sgdisk -e
-    # must run while sda4 is still 89 GB and the GPT is in the free space past it.
     log "XFS fix: moving secondary GPT to true disk end..."
     sgdisk -e "$DISK" 2>&1 | tee -a "$LOG_FILE"
 
-    # Extend partition to fill disk (idempotent — skipped if already at full size).
+    # Extend partition to fill disk (idempotent).
     local PART_END DISK_END ROOT_PART_START
     PART_END=$(sgdisk -p "$DISK" | awk "/^ *${ROOT_PART_NUM} / {print \$3}")
     DISK_END=$(sgdisk -p "$DISK" | awk '/last usable sector/ {print $NF}')
@@ -81,23 +78,18 @@ rebuild_xfs_agsize() {
         sgdisk -d "$ROOT_PART_NUM" "$DISK" 2>&1 | tee -a "$LOG_FILE"
         sgdisk -n "${ROOT_PART_NUM}:${ROOT_PART_START}:0" -t "${ROOT_PART_NUM}:${ROOT_PART_TYPE}" \
             "$DISK" 2>&1 | tee -a "$LOG_FILE"
-        # blockdev --rereadpt fails (other partitions in use); update only sda4.
         partx --update --nr "$ROOT_PART_NUM" "$DISK" 2>&1 | tee -a "$LOG_FILE"
     else
         log "XFS fix: partition ${ROOT_PART_NUM} already at full disk size, skipping extension"
     fi
 
     # Rebuild XFS with agsize that keeps agcount < threshold=400 after first-boot growfs.
-    # 'b' suffix = filesystem blocks (4096 bytes). Without it mkfs.xfs treats the
-    # value as bytes (~2 MB) and rejects it as "too small".
     local DISK_BLOCKS AGSIZE
     DISK_BLOCKS=$(( $(blockdev --getsize64 "$DISK") / 4096 ))
     AGSIZE=$(( (DISK_BLOCKS + 389) / 390 ))
     log "XFS fix: rebuilding XFS agsize=${AGSIZE}b → agcount≈390 < threshold=400..."
     mkfs.xfs -f -d agsize="${AGSIZE}b" -L root "${DISK}${ROOT_PART_NUM}" 2>&1 | tee -a "$LOG_FILE"
 
-    # Restore content. cp -a preserves chattr +i to tmpfs; an interrupted run may
-    # leave immutable dirs in TMP_MNT blocking the next cp. Clear both ends first.
     log "XFS fix: restoring root XFS content..."
     mount "${DISK}${ROOT_PART_NUM}" "$TMP_MNT"
     chattr -R -i "$SAVE_DIR" 2>/dev/null || true
@@ -135,15 +127,30 @@ fi
 
 MASTER_IGN_FILE="/tmp/master-mcs-server.ign"
 
-# Wait for the local ignition file — needed for role detection and hostname.
-log "Waiting for local ignition file in $LOCAL_IGN_DIR..."
+# Wait for both the local ignition file and the bootstrap MCS ignition
+# concurrently.  The bootstrap MCS (192.168.110.2:22623) is available during
+# the disk-write phase and must be fetched NOW — it disappears when master-0
+# reboots, which happens around the same time workers see "Rebooting node".
+log "Waiting for local ignition file and bootstrap MCS ignition..."
 LOCAL_IGN_FILE=""
+MASTER_IGN_READY=0
 while true; do
-    LOCAL_IGN_FILE=$(find "$LOCAL_IGN_DIR" -maxdepth 1 \( -name 'master-*.ign' -o -name 'worker-*.ign' \) -type f 2>/dev/null | head -1)
-    [ -n "$LOCAL_IGN_FILE" ] && break
+    if [ -z "$LOCAL_IGN_FILE" ]; then
+        LOCAL_IGN_FILE=$(find "$LOCAL_IGN_DIR" -maxdepth 1 \( -name 'master-*.ign' -o -name 'worker-*.ign' \) -type f 2>/dev/null | head -1)
+        [ -n "$LOCAL_IGN_FILE" ] && log "Found local ignition file: $LOCAL_IGN_FILE"
+    fi
+    if [ "$MASTER_IGN_READY" -eq 0 ]; then
+        if curl -k -s --connect-timeout 2 --max-time 10 -o "$MASTER_IGN_FILE" "https://192.168.110.2:22623/config/master" 2>/dev/null && \
+           [ -s "$MASTER_IGN_FILE" ] && jq -e '.ignition.version' "$MASTER_IGN_FILE" >/dev/null 2>&1; then
+            log "Got master ignition from bootstrap MCS ($(wc -c < "$MASTER_IGN_FILE") bytes)"
+            MASTER_IGN_READY=1
+        else
+            rm -f "$MASTER_IGN_FILE"
+        fi
+    fi
+    [ -n "$LOCAL_IGN_FILE" ] && [ "$MASTER_IGN_READY" -eq 1 ] && break
     sleep 5
 done
-log "Found local ignition file: $LOCAL_IGN_FILE"
 
 # Detect role from filename
 case "$LOCAL_IGN_FILE" in
@@ -172,18 +179,7 @@ else
 fi
 
 if [ "$NODE_ROLE" = "master" ]; then
-    # Masters: fetch from bootstrap MCS (available throughout bootstrap).
-    log "Fetching master ignition from bootstrap MCS..."
-    while true; do
-        if curl -k -s --connect-timeout 5 --max-time 30 -o "$MASTER_IGN_FILE" "https://192.168.110.2:22623/config/master" 2>/dev/null && \
-           [ -s "$MASTER_IGN_FILE" ] && jq -e '.ignition.version' "$MASTER_IGN_FILE" >/dev/null 2>&1; then
-            log "Got master ignition from bootstrap MCS ($(wc -c < "$MASTER_IGN_FILE") bytes)"
-            break
-        fi
-        rm -f "$MASTER_IGN_FILE"
-        log "Bootstrap MCS not ready, retrying in 5 s..."
-        sleep 5
-    done
+    # Masters: bootstrap MCS ignition already fetched above — use it directly.
 
     log "Converting master ignition to spec v3..."
     if podman run --privileged --rm -v /tmp:/tmp "$CONVERTER_IMAGE" -input "$MASTER_IGN_FILE" -output "${MASTER_IGN_FILE%.ign}-v3.ign" 2>&1 | tee -a "$LOG_FILE"; then
@@ -207,38 +203,61 @@ if [ "$NODE_ROLE" = "master" ]; then
             "$MASTER_IGN_FILE" > "$IGN_FILE"
     fi
 else
-    # Workers: fetch full ignition from the production MCS at the API VIP.
-    # By the time workers see "Rebooting node", the cluster is up and the
-    # production MCS is serving /config/worker.
-    WORKER_IGN_FILE="/tmp/worker-mcs.ign"
-    log "Fetching worker ignition from production MCS..."
+    # Workers: fetch master MCS ignition from the bootstrap MCS early (reachable
+    # via direct L2 while bootstrap is running) then merge with the local worker
+    # ignition which has node-specific certs, kubeconfig and hostname.
+    # FRR does not run on workers in the live ISO (OVS blocks can_start.sh), so
+    # the production MCS at the API VIP is not reachable — bootstrap MCS is.
+    log "Fetching master ignition from bootstrap MCS for worker merge..."
     while true; do
-        if curl -k -s --connect-timeout 5 --max-time 30 -o "$WORKER_IGN_FILE" "https://192.168.110.10:22623/config/worker" 2>/dev/null && \
-           [ -s "$WORKER_IGN_FILE" ] && jq -e '.ignition.version' "$WORKER_IGN_FILE" >/dev/null 2>&1; then
-            log "Got worker ignition from production MCS ($(wc -c < "$WORKER_IGN_FILE") bytes)"
+        if curl -k -s --connect-timeout 5 --max-time 30 -o "$MASTER_IGN_FILE" "https://192.168.110.2:22623/config/master" 2>/dev/null && \
+           [ -s "$MASTER_IGN_FILE" ] && jq -e '.ignition.version' "$MASTER_IGN_FILE" >/dev/null 2>&1; then
+            log "Got master ignition from bootstrap MCS ($(wc -c < "$MASTER_IGN_FILE") bytes)"
             break
         fi
-        rm -f "$WORKER_IGN_FILE"
-        log "Production MCS not ready, retrying in 10 s..."
-        sleep 10
+        rm -f "$MASTER_IGN_FILE"
+        log "Bootstrap MCS not ready, retrying in 5 s..."
+        sleep 5
     done
 
-    log "Converting worker ignition to spec v3..."
-    if podman run --privileged --rm -v /tmp:/tmp "$CONVERTER_IMAGE" -input "$WORKER_IGN_FILE" -output "${WORKER_IGN_FILE%.ign}-v3.ign" 2>&1 | tee -a "$LOG_FILE"; then
-        mv "${WORKER_IGN_FILE%.ign}-v3.ign" "$WORKER_IGN_FILE"
-        log "Successfully converted worker ignition to v3"
+    log "Converting master ignition to spec v3..."
+    if podman run --privileged --rm -v /tmp:/tmp "$CONVERTER_IMAGE" -input "$MASTER_IGN_FILE" -output "${MASTER_IGN_FILE%.ign}-v3.ign" 2>&1 | tee -a "$LOG_FILE"; then
+        mv "${MASTER_IGN_FILE%.ign}-v3.ign" "$MASTER_IGN_FILE"
+        log "Successfully converted master ignition to v3"
     else
-        log "ERROR: Failed to convert worker ignition to v3"
+        log "ERROR: Failed to convert master ignition to v3"
         exit 1
     fi
 
-    cp "$WORKER_IGN_FILE" "$IGN_FILE"
+    log "Building worker ignition: local base + master FRR/quadlet additions..."
+    jq -s --arg version "$IGN_VERSION" '
+        .[0] as $worker | .[1] as $master |
+        ($worker.storage.files // [] | map(.path)) as $workerPaths |
+        ($worker.systemd.units // [] | map(.name)) as $workerUnits |
+        $worker |
+        .ignition.version = $version |
+        .storage.files = (.storage.files +
+            [$master.storage.files[]? |
+             select(.path as $p | $workerPaths | index($p) | not)]) |
+        .systemd.units = ((.systemd.units // []) +
+            [$master.systemd.units[]? |
+             select(.name as $n | $workerUnits | index($n) | not)])
+    ' "$LOCAL_IGN_FILE" "$MASTER_IGN_FILE" > "$IGN_FILE"
 fi
 
 if [ $? -ne 0 ] || ! jq -e '.ignition.version' "$IGN_FILE" >/dev/null 2>&1; then
     log "ERROR: Failed to build ignition"
     exit 1
 fi
+
+# Strip any merge config inherited from the MCS ignition.  The bootstrap MCS
+# may include ignition.config.merge pointing to the production MCS (API VIP).
+# On first RHCOS boot there is no SRv6 yet so that fetch would fail, causing
+# the node to loop looking for ignition from the network.
+jq 'del(.ignition.config.merge) | del(.ignition.config.replace)' \
+    "$IGN_FILE" > "${IGN_FILE}.tmp" && mv "${IGN_FILE}.tmp" "$IGN_FILE"
+log "Stripped merge/replace config from ignition"
+
 log "Successfully built ignition ($(wc -c < "$IGN_FILE") bytes)"
 
 # Inject registry.redhat.io mirror into the registries.conf so that
@@ -272,38 +291,8 @@ jq --arg data "$MIRROR_CONF_B64" --arg path "$MIRROR_PATH" '
 ' "$IGN_FILE" > "${IGN_FILE}.tmp" && mv "${IGN_FILE}.tmp" "$IGN_FILE"
 log "Injected registry mirror configuration"
 
-# The default policy.json requires GPG signatures for registry.redhat.io
-# images, but the appliance mirror copy is unsigned.  Override the policy
-# to accept unsigned images from the appliance registry.
-POLICY_OVERRIDE='{
-    "default": [{"type": "insecureAcceptAnything"}],
-    "transports": {
-        "docker": {
-            "registry.appliance.openshift.com:22625": [{"type": "insecureAcceptAnything"}],
-            "registry.redhat.io": [{"type": "insecureAcceptAnything"}]
-        },
-        "docker-daemon": {
-            "": [{"type": "insecureAcceptAnything"}]
-        }
-    }
-}'
-POLICY_B64=$(echo "$POLICY_OVERRIDE" | base64 -w0)
-POLICY_PATH="/etc/containers/policy.json"
-log "Injecting relaxed $POLICY_PATH into ignition..."
-jq --arg data "$POLICY_B64" --arg path "$POLICY_PATH" '
-    .storage.files = (
-        [.storage.files[]? | select(.path != $path)] + [{
-            "path": $path,
-            "mode": 420,
-            "overwrite": true,
-            "contents": {
-                "source": ("data:text/plain;charset=utf-8;base64," + $data),
-                "verification": {}
-            }
-        }]
-    )
-' "$IGN_FILE" > "${IGN_FILE}.tmp" && mv "${IGN_FILE}.tmp" "$IGN_FILE"
-log "Injected container signature policy override"
+# policy.json is managed by the MCO via the rendered machineconfig — do NOT
+# inject it here or MCO will report a content mismatch and fail to converge.
 
 # Detect whether this is the bootstrap/rendezvous node by checking if the
 # assisted-service container is running locally.  The bootstrap node must stay
@@ -358,7 +347,10 @@ else
     log "Boot partition already mounted at $BOOT_MNT"
 fi
 fsfreeze --unfreeze "$BOOT_MNT" 2>/dev/null || true
-cp "$IGN_FILE" "$BOOT_MNT/ignition/config.ign"
+# Use dd conv=fsync to force the ext4 journal to commit before returning.
+# For workers especially, ostree holds sda3 open for a long time, so the
+# dirty umount during shutdown would lose a plain cp+sync write.
+dd if="$IGN_FILE" of="$BOOT_MNT/ignition/config.ign" conv=fsync 2>/dev/null
 sync
 if [ "$_OWN_BOOT_MOUNT" -eq 1 ]; then
     umount "$BOOT_MNT"
@@ -366,15 +358,16 @@ if [ "$_OWN_BOOT_MOUNT" -eq 1 ]; then
 fi
 log "Successfully wrote ignition to boot partition"
 
-# Rebuild sda4 XFS with a large agsize so that first-boot growfs keeps
-# agcount < 400 (the autosave-xfs threshold).  Must run after disk writes
-# are complete and before the actual reboot.
+# Wait for "Rebooting node" before triggering the actual reboot.
+# The local assisted-installer logs this just before calling shutdown -r,
+# meaning it has already sent the "Rebooting" stage update to the
+# assisted-service.  Rebooting before this point causes the service to
+# mark the node as disconnected/error.
 rebuild_xfs_agsize || { log "XFS fix failed — aborting reboot"; exit 1; }
 
 log "Rebooting node seen — unmasking reboot.target and rebooting"
 systemctl unmask reboot.target
 systemctl reboot
-systemctl unmask reboot.target
 HACKSCRIPT_EOF
 
 # Base64 encode the script (use printf to avoid trailing newline)
