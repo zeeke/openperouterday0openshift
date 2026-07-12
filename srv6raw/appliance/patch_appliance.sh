@@ -114,6 +114,15 @@ if [[ -s "${registries_conf}" ]]; then
 "
 fi
 
+# --- Patch set-hostname.sh to wait for /etc/assisted/hostnames ---
+cp "${SCRIPTDIR}/set-hostname.sh" "${staging}/set-hostname.sh"
+bu_files+="    - path: /usr/local/bin/set-hostname.sh
+      mode: 0755
+      overwrite: true
+      contents:
+        local: set-hostname.sh
+"
+
 # --- Override container signature policy ---
 # The default policy.json requires GPG signatures for registry.redhat.io
 # images, but the appliance mirror copy is unsigned.
@@ -179,13 +188,23 @@ sudo coreos-installer iso ignition show "${appliance_iso}" > "${tmpdir}/original
     || echo '{"ignition":{"version":"3.4.0"}}' > "${tmpdir}/original.ign"
 
 # Merge: original + openperouter + extras
+# Strip files/units from original that extras or openperouter override,
+# to avoid duplicate path entries that ignition rejects.
 jq -s '
     .[0] as $orig | .[1] as $ope | .[2] as $ext |
+    (($ope.storage.files // []) + ($ext.storage.files // []) | map(.path)) as $overridePaths |
+    (($ope.systemd.units // []) + ($ext.systemd.units // []) | map(.name)) as $overrideUnits |
     $orig |
     .storage = (.storage // {}) |
-    .storage.files = ((.storage.files // []) + ($ope.storage.files // []) + ($ext.storage.files // [])) |
+    .storage.files = (
+        [(.storage.files // [])[] | select(.path as $p | $overridePaths | index($p) | not)] +
+        ($ope.storage.files // []) + ($ext.storage.files // [])
+    ) |
     .systemd = (.systemd // {}) |
-    .systemd.units = ((.systemd.units // []) + ($ope.systemd.units // []) + ($ext.systemd.units // [])) |
+    .systemd.units = (
+        [(.systemd.units // [])[] | select(.name as $n | $overrideUnits | index($n) | not)] +
+        ($ope.systemd.units // []) + ($ext.systemd.units // [])
+    ) |
     if ($ext.passwd.users // [] | length) > 0 then
         .passwd = (.passwd // {}) |
         .passwd.users = ((.passwd.users // []) + ($ext.passwd.users // []))
