@@ -1,7 +1,7 @@
 apiVersion: v1beta1
 kind: ApplianceConfig
 ocpRelease:
-  version: "4.22"
+  version: '4.22'
   url: quay.io/openshift-release-dev/ocp-release:4.22.3-x86_64
 diskSizeGB: 200
 userCorePass: core
@@ -9,3 +9,4 @@ stopLocalRegistry: false
 additionalImages:
   - name: quay.io/redhat-user-workloads/telco-5g-tenant/openperouter-operator-edge-4-22:latest
   - name: quay.io/mavazque/ign-converter:latest
+  - name: registry.redhat.io/rhel9/support-tools:latest

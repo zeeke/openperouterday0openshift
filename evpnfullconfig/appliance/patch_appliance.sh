@@ -1,7 +1,11 @@
 #!/bin/bash
 # patch_appliance.sh - Patch an existing appliance ISO by embedding
-# OpenPERouter quadlets, configs, registry mirrors,
+# OpenPERouter quadlets, configs, registry mirrors, DNS overrides,
 # and the ignition hack agent into it.
+#
+# This variant compiles openperouter.bu (the single source of truth for
+# file lists and systemd units) and merges the resulting ignition with
+# appliance-specific extras (registry mirrors, DNS, SSH key).
 #
 # Usage: patch_appliance.sh <appliance_iso> <ocp_dir>
 #
@@ -14,6 +18,7 @@ set -euo pipefail
 
 SCRIPTDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 EXTRASDIR="$(cd "${SCRIPTDIR}/../extras" && pwd)"
+RAWCONFIG_BU="${SCRIPTDIR}/../configimage/openperouter.bu"
 
 appliance_iso="$1"
 ocp_dir="$2"
@@ -23,20 +28,38 @@ if [[ ! -f "${appliance_iso}" ]]; then
     exit 1
 fi
 
+if [[ ! -f "${RAWCONFIG_BU}" ]]; then
+    echo "ERROR: openperouter.bu not found: ${RAWCONFIG_BU}"
+    exit 1
+fi
+
 # ============================================================
-# Step 1: Embed OpenPERouter content into the ISO ignition
+# Step 1: Compile openperouter.bu → ignition
 # ============================================================
-echo "==> Patching appliance ISO with OpenPERouter content..."
+echo "==> Compiling openperouter.bu..."
 
 tmpdir=$(mktemp -d)
 trap 'rm -rf "${tmpdir}"' EXIT
 
+# butane --raw on an openshift-variant .bu outputs ignition JSON directly
+# (without --raw it would produce a MachineConfig YAML wrapper)
+butane --raw --strict --files-dir="${EXTRASDIR}" "${RAWCONFIG_BU}" \
+    > "${tmpdir}/openperouter.ign"
+
+
+# ============================================================
+# Step 2: Build extras ignition (registry mirrors, SSH key)
+# ============================================================
+echo "==> Building appliance extras..."
+
 staging="${tmpdir}/staging"
 mkdir -p "${staging}"
 
+bu="${tmpdir}/extras.bu"
+bu_files=""
+bu_units=""
+
 # --- Generate registries.conf drop-in ---
-# Converts IDMS/ITMS yaml files from the appliance cache into a
-# registries.conf drop-in so mirror redirects work on first boot.
 registries_conf="${staging}/appliance-mirrors.conf"
 cluster_resources="${ocp_dir}/cache/"*"/cluster-resources"
 {
@@ -66,12 +89,22 @@ TOML
     done
 } > "${registries_conf}"
 
-# --- Build butane YAML ---
-bu="${tmpdir}/appliance.bu"
-bu_files=""
-bu_units=""
+# The appliance embeds additionalImages into its local registry but the
+# auto-generated IDMS/ITMS only cover OCP release images.  Add a mirror
+# rule so that registry.redhat.io pulls (e.g. toolbox, support-tools)
+# are served from the appliance registry.
+cat >> "${registries_conf}" <<TOML
 
-# Registry mirrors
+[[registry]]
+  prefix = ""
+  location = "registry.redhat.io"
+  mirror-by-digest-only = false
+
+  [[registry.mirror]]
+    location = "registry.appliance.openshift.com:22625"
+    insecure = true
+TOML
+
 if [[ -s "${registries_conf}" ]]; then
     bu_files+="    - path: /etc/containers/registries.conf.d/appliance-mirrors.conf
       mode: 0644
@@ -81,69 +114,43 @@ if [[ -s "${registries_conf}" ]]; then
 "
 fi
 
-# Quadlet files and configs
-if [[ -d "${EXTRASDIR}/quadlets" ]]; then
-    # Stage all source files into the butane files-dir
-    for f in controllerpod.pod controller.container routerpod.pod frr.container \
-             reloader.container frr-sockets.volume openperouter-node-index.sh \
-             patch-installer-config.sh can_start.sh \
-             openperouter-node-index.service \
-             enable-virtual-interfaces.service; do
-        cp "${EXTRASDIR}/quadlets/${f}" "${staging}/"
-    done
-    cp "${EXTRASDIR}/config/openpe_config.yaml" "${staging}/"
-
-    # Quadlet files -> /etc/containers/systemd/
-    for f in controllerpod.pod controller.container routerpod.pod frr.container \
-             reloader.container frr-sockets.volume; do
-        bu_files+="    - path: /etc/containers/systemd/${f}
-      mode: 0644
-      overwrite: true
-      contents:
-        local: ${f}
-"
-    done
-
-    # Scripts -> /usr/local/bin/ (executable)
-    for f in openperouter-node-index.sh patch-installer-config.sh; do
-        bu_files+="    - path: /usr/local/bin/${f}
+# --- Patch set-hostname.sh to wait for /etc/assisted/hostnames ---
+cp "${SCRIPTDIR}/set-hostname.sh" "${staging}/set-hostname.sh"
+bu_files+="    - path: /usr/local/bin/set-hostname.sh
       mode: 0755
       overwrite: true
       contents:
-        local: ${f}
+        local: set-hostname.sh
 "
-    done
 
-    # Config files -> /var/lib/openperouter/
-    bu_files+="    - path: /var/lib/openperouter/configs/openpe_config.yaml
+# --- Override container signature policy ---
+# The default policy.json requires GPG signatures for registry.redhat.io
+# images, but the appliance mirror copy is unsigned.
+policy_json="${staging}/appliance-policy.json"
+cat > "${policy_json}" <<'POLICY'
+{
+    "default": [{"type": "insecureAcceptAnything"}],
+    "transports": {
+        "docker": {
+            "registry.appliance.openshift.com:22625": [{"type": "insecureAcceptAnything"}],
+            "registry.redhat.io": [{"type": "insecureAcceptAnything"}]
+        },
+        "docker-daemon": {
+            "": [{"type": "insecureAcceptAnything"}]
+        }
+    }
+}
+POLICY
+bu_files+="    - path: /etc/containers/policy.json
       mode: 0644
       overwrite: true
       contents:
-        local: openpe_config.yaml
+        local: appliance-policy.json
 "
 
-    # can_start.sh -> /var/lib/openperouter/ (executable)
-    bu_files+="    - path: /var/lib/openperouter/can_start.sh
-      mode: 0755
-      overwrite: true
-      contents:
-        local: can_start.sh
-"
-
-    # Systemd units (using contents_local so butane reads from files-dir)
-    for f in openperouter-node-index.service \
-             enable-virtual-interfaces.service; do
-        bu_units+="    - name: ${f}
-      enabled: true
-      contents_local: ${f}
-"
-    done
-fi
-
-# --- Assemble and compile butane ---
-if [[ -z "${bu_files}" && -z "${bu_units}" ]]; then
-    echo "Nothing to embed into appliance ISO"
-else
+# --- Compile extras butane → ignition ---
+extras_ign="${tmpdir}/extras.ign"
+if [[ -n "${bu_files}" || -n "${bu_units}" ]]; then
     {
         echo "variant: fcos"
         echo "version: 1.5.0"
@@ -166,37 +173,52 @@ else
         fi
     } > "${bu}"
 
-    # Compile butane -> ignition (butane handles base64 encoding, etc.)
-    butane --raw --strict -d "${staging}" "${bu}" > "${tmpdir}/additions.ign"
-
-    # Extract existing ISO ignition
-    sudo coreos-installer iso ignition show "${appliance_iso}" > "${tmpdir}/original.ign" 2>/dev/null \
-        || echo '{"ignition":{"version":"3.4.0"}}' > "${tmpdir}/original.ign"
-
-    # Merge our additions with the original ignition
-    jq -s '
-        .[0] as $orig | .[1] as $new |
-        $orig |
-        .storage = (.storage // {}) |
-        .storage.files = ((.storage.files // []) + ($new.storage.files // [])) |
-        if ($new.systemd.units // [] | length) > 0 then
-            .systemd = (.systemd // {}) |
-            .systemd.units = ((.systemd.units // []) + ($new.systemd.units // []))
-        else . end |
-        if ($new.passwd.users // [] | length) > 0 then
-            .passwd = (.passwd // {}) |
-            .passwd.users = ((.passwd.users // []) + ($new.passwd.users // []))
-        else . end
-    ' "${tmpdir}/original.ign" "${tmpdir}/additions.ign" > "${tmpdir}/merged.ign"
-
-    # Embed merged ignition into ISO (force overwrite)
-    sudo coreos-installer iso ignition embed -f -i "${tmpdir}/merged.ign" "${appliance_iso}"
-
-    echo "==> Embedded OpenPERouter ignition into appliance ISO"
+    butane --raw --strict -d "${staging}" "${bu}" > "${extras_ign}"
+else
+    echo '{"ignition":{"version":"3.4.0"}}' > "${extras_ign}"
 fi
 
 # ============================================================
-# Step 2: Embed ignition hack agent
+# Step 3: Merge everything into the ISO
+# ============================================================
+echo "==> Merging ignition into appliance ISO..."
+
+# Extract existing ISO ignition
+sudo coreos-installer iso ignition show "${appliance_iso}" > "${tmpdir}/original.ign" 2>/dev/null \
+    || echo '{"ignition":{"version":"3.4.0"}}' > "${tmpdir}/original.ign"
+
+# Merge: original + openperouter + extras
+# Strip files/units from original that extras or openperouter override,
+# to avoid duplicate path entries that ignition rejects.
+jq -s '
+    .[0] as $orig | .[1] as $ope | .[2] as $ext |
+    (($ope.storage.files // []) + ($ext.storage.files // []) | map(.path)) as $overridePaths |
+    (($ope.systemd.units // []) + ($ext.systemd.units // []) | map(.name)) as $overrideUnits |
+    $orig |
+    .storage = (.storage // {}) |
+    .storage.files = (
+        [(.storage.files // [])[] | select(.path as $p | $overridePaths | index($p) | not)] +
+        ($ope.storage.files // []) + ($ext.storage.files // [])
+    ) |
+    .systemd = (.systemd // {}) |
+    .systemd.units = (
+        [(.systemd.units // [])[] | select(.name as $n | $overrideUnits | index($n) | not)] +
+        ($ope.systemd.units // []) + ($ext.systemd.units // [])
+    ) |
+    if ($ext.passwd.users // [] | length) > 0 then
+        .passwd = (.passwd // {}) |
+        .passwd.users = ((.passwd.users // []) + ($ext.passwd.users // []))
+    else . end
+' "${tmpdir}/original.ign" "${tmpdir}/openperouter.ign" "${extras_ign}" \
+    > "${tmpdir}/merged.ign"
+
+# Embed merged ignition into ISO
+sudo coreos-installer iso ignition embed -f -i "${tmpdir}/merged.ign" "${appliance_iso}"
+
+echo "==> Embedded OpenPERouter ignition into appliance ISO"
+
+# ============================================================
+# Step 4: Embed ignition hack agent
 # ============================================================
 if [[ -x "${SCRIPTDIR}/hackagent.sh" ]]; then
     "${SCRIPTDIR}/hackagent.sh" "${appliance_iso}"
