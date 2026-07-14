@@ -42,70 +42,59 @@ log() {
     echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$LOG_FILE"
 }
 
-rebuild_xfs_agsize() {
+resize_root_for_growfs() {
+    # Resize sda4 to 2 TiB and create sda5 with the remaining disk space.
+    # On first RHCOS boot, ignition-ostree-growfs.service runs xfs_growfs which
+    # grows the XFS to fill sda4 (2 TiB). sda5 blocks growpart from extending
+    # sda4 further, keeping agcount ≈ 369 < threshold=400 → autosave-xfs skips.
     local DISK=/dev/sda
     local ROOT_PART_NUM=4
     local ROOT_PART_TYPE=8304
-    local TMP_MNT SAVE_DIR
-    TMP_MNT=$(mktemp -d)
-    SAVE_DIR=$(mktemp -d)
+    local DATA_PART_NUM=5
+    local DATA_PART_TYPE=8300
+    local TARGET_SIZE_TIB=2
+    local MIN_DISK_GB=2500
 
-    log "XFS fix: mounting sda4..."
-    mount "${DISK}${ROOT_PART_NUM}" "$TMP_MNT"
-    fsfreeze --unfreeze "$TMP_MNT" 2>/dev/null || true
+    local DISK_GB
+    DISK_GB=$(( $(blockdev --getsize64 "$DISK") / 1000000000 ))
+    if [ "$DISK_GB" -lt "$MIN_DISK_GB" ]; then
+        log "Partition resize: disk=${DISK_GB}GB < ${MIN_DISK_GB}GB — skipping (not a large BM disk)"
+        return 0
+    fi
 
-    log "XFS fix: saving root XFS content to tmpfs..."
-    cp -aT "$TMP_MNT" "$SAVE_DIR" 2>&1 | tee -a "$LOG_FILE"
-    umount "$TMP_MNT"
+    # Idempotent: skip if sda5 already exists
+    if sgdisk -p "$DISK" 2>/dev/null | grep -q "^ *${DATA_PART_NUM} "; then
+        log "Partition resize: sda${DATA_PART_NUM} already exists — skipping"
+        return 0
+    fi
 
-    # Force-unmount sda4 from ALL remaining mounts (installer holds /sysroot).
-    while mp=$(findmnt -n -o TARGET "${DISK}${ROOT_PART_NUM}" 2>/dev/null | head -1) && [ -n "$mp" ]; do
-        log "XFS fix: force-unmounting ${DISK}${ROOT_PART_NUM} from $mp..."
-        umount -l "$mp" || break
-    done
+    log "Partition resize: disk=${DISK_GB}GB, resizing sda${ROOT_PART_NUM} to ${TARGET_SIZE_TIB} TiB, creating sda${DATA_PART_NUM}"
 
-    # Move secondary GPT to true disk end BEFORE extending sda4.
-    log "XFS fix: moving secondary GPT to true disk end..."
+    # Move secondary GPT to true disk end (coreos-installer leaves it at ~89 GB mark).
+    log "Partition resize: moving secondary GPT to disk end..."
     sgdisk -e "$DISK" 2>&1 | tee -a "$LOG_FILE"
 
-    # Extend partition to fill disk (idempotent).
-    local PART_END DISK_END ROOT_PART_START
-    PART_END=$(sgdisk -p "$DISK" | awk "/^ *${ROOT_PART_NUM} / {print \$3}")
-    DISK_END=$(sgdisk -p "$DISK" | awk '/last usable sector/ {print $NF}')
-    if [ "$PART_END" -lt "$DISK_END" ]; then
-        log "XFS fix: extending partition ${ROOT_PART_NUM} to fill disk..."
-        ROOT_PART_START=$(sgdisk -p "$DISK" | awk "/^ *${ROOT_PART_NUM} / {print \$2}")
-        sgdisk -d "$ROOT_PART_NUM" "$DISK" 2>&1 | tee -a "$LOG_FILE"
-        sgdisk -n "${ROOT_PART_NUM}:${ROOT_PART_START}:0" -t "${ROOT_PART_NUM}:${ROOT_PART_TYPE}" \
-            "$DISK" 2>&1 | tee -a "$LOG_FILE"
-        partx --update --nr "$ROOT_PART_NUM" "$DISK" 2>&1 | tee -a "$LOG_FILE"
-    else
-        log "XFS fix: partition ${ROOT_PART_NUM} already at full disk size, skipping extension"
-    fi
+    # Resize sda4: delete and recreate at 2 TiB from the same start sector.
+    local ROOT_START
+    ROOT_START=$(sgdisk -p "$DISK" | awk "/^ *${ROOT_PART_NUM} / {print \$2}")
+    log "Partition resize: resizing sda${ROOT_PART_NUM} (start=${ROOT_START}) to +${TARGET_SIZE_TIB}T..."
+    sgdisk -d "$ROOT_PART_NUM" "$DISK" 2>&1 | tee -a "$LOG_FILE"
+    sgdisk -n "${ROOT_PART_NUM}:${ROOT_START}:+${TARGET_SIZE_TIB}T" \
+           -t "${ROOT_PART_NUM}:${ROOT_PART_TYPE}" \
+           "$DISK" 2>&1 | tee -a "$LOG_FILE"
 
-    # Rebuild XFS with agsize that keeps agcount < threshold=400 after first-boot growfs.
-    local DISK_BLOCKS AGSIZE
-    DISK_BLOCKS=$(( $(blockdev --getsize64 "$DISK") / 4096 ))
-    AGSIZE=$(( (DISK_BLOCKS + 389) / 390 ))
-    log "XFS fix: rebuilding XFS agsize=${AGSIZE}b → agcount≈390 < threshold=400..."
-    mkfs.xfs -f -d agsize="${AGSIZE}b" -L root "${DISK}${ROOT_PART_NUM}" 2>&1 | tee -a "$LOG_FILE"
+    # Create sda5 with all remaining space.
+    log "Partition resize: creating sda${DATA_PART_NUM} with remaining space..."
+    sgdisk -n "${DATA_PART_NUM}:0:0" \
+           -t "${DATA_PART_NUM}:${DATA_PART_TYPE}" \
+           "$DISK" 2>&1 | tee -a "$LOG_FILE"
 
-    log "XFS fix: restoring root XFS content..."
-    mount "${DISK}${ROOT_PART_NUM}" "$TMP_MNT"
-    chattr -R -i "$SAVE_DIR" 2>/dev/null || true
-    chattr -R -i "$TMP_MNT" 2>/dev/null || true
-    cp -aT "$SAVE_DIR" "$TMP_MNT" 2>&1 | tee -a "$LOG_FILE" || true
+    # Update kernel partition table.
+    partx --update --nr "$ROOT_PART_NUM" "$DISK" 2>&1 | tee -a "$LOG_FILE"
+    partx --add    --nr "$DATA_PART_NUM" "$DISK" 2>&1 | tee -a "$LOG_FILE"
 
-    if [ ! -d "$TMP_MNT/ostree" ] || [ ! -d "$TMP_MNT/boot" ]; then
-        log "XFS fix ERROR: restore incomplete — ostree or boot directory missing"
-        return 1
-    fi
-    log "XFS fix: restore OK ($(du -sh "$TMP_MNT" | cut -f1) written)"
-
-    umount "$TMP_MNT"
-    rm -rf "$SAVE_DIR"
-    rmdir "$TMP_MNT"
-    log "XFS fix: complete"
+    log "Partition resize: complete"
+    sgdisk -p "$DISK" 2>&1 | tee -a "$LOG_FILE"
 }
 
 log "Starting ignition hack script"
@@ -363,7 +352,7 @@ log "Successfully wrote ignition to boot partition"
 # meaning it has already sent the "Rebooting" stage update to the
 # assisted-service.  Rebooting before this point causes the service to
 # mark the node as disconnected/error.
-rebuild_xfs_agsize || { log "XFS fix failed — aborting reboot"; exit 1; }
+resize_root_for_growfs || { log "Partition resize failed — aborting reboot"; exit 1; }
 
 log "Rebooting node seen — unmasking reboot.target and rebooting"
 systemctl unmask reboot.target
