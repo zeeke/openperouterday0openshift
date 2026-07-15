@@ -27,6 +27,12 @@ fi
 
 source "$SCRIPT_DIR/openperouter-common.sh"
 
+# Load environment configuration file
+ENV_FILE="${ENV_FILE:-/etc/openperouter/vpn-setup.env}"
+if [[ -f "$ENV_FILE" ]]; then
+    source "$ENV_FILE"
+fi
+
 # Verify required functions
 for func in frr_netns_pid inns isfrr_ready; do
     if ! declare -f "$func" >/dev/null 2>&1; then
@@ -36,7 +42,7 @@ for func in frr_netns_pid inns isfrr_ready; do
 done
 
 # Load environment variables with defaults
-UNDERLAY_NIC="${UNDERLAY_NIC:-enp2s0}"
+
 FRR_READY_TIMEOUT="${FRR_READY_TIMEOUT:-60}"
 NODE_NAME="${NODE_NAME:-$(hostname)}"
 ISIS_AREA="${ISIS_AREA:-49.0001}"
