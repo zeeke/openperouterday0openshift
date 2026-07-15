@@ -72,8 +72,9 @@ cluster_resources="${ocp_dir}/cache/"*"/cluster-resources"
         else
             digest_only="false"
         fi
-        yq -r '.spec.imageDigestMirrors // .spec.imageTagMirrors // [] | .[] | .source as $src | .mirrors[] | [$src, .] | @tsv' "${yaml_file}" | \
+        yq -N -r '.spec.imageDigestMirrors // .spec.imageTagMirrors // [] | .[] | .source as $src | .mirrors[] | [$src, .] | @tsv' "${yaml_file}" | \
         while IFS=$'\t' read -r source mirror; do
+            [[ -z "${source}" || -z "${mirror}" ]] && continue
             cat <<TOML
 
 [[registry]]
