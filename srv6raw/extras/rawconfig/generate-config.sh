@@ -25,6 +25,12 @@ fi
 
 source "$SCRIPT_DIR/openperouter-common.sh"
 
+# Load environment configuration file
+ENV_FILE="${ENV_FILE:-/etc/openperouter/vpn-setup.env}"
+if [[ -f "$ENV_FILE" ]]; then
+    source "$ENV_FILE"
+fi
+
 # Load environment variables with defaults
 BGP_AS="${BGP_AS:-65500}"
 RR_NODE_IDX="${RR_NODE_IDX:-2}"
@@ -33,7 +39,7 @@ VRF_NAME="${VRF_NAME:-red}"
 L2_VNI="${L2_VNI:-210}"
 L2_GATEWAY_IP="${L2_GATEWAY_IP:-192.168.110.1/24}"
 L2_GATEWAY_IP_V6="${L2_GATEWAY_IP_V6:-fd00:110::1/64}"
-UNDERLAY_NIC="${UNDERLAY_NIC:-enp2s0}"
+
 
 # Paths
 VARS_FILE="${VARS_FILE:-/var/lib/openperouter/vpn-setup.vars}"
