@@ -21,30 +21,23 @@ if ! command -v butane &>/dev/null; then
     exit 1
 fi
 
+compile_bu() {
+    local bu="$1" prefix="$2" name="$3"
+    if [[ ! -f "${SCRIPTDIR}/${bu}" ]]; then
+        return
+    fi
+    for role in master worker; do
+        local out="${output_dir}/${prefix}-${role}-${name}.yaml"
+        echo "  ${bu} -> $(basename "${out}")"
+        butane --files-dir="${EXTRASDIR}" "${SCRIPTDIR}/${bu}" \
+            | sed "s/role: master/role: ${role}/;s/name: ${prefix}-master-/name: ${prefix}-${role}-/" \
+            > "${out}"
+    done
+}
+
 echo "==> Generating MachineConfig manifests into ${output_dir}..."
 
-if [[ -f "${SCRIPTDIR}/openperouter-raw.bu" ]]; then
-    echo "  openperouter-raw.bu -> 99-master-openperouter.yaml"
-    butane --files-dir="${EXTRASDIR}" "${SCRIPTDIR}/openperouter-raw.bu" \
-        -o "${output_dir}/99-master-openperouter.yaml"
-fi
-
-if [[ -f "${SCRIPTDIR}/openperouter-raw-worker.bu" ]]; then
-    echo "  openperouter-raw-worker.bu -> 99-worker-openperouter.yaml"
-    butane --files-dir="${EXTRASDIR}" "${SCRIPTDIR}/openperouter-raw-worker.bu" \
-        -o "${output_dir}/99-worker-openperouter.yaml"
-fi
-
-if [[ -f "${SCRIPTDIR}/registry.bu" ]]; then
-    echo "  registry.bu -> 01-master-registry.yaml"
-    butane --files-dir="${EXTRASDIR}" "${SCRIPTDIR}/registry.bu" \
-        -o "${output_dir}/01-master-registry.yaml"
-fi
-
-if [[ -f "${SCRIPTDIR}/registry-worker.bu" ]]; then
-    echo "  registry-worker.bu -> 01-worker-registry.yaml"
-    butane --files-dir="${EXTRASDIR}" "${SCRIPTDIR}/registry-worker.bu" \
-        -o "${output_dir}/01-worker-registry.yaml"
-fi
+compile_bu openperouter-raw.bu 99 openperouter
+compile_bu registry.bu 01 registry
 
 echo "==> MachineConfig manifests generated."
