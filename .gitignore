@@ -1,0 +1,8 @@
+/*/appliance/.openshift_appliance.log
+/*/appliance/.openshift_install_state.json
+/*/appliance/appliance-config.yaml
+/*/appliance/appliance.iso
+/*/appliance/cache
+/*/appliance/temp
+/*/configimage/configimage/
+/*/configimage/install-config.yaml
