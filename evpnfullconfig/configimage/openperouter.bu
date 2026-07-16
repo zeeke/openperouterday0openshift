@@ -15,12 +15,12 @@ storage:
       mode: 0755
       overwrite: true
       contents:
-        local: quadlets/openperouter-node-index.sh
+        local: common/openperouter-node-index.sh
     - path: /usr/local/bin/patch-installer-config.sh
       mode: 0755
       overwrite: true
       contents:
-        local: quadlets/patch-installer-config.sh
+        local: common/patch-installer-config.sh
     - path: /etc/containers/systemd/controllerpod.pod
       mode: 0644
       overwrite: true
