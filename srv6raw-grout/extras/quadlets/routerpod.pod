@@ -1,0 +1,27 @@
+# ex: ft=systemd
+
+[Unit]
+Description=OpenPERouter FRR Router Pod
+Documentation=https://github.com/openperouter
+
+[Pod]
+PodName=routerpod
+Network=ns:/run/netns/perouter
+Volume=/run/grout:/run/grout
+Volume=/run/frr:/run/frr
+PodmanArgs=--share=+pid
+
+[Service]
+Restart=on-failure
+TimeoutStopSec=70
+ExecStartPre=/usr/bin/mkdir -p /run/netns
+ExecStartPre=/usr/bin/mkdir -p -m 775 /run/grout /run/frr
+ExecStartPre=/usr/bin/chcon -t container_file_t /run/grout /run/frr
+ExecStartPre=-/usr/sbin/ip netns add perouter
+ExecStartPre=/usr/sbin/ip -n perouter link set lo up
+ExecStartPre=/usr/sbin/ip netns exec perouter sysctl -qw net.ipv4.conf.all.rp_filter=0
+ExecStartPre=/usr/sbin/ip netns exec perouter sysctl -qw net.ipv4.conf.default.rp_filter=0
+ExecStopPost=-/usr/sbin/ip netns del perouter
+
+[Install]
+WantedBy=default.target
