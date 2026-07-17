@@ -45,7 +45,7 @@ mkdir -p "${config_image_dir}"
 
 # Generate install-config.yaml from base template with injected pull secret
 pull_secret="$(jq -c . "${pull_secret_file}")"
-yq -y ".pullSecret = $(echo "${pull_secret}" | jq -R .)" \
+yq ".pullSecret = $(echo "${pull_secret}" | jq -R .)" \
     "${SCRIPTDIR}/install-config.yaml.base" > "${config_image_dir}/install-config.yaml"
 
 cp "${SCRIPTDIR}/agent-config.yaml" "${config_image_dir}/"

@@ -49,11 +49,11 @@ fi
 
 pull_secret="$(jq -c . "${pull_secret_file}")"
 
-yq -y ".pullSecret = $(echo "${pull_secret}" | jq -R .)" "${base_config}" > "${config}"
+yq ".pullSecret = $(echo "${pull_secret}" | jq -R .)" "${base_config}" > "${config}"
 
 if [[ -n "${ssh_key_file}" ]]; then
     ssh_key="$(cat "${ssh_key_file}")"
-    yq -y ".sshKey = \"${ssh_key}\"" "${config}" > "${config}.tmp" && mv "${config}.tmp" "${config}"
+    yq ".sshKey = \"${ssh_key}\"" "${config}" > "${config}.tmp" && mv "${config}.tmp" "${config}"
 fi
 
 # ============================================================
