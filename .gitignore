@@ -1,1 +1,3 @@
+venv
 pull-secret.json
+*.out
