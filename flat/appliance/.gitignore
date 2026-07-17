@@ -1,0 +1,7 @@
+temp
+appliance-config.yaml
+cache
+temp
+.openshift_appliance.log
+.openshift_install_state.json
+appliance.iso

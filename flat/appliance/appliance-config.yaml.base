@@ -1,0 +1,13 @@
+apiVersion: v1beta1
+kind: ApplianceConfig
+ocpRelease:
+  version: '4.20'
+  url: quay.io/openshift-release-dev/ocp-release:4.20.25-x86_64
+diskSizeGB: 200
+userCorePass: core
+stopLocalRegistry: false
+additionalImages:
+  - name: quay.io/redhat-user-workloads/telco-5g-tenant/openperouter-operator-edge-5-0:latest
+  - name: quay.io/mavazque/ign-converter:latest
+  - name: registry.redhat.io/rhel9/support-tools:latest
+  - name: docker.io/alpine/socat:latest

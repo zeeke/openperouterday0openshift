@@ -1,0 +1,83 @@
+apiVersion: v1alpha1
+metadata:
+  name: sno-lab
+  namespace: cluster0
+rendezvousIP: 192.168.110.2
+hosts:
+- hostname: master-0
+  rootDeviceHints:
+    deviceName: /dev/sda
+  interfaces:
+  - name: ens1f0np0
+    macAddress: b8:3f:d2:fa:53:86
+  networkConfig:
+    interfaces:
+    - name: eno8303 # lab connectivity for debug
+      type: ethernet
+      state: up
+      ipv4:
+        enabled: true
+        auto-dns: false
+        dhcp: true
+      ipv6:
+        enabled: false
+
+    - name: ens1f0np0
+      type: ethernet
+      state: up
+      ipv4:
+        enabled: false
+      ipv6:
+        enabled: false
+      ethernet:
+        sr-iov:
+          total-vfs: 8
+          vfs:
+          - id: 0 # underlay
+            vlan-id: 0
+            spoof-check: false
+            trust: true
+          - id: 1 # trunk
+            vlan-id: 0
+            spoof-check: false
+            trust: true
+          - id: 2 # host
+            vlan-id: 42
+            spoof-check: false
+            trust: true
+
+    - name: ens1f0v2
+      type: ethernet
+      state: up
+      ipv4:
+        enabled: true
+        auto-dns: false
+        address:
+        - ip: 192.168.110.2
+          prefix-length: 24
+        dhcp: false
+      ipv6:
+        enabled: true
+        auto-dns: false
+        autoconf: false
+        address:
+        - ip: fd00:110::2
+          prefix-length: 64
+        dhcp: false
+
+    dns-resolver:
+      config:
+        server:
+        - 10.0.0.4 # bastion (underlay IP)
+        - fc00:0:1::4
+
+    routes:
+      config:
+      - destination: 0.0.0.0/0
+        next-hop-address: 192.168.110.1
+        next-hop-interface: ens1f0v2
+        table-id: 254
+      - destination: ::/0
+        next-hop-address: fd00:110::1
+        next-hop-interface: ens1f0v2
+        table-id: 254

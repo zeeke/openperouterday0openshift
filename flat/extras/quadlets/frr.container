@@ -1,0 +1,31 @@
+[Unit]
+Description=FRR Routing Suite
+After=grout.service
+
+[Container]
+Image=quay.io/redhat-user-workloads/telco-5g-tenant/openperouter-operator-edge-5-0:latest
+
+Pod=routerpod.pod
+ContainerName=frr
+
+AddCapability=CAP_NET_BIND_SERVICE CAP_NET_ADMIN CAP_NET_RAW CAP_SYS_ADMIN
+Volume=/etc/perouter/daemons:/etc/frr/daemons:ro,Z
+Volume=/etc/perouter/frr/frr.conf:/etc/frr/frr.conf:Z
+PodmanArgs=--env-file=/etc/openperouter/grout.env
+PodmanArgs=--pidfile=/etc/perouter/frr/frr.pid
+PodmanArgs=--entrypoint='["/usr/libexec/catatonit/catatonit", "--"]'
+Exec=/bin/sh -c "chown frr:frr /run/frr && exec /usr/lib/frr/docker-start"
+HealthCmd=vtysh -c "show zebra dplane providers" | grep -q zebra_dplane_grout
+HealthInterval=30s
+HealthTimeout=5s
+HealthRetries=3
+HealthOnFailure=none
+
+[Service]
+Restart=on-failure
+RestartSec=10
+ExecStartPre=/usr/bin/mkdir -p /etc/perouter/frr
+ExecStartPre=/usr/bin/touch /etc/perouter/frr/frr.conf
+
+[Install]
+WantedBy=multi-user.target default.target

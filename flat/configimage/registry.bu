@@ -1,0 +1,75 @@
+variant: openshift
+version: 4.20.0
+metadata:
+  name: 01-master-registry
+  labels:
+    machineconfiguration.openshift.io/role: master
+storage:
+  files:
+    - path: /etc/assisted/registry.env
+      mode: 0644
+      overwrite: true
+      contents:
+        local: registry/registry.env
+    - path: /usr/local/bin/mountRegistry.sh
+      mode: 0755
+      overwrite: true
+      contents:
+        local: registry/mountRegistry.sh
+    - path: /usr/local/bin/setup-local-registry.sh
+      mode: 0755
+      overwrite: true
+      contents:
+        local: registry/setup-local-registry.sh
+    - path: /usr/local/bin/mount-agent-data.sh
+      mode: 0755
+      overwrite: true
+      contents:
+        local: registry/mount-agent-data.sh
+    - path: /usr/local/bin/load-registry-image.sh
+      mode: 0755
+      overwrite: true
+      contents:
+        local: registry/load-registry-image.sh
+systemd:
+  units:
+    - name: start-local-registry.service
+      enabled: true
+      contents: |
+        [Unit]
+        Description=Local Registry
+        Before=ovs-configuration.service
+
+        [Service]
+        Environment=PODMAN_SYSTEMD_UNIT=%n
+        EnvironmentFile=/etc/assisted/registry.env
+        ExecStartPre=/bin/rm -f %t/%n.ctr-id
+        ExecStartPre=/usr/local/bin/setup-local-registry.sh
+        ExecStart=/usr/bin/podman run --net host --cidfile=%t/%n.ctr-id --privileged --replace --log-driver=journald --name=registry -v ${REGISTRY_DATA}:/var/lib/registry -v /etc/iri-registry/certs:/certs:ro -e REGISTRY_HTTP_ADDR=0.0.0.0:22625 -e REGISTRY_HTTP_TLS_CERTIFICATE=certs/tls.crt -e REGISTRY_HTTP_TLS_KEY=certs/tls.key ${REGISTRY_IMAGE}
+        ExecStop=/usr/bin/podman stop --ignore --cidfile=%t/%n.ctr-id
+        ExecStopPost=/usr/bin/podman rm -f --ignore --cidfile=%t/%n.ctr-id
+
+        Restart=on-failure
+        RestartSec=10
+        TimeoutStartSec=9000
+        TimeoutStopSec=300
+
+        [Install]
+        WantedBy=multi-user.target
+    - name: mount-registry-iso.service
+      enabled: true
+      contents: |
+        [Unit]
+        Description=Mount CoreOS ISO
+        Wants=network.target
+
+        [Service]
+        ExecStartPre=mkdir -p /media/iso
+        ExecStart=/usr/local/bin/mountRegistry.sh
+        Restart=on-failure
+        RestartSec=10
+        TimeoutStartSec=500
+        TimeoutStopSec=300
+
+        [Install]
+        WantedBy=multi-user.target

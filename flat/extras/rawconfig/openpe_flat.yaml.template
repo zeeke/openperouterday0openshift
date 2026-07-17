@@ -1,0 +1,43 @@
+# OpenPERouter FRR Configuration Template — Flat / ISIS Underlay
+# Rendered by generate-config.sh using envsubst
+#
+# Variables:
+#   ${NODE_NAME}, ${UNDERLAY_NIC}, ${TRUNK_VLAN}
+#   ${ROUTER_ID}, ${ISIS_NET}
+#   ${GATEWAY_IP}, ${GATEWAY_IP_V6}
+
+rawfrrconfigs:
+  - priority: 100
+    rawConfig: |
+      frr version 10.6
+      frr defaults traditional
+      hostname ${NODE_NAME}
+      log stdout debug
+      debug zebra dplane dpdk
+      !
+      interface ${UNDERLAY_NIC}
+       ip address ${ROUTER_ID}/32
+       ip router isis UNDERLAY
+       ipv6 router isis UNDERLAY
+       isis network point-to-point
+       isis circuit-type level-1
+      exit
+      !
+      interface ${TRUNK_VLAN}
+       ip address ${GATEWAY_IP}
+       ipv6 address ${GATEWAY_IP_V6}
+      exit
+      !
+      router isis UNDERLAY
+       is-type level-1
+       net ${ISIS_NET}
+       topology ipv6-unicast
+       redistribute ipv4 connected level-1
+       redistribute ipv6 connected level-1
+       log-adjacency-changes
+      exit
+      !
+      ip forwarding
+      ipv6 forwarding
+      !
+      end
