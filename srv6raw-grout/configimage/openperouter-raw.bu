@@ -31,11 +31,6 @@ storage:
       overwrite: true
       contents:
         local: rawconfig/generate-config.sh
-    - path: /usr/local/bin/bridge-refresher.sh
-      mode: 0755
-      overwrite: true
-      contents:
-        local: rawconfig/bridge-refresher.sh
     - path: /usr/local/bin/grout-bind.sh
       mode: 0755
       overwrite: true
@@ -177,7 +172,7 @@ systemd:
       enabled: true
       contents: |
         [Slice]
-        AllowedCPUs=0,1,20,21
+        AllowedCPUs=0-19
         [Install]
         WantedBy=default.target
     # --- Grout NIC bind ---
@@ -257,30 +252,6 @@ systemd:
         SyslogIdentifier=generate-config
         TimeoutStartSec=60
         TimeoutStopSec=10
-
-        [Install]
-        WantedBy=multi-user.target
-    # --- Bridge refresher (mimics OpenPERouter bridge refresher) ---
-    - name: bridge-refresher.service
-      enabled: true
-      contents: |
-        [Unit]
-        Description=OpenPERouter Bridge Refresher
-        Documentation=https://github.com/openperouter/openperouter
-        After=setup-network.service generate-config.service
-        Requires=setup-network.service
-
-        [Service]
-        Type=simple
-        User=root
-        Group=root
-        EnvironmentFile=-/etc/openperouter/vpn-setup.env
-        ExecStart=/usr/local/bin/bridge-refresher.sh
-        Restart=always
-        RestartSec=5
-        StandardOutput=journal
-        StandardError=journal
-        SyslogIdentifier=bridge-refresher
 
         [Install]
         WantedBy=multi-user.target

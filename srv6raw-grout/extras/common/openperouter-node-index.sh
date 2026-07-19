@@ -1,30 +1,30 @@
 #!/usr/bin/env bash
-# Extract the last octet from the br0 bridge IP and write it as nodeIndex
-# in the openperouter node-config.yaml.
+# Extract the last octet from the host VF or br-ex IP and write it as
+# nodeIndex in the openperouter node-config.yaml.
 
 set -euo pipefail
 
-BRIDGE_NAME="${1:-br0}"
+HOST_VF="${1:-ens1f0v2}"
 CONFIG_PATH="/var/lib/openperouter/node-config.yaml"
 MAX_RETRIES=60
 
-get_bridge_ip() {
-  ip -4 -o addr show dev "${BRIDGE_NAME}" 2>/dev/null | awk '{print $4}' | cut -d/ -f1 | head -1 || true
-}
-
-# Wait for the bridge to get an IPv4 address
+# Wait for an IPv4 address on either the VF or br-ex
 BRIDGE_IP=""
+BRIDGE_NAME=""
 for (( i=1; i<=MAX_RETRIES; i++ )); do
-  BRIDGE_IP=$(get_bridge_ip)
-  if [ -n "${BRIDGE_IP}" ]; then
-    break
-  fi
-  echo "Waiting for ${BRIDGE_NAME} to get an IPv4 address (attempt ${i}/${MAX_RETRIES})..."
+  for iface in "$HOST_VF" br-ex; do
+    BRIDGE_IP=$(ip -4 -o addr show dev "$iface" 2>/dev/null | awk '{print $4}' | cut -d/ -f1 | head -1 || true)
+    if [ -n "${BRIDGE_IP}" ]; then
+      BRIDGE_NAME="$iface"
+      break 2
+    fi
+  done
+  echo "Waiting for ${HOST_VF}/br-ex to get an IPv4 address (attempt ${i}/${MAX_RETRIES})..."
   sleep 2
 done
 
 if [ -z "${BRIDGE_IP}" ]; then
-  echo "ERROR: No IPv4 address found on ${BRIDGE_NAME} after ${MAX_RETRIES} attempts" >&2
+  echo "ERROR: No IPv4 address found on ${HOST_VF} or br-ex after ${MAX_RETRIES} attempts" >&2
   exit 1
 fi
 

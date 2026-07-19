@@ -10,7 +10,7 @@
 #   connectivity checker (assisted-installer-agent/src/connectivity_check/util.go)
 #   only uses physical, bonding, or VLAN interfaces for outgoing L2 checks.
 #   Bridge interfaces are explicitly excluded. When the machine network IP
-#   lives on br0, arping is never performed on that subnet, so the
+#   lives on a VF, arping is never performed on that subnet, so the
 #   "belongs-to-majority-group" validation always fails.
 #   ENABLE_VIRTUAL_INTERFACES only affects inventory reporting on the
 #   assisted-service side — it has no effect on the agent-side connectivity
