@@ -3,7 +3,7 @@ Description=OpenPERouter FRR Container
 Documentation=https://github.com/openperouter
 
 [Container]
-Image=quay.io/redhat-user-workloads/telco-5g-tenant/openperouter-operator-edge-5-0:latest
+Image=quay.io/redhat-user-workloads/telco-5g-tenant/openperouter-operator-edge-5-0:943e4b315798d0f8368dede5a17281eecfd431f2
 Pod=routerpod.pod
 ContainerName=frr
 AddCapability=CAP_NET_BIND_SERVICE CAP_NET_ADMIN CAP_NET_RAW CAP_SYS_ADMIN
