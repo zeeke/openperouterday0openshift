@@ -132,12 +132,12 @@ ISIS_NET="${ISIS_AREA}.0000.0000.$(printf '%04d' "${LAST_OCTET}").00"
 HOST_IP_V6=""
 HOST_V6_ELAPSED=0
 while [[ -z "$HOST_IP_V6" ]]; do
-    HOST_IP_V6=$(ip -6 addr show "$BRIDGE_IFACE" scope global | grep -oP '(?<=inet6\s)[0-9a-f:]+' | head -1 || true)
+    HOST_IP_V6=$(ip -6 addr show "$HOST_IFACE" scope global | grep -oP '(?<=inet6\s)[0-9a-f:]+' | head -1 || true)
     if [[ -n "$HOST_IP_V6" ]]; then
         break
     fi
-    if [ $HOST_V6_ELAPSED -ge $HOST_READY_TIMEOUT ]; then
-        log "WARNING: No IPv6 address on $BRIDGE_IFACE after ${HOST_READY_TIMEOUT}s — continuing without it"
+    if [ $HOST_V6_ELAPSED -ge $HOST_IP_TIMEOUT ]; then
+        log "WARNING: No IPv6 address on $HOST_IFACE after ${HOST_IP_TIMEOUT}s — continuing without it"
         break
     fi
     if [ $((HOST_V6_ELAPSED % 10)) -eq 0 ] && [ $HOST_V6_ELAPSED -gt 0 ]; then
@@ -223,6 +223,15 @@ log_step "Saving variables for config generation"
 # Create directory if needed
 mkdir -p "$(dirname "$VARS_FILE")"
 
+# Compute derived values before writing
+BR0_IP="$HOST_IP"
+BR0_IP_V6="${HOST_IP_V6:-}"
+BR0_SUBNET="${HOST_IP%.*}.0/24"
+BR0_SUBNET_V6=""
+if [[ -n "$BR0_IP_V6" ]]; then
+    BR0_SUBNET_V6="$(echo "$BR0_IP_V6" | sed 's/:[^:]*$//' | sed 's/:*$//')::/64"
+fi
+
 # Write variables (will be sourced by generate-config.sh and setup-network.sh)
 cat > "$VARS_FILE" <<EOF
 # OpenPERouter VPN Setup Variables (ISIS + SRv6)
@@ -235,10 +244,10 @@ LAST_OCTET="$LAST_OCTET"
 # Router ID and VTEP (same address — L2 VXLAN uses router-id as source)
 ROUTER_ID="$ROUTER_ID"
 VTEP_IP="$VTEP_IP"
-HOST_IP="$HOST_IP"
-HOST_IP_V6="${HOST_IP_V6:-}"
-HOST_SUBNET="${HOST_IP%.*}.0/24"
-HOST_SUBNET_V6="$(echo "$HOST_IP_V6" | sed 's/:[^:]*$//' | sed 's/:*$//')::/64"
+BR0_IP="$BR0_IP"
+BR0_IP_V6="$BR0_IP_V6"
+BR0_SUBNET="$BR0_SUBNET"
+BR0_SUBNET_V6="$BR0_SUBNET_V6"
 
 # IPv6 loopback for BGP peering
 LOOPBACK_V6="$LOOPBACK_V6"

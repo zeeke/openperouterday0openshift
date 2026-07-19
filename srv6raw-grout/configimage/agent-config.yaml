@@ -71,6 +71,24 @@ hosts:
         base-iface: bond1
         id: 16
 
+    - name: eno12399np0_VF_NAME
+      type: ethernet
+      state: up
+      ipv4:
+        enabled: true
+        auto-dns: false
+        address:
+        - ip: 192.168.110.2
+          prefix-length: 24
+        dhcp: false
+      ipv6:
+        enabled: true
+        auto-dns: false
+        address:
+        - ip: fd00:110::2
+          prefix-length: 64
+        dhcp: false
+
     dns-resolver:
       config:
         server:
@@ -80,11 +98,11 @@ hosts:
       config:
       - destination: 0.0.0.0/0
         next-hop-address: 192.168.110.1
-        next-hop-interface: br0
+        next-hop-interface: eno12399np0_VF_NAME
         table-id: 254
       - destination: ::/0
         next-hop-address: fd00:110::1
-        next-hop-interface: br0
+        next-hop-interface: eno12399np0_VF_NAME
         table-id: 254
 - hostname: master-1
   interfaces:
@@ -151,6 +169,24 @@ hosts:
         base-iface: bond1
         id: 16
 
+    - name: eno12399np0_VF_NAME
+      type: ethernet
+      state: up
+      ipv4:
+        enabled: true
+        auto-dns: false
+        address:
+        - ip: 192.168.110.3
+          prefix-length: 24
+        dhcp: false
+      ipv6:
+        enabled: true
+        auto-dns: false
+        address:
+        - ip: fd00:110::3
+          prefix-length: 64
+        dhcp: false
+
     dns-resolver:
       config:
         server:
@@ -160,11 +196,11 @@ hosts:
       config:
       - destination: 0.0.0.0/0
         next-hop-address: 192.168.110.1
-        next-hop-interface: br0
+        next-hop-interface: eno12399np0_VF_NAME
         table-id: 254
       - destination: ::/0
         next-hop-address: fd00:110::1
-        next-hop-interface: br0
+        next-hop-interface: eno12399np0_VF_NAME
         table-id: 254
 - hostname: master-2
   interfaces:
@@ -231,6 +267,24 @@ hosts:
         base-iface: bond1
         id: 16
 
+    - name: eno12399np0_VF_NAME
+      type: ethernet
+      state: up
+      ipv4:
+        enabled: true
+        auto-dns: false
+        address:
+        - ip: 192.168.110.4
+          prefix-length: 24
+        dhcp: false
+      ipv6:
+        enabled: true
+        auto-dns: false
+        address:
+        - ip: fd00:110::4
+          prefix-length: 64
+        dhcp: false
+
     dns-resolver:
       config:
         server:
@@ -240,9 +294,9 @@ hosts:
       config:
       - destination: 0.0.0.0/0
         next-hop-address: 192.168.110.1
-        next-hop-interface: br0
+        next-hop-interface: eno12399np0_VF_NAME
         table-id: 254
       - destination: ::/0
         next-hop-address: fd00:110::1
-        next-hop-interface: br0
+        next-hop-interface: eno12399np0_VF_NAME
         table-id: 254

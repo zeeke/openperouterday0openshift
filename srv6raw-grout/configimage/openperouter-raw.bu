@@ -178,6 +178,8 @@ systemd:
     # --- Grout NIC bind ---
     - name: grout-bind@eno12399np0.service
       enabled: true
+    - name: grout-bind@eno12399v1.service
+      enabled: true
     # --- Rawconfig systemd services ---
     - name: setup-underlay.service
       enabled: true

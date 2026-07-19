@@ -27,11 +27,21 @@ storage:
       overwrite: true
       contents:
         local: rawconfig/generate-config.sh
-    - path: /usr/local/bin/bridge-refresher.sh
+    - path: /usr/local/bin/grout-bind.sh
       mode: 0755
       overwrite: true
       contents:
-        local: rawconfig/bridge-refresher.sh
+        local: rawconfig/grout-bind.sh
+    - path: /usr/local/bin/grout-unbind.sh
+      mode: 0755
+      overwrite: true
+      contents:
+        local: rawconfig/grout-unbind.sh
+    - path: /etc/systemd/system/grout-bind@.service
+      mode: 0644
+      overwrite: true
+      contents:
+        local: rawconfig/grout-bind@.service
     - path: /usr/local/bin/can_start.sh
       mode: 0755
       overwrite: true
@@ -64,12 +74,21 @@ storage:
       overwrite: true
       contents:
         local: rawconfig/vpn-setup.env
-    # --- FRR daemons file (no dplane_grout on workers) ---
+    # --- FRR daemons file (enables isisd for ISIS + SRv6, dplane_grout) ---
     - path: /etc/perouter/daemons
       mode: 0644
       overwrite: true
       contents:
-        local: quadlets/daemons-worker
+        local: quadlets/daemons
+    - path: /etc/openperouter/grout.env
+      mode: 0644
+      overwrite: true
+      contents:
+        inline: |
+          GROUT_SOCK_PATH=/run/grout/api.sock
+          GROUT_CPUS=4
+          GROUT_HUGEPAGES_1G=8Gi
+          GROUT_SOCKET_LIMIT=8192
     # --- Node index script ---
     - path: /usr/local/bin/openperouter-node-index.sh
       mode: 0755
@@ -97,22 +116,22 @@ storage:
       mode: 0644
       overwrite: true
       contents:
-        local: quadlets/routerpod-worker.pod
+        local: quadlets/routerpod.pod
     - path: /etc/containers/systemd/frr.container
       mode: 0644
       overwrite: true
       contents:
-        local: quadlets/frr-worker.container
+        local: quadlets/frr.container
     - path: /etc/containers/systemd/reloader.container
       mode: 0644
       overwrite: true
       contents:
         local: quadlets/reloader.container
-    - path: /etc/containers/systemd/frr-sockets.volume
+    - path: /etc/containers/systemd/grout.container
       mode: 0644
       overwrite: true
       contents:
-        local: quadlets/frr-sockets.volume
+        local: quadlets/grout.container
 systemd:
   units:
     # --- Quadlet services ---
@@ -126,7 +145,20 @@ systemd:
       enabled: true
     - name: reloader.service
       enabled: true
-    - name: frr-sockets.service
+    - name: grout.service
+      enabled: true
+    # --- Grout CPU isolation slice ---
+    - name: grout.slice
+      enabled: true
+      contents: |
+        [Slice]
+        AllowedCPUs=0-19
+        [Install]
+        WantedBy=default.target
+    # --- Grout NIC bind ---
+    - name: grout-bind@eno12399np0.service
+      enabled: true
+    - name: grout-bind@eno12399v1.service
       enabled: true
     # --- Rawconfig systemd services ---
     - name: setup-underlay.service
@@ -135,7 +167,7 @@ systemd:
         [Unit]
         Description=OpenPERouter Underlay Setup
         Documentation=https://github.com/openperouter/openperouter
-        After=network-online.target routerpod-pod.service frr.service
+        After=network-online.target nmstate.service routerpod-pod.service grout.service frr.service
         Requires=routerpod-pod.service
         Wants=network-online.target
 
@@ -202,30 +234,6 @@ systemd:
         SyslogIdentifier=generate-config
         TimeoutStartSec=60
         TimeoutStopSec=10
-
-        [Install]
-        WantedBy=multi-user.target
-    # --- Bridge refresher (mimics OpenPERouter bridge refresher) ---
-    - name: bridge-refresher.service
-      enabled: true
-      contents: |
-        [Unit]
-        Description=OpenPERouter Bridge Refresher
-        Documentation=https://github.com/openperouter/openperouter
-        After=setup-network.service generate-config.service
-        Requires=setup-network.service
-
-        [Service]
-        Type=simple
-        User=root
-        Group=root
-        EnvironmentFile=-/etc/openperouter/vpn-setup.env
-        ExecStart=/usr/local/bin/bridge-refresher.sh
-        Restart=always
-        RestartSec=5
-        StandardOutput=journal
-        StandardError=journal
-        SyslogIdentifier=bridge-refresher
 
         [Install]
         WantedBy=multi-user.target

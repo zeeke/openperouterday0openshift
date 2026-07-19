@@ -160,7 +160,7 @@ cluster is fully formed.
  │                                                                   │
  │  can_start.sh  (gate for all OpenPERouter services)               │
  │    └─► waits for OVS network migration to complete                │
- │    └─► ensures br0 is active via NetworkManager                   │
+ │    └─► ensures host VF or br-ex is active via NetworkManager                   │
  │                                                                   │
  │  openperouter-node-index.sh                                       │
  │    └─► reads hostVF IPv4 last octet → writes node-config.yaml     │
@@ -168,7 +168,8 @@ cluster is fully formed.
  │                                                                   │
  │  ┌── MASTER NODES ────────────────────────────────────────────┐   │
  │  │                                                            │   │
- │  │  grout-bind@eno12399np0.service                            │   │
+ │  │  grout-bind@eno12399np0.service (underlay)                  │   │
+ │  │  grout-bind@eno12399v1.service  (trunk)                    │   │
  │  │    └─► grout-bind.sh                                       │   │
  │  │      └─► binds NIC to vfio-pci (Intel) or moves to         │   │
  │  │          perouter netns (Mellanox)                         │   │
@@ -191,19 +192,16 @@ cluster is fully formed.
  │                                                                   │
  │  setup-underlay.sh                                                │
  │    └─► waits for FRR ready (bgpd + isisd)                         │
- │    └─► derives all addressing from br0 last octet:                │
+ │    └─► derives all addressing from host VF/br-ex last octet:     │
  │        Router ID, VTEP IP, IPv6 loopback, SRv6 prefix, ISIS NET   │
- │    └─► MASTER: adds underlay NIC to grout via grcli               │
- │        WORKER: moves NIC to FRR netns, assigns IPs                │
- │    └─► configures IPv6 loopback, SRv6 source, sr0 dummy iface     │
+ │    └─► adds underlay + trunk NICs to grout via grcli               │
+ │    └─► configures IPv6, VTEP, loopback, SRv6 source addresses     │
  │    └─► saves all vars to vpn-setup.vars                           │
  │                          │                                        │
  │                          ▼                                        │
  │  setup-network.sh                                                 │
- │    └─► enables IP forwarding in FRR netns                         │
- │    └─► creates VRF "red" (table 1100)                             │
+ │    └─► creates VRF "red", bridge, VXLAN, VLAN via grcli           │
  │    └─► creates L2VNI bridge br-pe-210, VXLAN vni210 (VNI 210)     │
- │    └─► creates veth pair: host-210 (br0) ↔ pe-210 (br-pe-210)     │
  │                          │                                        │
  │                          ▼                                        │
  │  generate-config.sh                                               │
@@ -348,12 +346,13 @@ bootstrap process, grabs the ignition during the live ISO phase (when the
 bootstrap node is reachable on the local network), and writes it directly
 to disk so the node never needs to contact MCS over the cluster network.
 
-### Chain 4: Grout Dataplane — Masters vs Workers
+### Chain 4: Grout Dataplane
 
 ```
 CAUSE                              EFFECT
 ─────────────────────────────────  ─────────────────────────────────────
-Master node: grout-bind@.service   → grout-bind.sh runs
+grout-bind@.service                → grout-bind.sh runs for each NIC
+                                     (underlay + trunk)
                                    → NIC unbound from kernel driver
                                    → NIC bound to vfio-pci (Intel)
                                      or moved to perouter netns (Mellanox)
@@ -370,23 +369,17 @@ frr.container starts with          → FRR uses grout as its dataplane
                                    → packets forwarded via DPDK
                                      (high performance)
 
-Worker node: NO grout              → frr-worker.container starts
-                                     without dplane_grout
-                                   → FRR uses standard kernel
-                                     networking (lower performance,
-                                     no hugepages needed)
-
-setup-underlay.sh detects          → MASTER: configures underlay NIC
-/run/grout-bind/<nic> exists?        via grcli (grout CLI)
-                                   → WORKER: moves NIC to FRR netns,
-                                     assigns IPs with ip commands
+setup-underlay.sh reads            → configures underlay + trunk NICs
+/run/grout-bind/<nic>                via grcli (grout CLI)
+                                   → assigns IPv6, VTEP, loopback,
+                                     SRv6 source addresses
 ```
 
-**Key insight:** Masters use DPDK (grout) for high-performance packet
-forwarding; workers fall back to kernel networking. The same `setup-underlay.sh`
-script handles both cases by checking whether `grout-bind.sh` has already
-claimed the NIC. This is why there are separate `.bu` files, quadlets, and
-daemons files for masters vs workers.
+**Key insight:** All nodes use DPDK (grout) for high-performance packet
+forwarding. The `grout-bind@.service` template is instantiated for both the
+underlay NIC and the trunk NIC. The separate `.bu` files for masters vs
+workers exist to differentiate quadlet configurations and systemd unit
+ordering.
 
 ### Chain 5: SRv6/EVPN Fabric Bringup
 
@@ -410,16 +403,15 @@ setup-underlay.sh runs             → FRR is ready (bgpd + isisd alive)
                                      • ISIS NET:   49.0001...N.00
                                    → underlay NIC configured (grout
                                      or kernel path)
-                                   → sr0 dummy interface created in
-                                     FRR namespace for SRv6
+                                   → SRv6 source address assigned on
+                                     underlay NIC via grcli
 
-setup-network.sh runs              → VRF "red" created (L3VPN container)
+setup-network.sh runs              → VRF "red" created via grcli
                                    → VXLAN vni210 created (L2VPN)
                                    → bridge br-pe-210 links VXLAN to VRF
-                                   → veth pair connects host br0 to
-                                     pe-210 in FRR namespace
-                                   → result: host traffic on br0 enters
-                                     the EVPN fabric via the veth
+                                   → VLAN sub-interface on trunk NIC
+                                     added to bridge domain via grcli
+                                   → gateway IPs assigned on bridge
 
 generate-config.sh runs            → FRR config rendered from template
                                    → ISIS + BGP + SRv6 + EVPN configured
@@ -428,13 +420,6 @@ generate-config.sh runs            → FRR config rendered from template
                                    → ISIS adjacencies form with peers
                                    → SRv6 tunnels established
                                    → BGP EVPN sessions come up
-
-bridge-refresher.sh runs           → periodic pings to API VIP and
-                                     Ingress VIP on br-pe-210
-                                   → forces ARP resolution
-                                   → EVPN type-2 (MAC/IP) routes
-                                     advertised to all peers
-                                   → VIPs reachable across the fabric
 ```
 
 ### Chain 6: Cluster Integration (post-bootstrap)
@@ -512,24 +497,19 @@ registries.conf                      CRI-O to pull from local mirror
 | `rawconfig/setup-underlay.sh`            | `/usr/local/bin/setup-underlay.sh`                        | M + W   |
 | `rawconfig/setup-network.sh`             | `/usr/local/bin/setup-network.sh`                         | M + W   |
 | `rawconfig/generate-config.sh`           | `/usr/local/bin/generate-config.sh`                       | M + W   |
-| `rawconfig/bridge-refresher.sh`          | `/usr/local/bin/bridge-refresher.sh`                      | M + W   |
-| `rawconfig/grout-bind.sh`                | `/usr/local/bin/grout-bind.sh`                            | M only  |
-| `rawconfig/grout-unbind.sh`              | `/usr/local/bin/grout-unbind.sh`                          | M only  |
+| `rawconfig/grout-bind.sh`                | `/usr/local/bin/grout-bind.sh`                            | M + W   |
+| `rawconfig/grout-unbind.sh`              | `/usr/local/bin/grout-unbind.sh`                          | M + W   |
 | `rawconfig/vpn-setup.env`               | `/etc/openperouter/vpn-setup.env`                         | M + W   |
 | `rawconfig/openpe_evpn.yaml.template`   | `/etc/openperouter/templates/openpe_evpn.yaml.template`   | M + W   |
 | `rawconfig/openpe_evpn.yaml_rr.template`| `/etc/openperouter/templates/openpe_evpn.yaml_rr.template`| M + W   |
 | `quadlets/can_start.sh`                 | `/usr/local/bin/can_start.sh`                             | M + W   |
 | `quadlets/controller.container`         | `/etc/containers/systemd/controller.container`            | M + W   |
 | `quadlets/controllerpod.pod`            | `/etc/containers/systemd/controllerpod.pod`               | M + W   |
-| `quadlets/routerpod.pod`                | `/etc/containers/systemd/routerpod.pod`                   | M only  |
-| `quadlets/routerpod-worker.pod`         | `/etc/containers/systemd/routerpod.pod`                   | W only  |
-| `quadlets/frr.container`                | `/etc/containers/systemd/frr.container`                   | M only  |
-| `quadlets/frr-worker.container`         | `/etc/containers/systemd/frr.container`                   | W only  |
-| `quadlets/grout.container`              | `/etc/containers/systemd/grout.container`                 | M only  |
+| `quadlets/routerpod.pod`                | `/etc/containers/systemd/routerpod.pod`                   | M + W   |
+| `quadlets/frr.container`                | `/etc/containers/systemd/frr.container`                   | M + W   |
+| `quadlets/grout.container`              | `/etc/containers/systemd/grout.container`                 | M + W   |
 | `quadlets/reloader.container`           | `/etc/containers/systemd/reloader.container`              | M + W   |
-| `quadlets/frr-sockets.volume`           | `/etc/containers/systemd/frr-sockets.volume`              | W only  |
-| `quadlets/daemons`                      | `/etc/perouter/daemons`                                   | M only  |
-| `quadlets/daemons-worker`               | `/etc/perouter/daemons`                                   | W only  |
+| `quadlets/daemons`                      | `/etc/perouter/daemons`                                   | M + W   |
 | `common/apply-manifests.sh`             | `/usr/local/bin/apply-manifests.sh`                       | M only  |
 | `common/openperouter-node-index.sh`     | `/usr/local/bin/openperouter-node-index.sh`               | M + W   |
 | `common/patch-installer-config.sh`      | `/usr/local/bin/patch-installer-config.sh`                | M + W   |
@@ -550,10 +530,11 @@ registries.conf                      CRI-O to pull from local mirror
 ```
 can_start.sh (gate)
     │
-    ├─► grout-bind@eno12399np0.service  (masters only)
+    ├─► grout-bind@eno12399np0.service
+    ├─► grout-bind@eno12399v1.service
     │
-    ├─► routerpod.pod / routerpod-worker.pod
-    │       ├─► grout.container          (masters only)
+    ├─► routerpod.pod
+    │       ├─► grout.container
     │       ├─► frr.container
     │       └─► reloader.container
     │
@@ -570,9 +551,6 @@ can_start.sh (gate)
     │
     ├─► generate-config.service
     │       └─► (after setup-network)
-    │
-    ├─► bridge-refresher.service
-    │       └─► (after generate-config)
     │
     └─► apply-manifests.path → apply-manifests.service  (masters only)
             └─► (waits for kubeconfig + API server)

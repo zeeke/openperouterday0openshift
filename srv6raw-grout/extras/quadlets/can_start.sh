@@ -13,7 +13,7 @@ set -euo pipefail
 
 SENTINEL="/run/configure-ovs-boot-done"
 OVS_CONNECTION="ovs-if-phys0"
-HOST_VF="${HOST_VF:-eno12399np0}"
+HOST_VF="${HOST_VF:-eno12399np0_VF_NAME}"
 MAX_WAIT=300
 
 if ! systemctl list-unit-files ovs-configuration.service &>/dev/null; then
