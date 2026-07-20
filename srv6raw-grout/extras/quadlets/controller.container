@@ -19,10 +19,6 @@ ContainerName=controller
 # Network capabilities (same as FRR for network operations)
 AddCapability=CAP_NET_BIND_SERVICE CAP_NET_ADMIN CAP_NET_RAW CAP_SYS_ADMIN
 
-# Host networking mode - controller needs host network access
-# Quadlet native directive for --network=host
-Network=host
-
 # Host filesystem volume mounts
 # Controller requires extensive host access for:
 # - Network namespace manipulation

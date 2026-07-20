@@ -13,8 +13,7 @@ After=network-online.target
 [Pod]
 # Pod name - will create Podman pod named "systemd-controllerpod"
 PodName=controllerpod
-
-# No namespace sharing needed for controller (default isolation)
+Network=host
 
 [Service]
 # Restart policy - restart pod if it fails
