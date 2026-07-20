@@ -158,9 +158,9 @@ cluster is fully formed.
 
  ┌─ PHASE 2: POST-INSTALL (MachineConfig-driven, real OS) ───────────┐
  │                                                                   │
- │  can_start.sh  (gate for all OpenPERouter services)               │
+ │  can_start.sh  (gate for setup-underlay + controller)             │
  │    └─► waits for OVS network migration to complete                │
- │    └─► ensures host VF or br-ex is active via NetworkManager                   │
+ │    └─► ensures host VF or br-ex is active via NetworkManager      │
  │                                                                   │
  │  openperouter-node-index.sh                                       │
  │    └─► reads hostVF IPv4 last octet → writes node-config.yaml     │
@@ -168,11 +168,13 @@ cluster is fully formed.
  │                                                                   │
  │  ┌── MASTER NODES ────────────────────────────────────────────┐   │
  │  │                                                            │   │
- │  │  grout-bind@eno12399np0.service (underlay)                  │   │
+ │  │  grout-bind@eno12399np0.service (underlay)                 │   │
  │  │  grout-bind@eno12399v1.service  (trunk)                    │   │
  │  │    └─► grout-bind.sh                                       │   │
- │  │      └─► binds NIC to vfio-pci (Intel) or moves to         │   │
- │  │          perouter netns (Mellanox)                         │   │
+ │  │      └─► binds NIC to vfio-pci (Intel) or moves to        │   │
+ │  │          perouter netns (Mellanox)                          │   │
+ │  │    └─► depends on routerpod-pod + nmstate +                │   │
+ │  │        network-online.target (not can_start.sh)            │   │
  │  │                                                            │   │
  │  │  routerpod.pod starts                                      │   │
  │  │    └─► creates /run/netns/perouter network namespace       │   │
@@ -387,7 +389,8 @@ ordering.
 CAUSE                              EFFECT
 ─────────────────────────────────  ─────────────────────────────────────
 can_start.sh passes                → OVS migration complete, br0 active
-(ExecStartPre for services)          with IP address
+(ExecStartPre for setup-underlay     with IP address
+ and controller)
 
 openperouter-node-index.sh         → node-config.yaml written with
 reads br0 last octet                 nodeIndex (used later for
@@ -528,22 +531,22 @@ registries.conf                      CRI-O to pull from local mirror
 ## Systemd Service Ordering (Phase 2-3)
 
 ```
-can_start.sh (gate)
+network-online.target + nmstate.service
     │
-    ├─► grout-bind@eno12399np0.service
-    ├─► grout-bind@eno12399v1.service
-    │
-    ├─► routerpod.pod
-    │       ├─► grout.container
-    │       ├─► frr.container
-    │       └─► reloader.container
-    │
-    ├─► controllerpod.pod
-    │       └─► controller.container
+    ├─► grout-bind@eno12399np0.service  ─┐
+    ├─► grout-bind@eno12399v1.service   ─┤ (also require routerpod-pod.service)
+    │                                    │
+    ├─► routerpod-pod.service ───────────┘
+    │       └─► routerpod.pod
+    │             ├─► grout.container
+    │             ├─► frr.container
+    │             └─► reloader.container
     │
     ├─► openperouter-node-index.service
+
+can_start.sh (gate for setup-underlay + controller)
     │
-    ├─► setup-underlay.service
+    ├─► setup-underlay.service          (ExecStartPre=can_start.sh)
     │       └─► (waits for FRR ready)
     │
     ├─► setup-network.service
@@ -551,6 +554,9 @@ can_start.sh (gate)
     │
     ├─► generate-config.service
     │       └─► (after setup-network)
+    │
+    ├─► controllerpod.pod
+    │       └─► controller.container    (ExecStartPre=can_start.sh, conditional)
     │
     └─► apply-manifests.path → apply-manifests.service  (masters only)
             └─► (waits for kubeconfig + API server)
