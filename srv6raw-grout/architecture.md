@@ -168,7 +168,7 @@ cluster is fully formed.
  │                                                                   │
  │  ┌── MASTER NODES ────────────────────────────────────────────┐   │
  │  │                                                            │   │
- │  │  grout-bind@eno12399np0.service (underlay)                 │   │
+ │  │  grout-bind@eno12399v0.service (underlay)                 │   │
  │  │  grout-bind@eno12399v1.service  (trunk)                    │   │
  │  │    └─► grout-bind.sh                                       │   │
  │  │      └─► binds NIC to vfio-pci (Intel) or moves to        │   │

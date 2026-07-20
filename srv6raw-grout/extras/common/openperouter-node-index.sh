@@ -4,7 +4,7 @@
 
 set -euo pipefail
 
-HOST_VF="${1:-eno12399v2}}"
+HOST_VF="${1:-eno12399v2}"
 CONFIG_PATH="/var/lib/openperouter/node-config.yaml"
 MAX_RETRIES=60
 
