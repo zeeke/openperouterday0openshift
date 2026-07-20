@@ -10,7 +10,7 @@ Description=OpenPERouter Controller Container
 Documentation=https://github.com/openperouter
 
 [Container]
-Image=quay.io/redhat-user-workloads/telco-5g-tenant/openperouter-operator-edge-5-0:943e4b315798d0f8368dede5a17281eecfd431f2
+Image=quay.io/redhat-user-workloads/telco-5g-tenant/openperouter-operator-edge-5-0:on-pr-512a6bf7c6dd96e49c5d85253af4431280d971e0
 Pod=controllerpod.pod
 
 # Container name within the pod
