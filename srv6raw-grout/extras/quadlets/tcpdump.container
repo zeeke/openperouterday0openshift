@@ -1,0 +1,19 @@
+# ex: ft=systemd
+
+[Unit]
+Description=tcpdump on perouter netns
+After=grout.service
+
+[Container]
+Image=quay.io/redhat-user-workloads/telco-5g-tenant/openperouter-operator-edge-5-0:943e4b315798d0f8368dede5a17281eecfd431f2
+ContainerName=tcpdump
+Pod=routerpod.pod
+AddCapability=CAP_NET_RAW CAP_NET_ADMIN
+PodmanArgs=--entrypoint='["tcpdump"]'
+Exec=-i any -nn -s 0 -w /tmp/perouter-isis.pcap iso
+
+[Service]
+Restart=no
+
+[Install]
+WantedBy=multi-user.target default.target
