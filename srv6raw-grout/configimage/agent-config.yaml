@@ -71,7 +71,7 @@ hosts:
         base-iface: bond1
         id: 16
 
-    - name: eno12399np0_VF_NAME
+    - name: eno12399v2
       type: ethernet
       state: up
       ipv4:
@@ -98,11 +98,11 @@ hosts:
       config:
       - destination: 0.0.0.0/0
         next-hop-address: 192.168.110.1
-        next-hop-interface: eno12399np0_VF_NAME
+        next-hop-interface: eno12399v2
         table-id: 254
       - destination: ::/0
         next-hop-address: fd00:110::1
-        next-hop-interface: eno12399np0_VF_NAME
+        next-hop-interface: eno12399v2
         table-id: 254
 - hostname: master-1
   interfaces:
@@ -169,7 +169,7 @@ hosts:
         base-iface: bond1
         id: 16
 
-    - name: eno12399np0_VF_NAME
+    - name: eno12399v2
       type: ethernet
       state: up
       ipv4:
@@ -196,11 +196,11 @@ hosts:
       config:
       - destination: 0.0.0.0/0
         next-hop-address: 192.168.110.1
-        next-hop-interface: eno12399np0_VF_NAME
+        next-hop-interface: eno12399v2
         table-id: 254
       - destination: ::/0
         next-hop-address: fd00:110::1
-        next-hop-interface: eno12399np0_VF_NAME
+        next-hop-interface: eno12399v2
         table-id: 254
 - hostname: master-2
   interfaces:
@@ -267,7 +267,7 @@ hosts:
         base-iface: bond1
         id: 16
 
-    - name: eno12399np0_VF_NAME
+    - name: eno12399v2
       type: ethernet
       state: up
       ipv4:
@@ -294,9 +294,9 @@ hosts:
       config:
       - destination: 0.0.0.0/0
         next-hop-address: 192.168.110.1
-        next-hop-interface: eno12399np0_VF_NAME
+        next-hop-interface: eno12399v2
         table-id: 254
       - destination: ::/0
         next-hop-address: fd00:110::1
-        next-hop-interface: eno12399np0_VF_NAME
+        next-hop-interface: eno12399v2
         table-id: 254
