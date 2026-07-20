@@ -15,7 +15,7 @@ Environment=GROUT_OVERRIDE_DEFAULT_ROUTE=true
 PodmanArgs=--privileged
 PodmanArgs=--env-file=/etc/openperouter/grout.env
 Entrypoint=/usr/bin/grout
-Exec=-o root:frr -M unix:/run/grout/metrics.sock -- --socket-limit $GROUT_SOCKET_LIMIT
+Exec=-o root:frr -M unix:/run/grout/metrics.sock --trace-packets --verbose -- --socket-limit $GROUT_SOCKET_LIMIT
 Volume=/dev/hugepages:/dev/hugepages
 Volume=/dev/vfio:/dev/vfio
 Volume=/sys/bus/pci:/sys/bus/pci
