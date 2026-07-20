@@ -10,3 +10,5 @@ additionalImages:
   - name: quay.io/redhat-user-workloads/telco-5g-tenant/openperouter-operator-edge-4-22:latest
   - name: quay.io/mavazque/ign-converter:latest
   - name: registry.redhat.io/rhel9/support-tools:latest
+  - name: registry.redhat.io/openshift4/ose-sriov-network-config-daemon-rhel9:v4.22
+
