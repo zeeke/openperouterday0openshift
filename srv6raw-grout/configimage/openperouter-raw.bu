@@ -176,7 +176,7 @@ systemd:
         [Install]
         WantedBy=default.target
     # --- Grout NIC bind ---
-    - name: grout-bind@eno12399np0.service
+    - name: grout-bind@eno12399v0.service
       enabled: true
     - name: grout-bind@eno12399v1.service
       enabled: true

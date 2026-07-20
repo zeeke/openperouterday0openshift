@@ -85,7 +85,7 @@ log "FRR container is ready"
 #
 log_step "Deriving addressing from bridge interface"
 
-HOST_VF="${HOST_VF:-ens1f0v2}"
+HOST_VF="${HOST_VF:-eno12399v2}"
 HOST_IP_TIMEOUT="${HOST_IP_TIMEOUT:-120}"
 HOST_ELAPSED=0
 HOST_INTERVAL=2
