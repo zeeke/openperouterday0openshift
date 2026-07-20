@@ -10,8 +10,6 @@
 #   ${LOOPBACK_V6}, ${SRV6_SOURCE}, ${SRV6_PREFIX}, ${ISIS_NET}
 #   ${VRF_NAME}, ${BR0_IP}, ${BR0_IP_V6}, ${BR0_SUBNET}, ${BR0_SUBNET_V6}
 #   ${TOR_LOOPBACK}, ${RR_LOOPBACK}
-#   ${SRV6_NODE_ID}   - non-zero node-ID for the uSID locator (0x0000 is End-of-Container)
-
 rawfrrconfigs:
   - priority: 100
     rawConfig: |
@@ -115,7 +113,7 @@ rawfrrconfigs:
         exit
         locators
          locator MAIN
-          prefix ${SRV6_PREFIX}:${SRV6_NODE_ID}::/48 block-len 32 node-len 16 func-bits 16
+          prefix ${SRV6_PREFIX}::/48 block-len 32 node-len 16 func-bits 16
           behavior usid
          exit
         exit

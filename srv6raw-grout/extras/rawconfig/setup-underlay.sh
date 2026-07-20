@@ -125,7 +125,7 @@ VTEP_IP="$ROUTER_ID"
 LOOPBACK_V6="fc00:0:${LAST_OCTET}::1"
 SRV6_SOURCE="fd00:${LAST_OCTET}::1"
 SRV6_PREFIX="fd00:${LAST_OCTET}"
-SRV6_NODE_ID="${LAST_OCTET}"
+UNDERLAY_V4="192.168.$((133 + LAST_OCTET)).$((19 + LAST_OCTET))"
 UNDERLAY_V6="fc00:100::${LAST_OCTET}"
 ISIS_NET="${ISIS_AREA}.0000.0000.$(printf '%04d' "${LAST_OCTET}").00"
 
@@ -152,7 +152,8 @@ log "Node index (last octet): $LAST_OCTET"
 log "  Router ID / VTEP IP: $ROUTER_ID"
 log "  Loopback IPv6:       $LOOPBACK_V6"
 log "  SRv6 source:         $SRV6_SOURCE"
-log "  SRv6 locator:        $SRV6_PREFIX:$SRV6_NODE_ID::/48"
+log "  SRv6 locator:        $SRV6_PREFIX::/48"
+log "  Underlay IPv4:       $UNDERLAY_V4"
 log "  Underlay IPv6:       $UNDERLAY_V6"
 log "  ISIS NET:            $ISIS_NET"
 
@@ -187,6 +188,12 @@ grcli interface add port $TRUNK_NIC devargs $TRUNK_PCI
 
 log "$UNDERLAY_NIC and $TRUNK_NIC configured via grout"
 
+# Add IPv4 address to underlay NIC
+log "Adding IPv4 $UNDERLAY_V4/25 to $UNDERLAY_NIC..."
+grcli address add $UNDERLAY_V4/25 iface "$UNDERLAY_NIC" || {
+    log "WARNING: IPv4 address may already be configured"
+}
+
 # Add IPv6 address to underlay NIC for ISIS adjacency
 log "Adding IPv6 $UNDERLAY_V6/64 to $UNDERLAY_NIC..."
 grcli address add $UNDERLAY_V6/64 iface "$UNDERLAY_NIC" || {
@@ -198,8 +205,8 @@ grcli address add $UNDERLAY_V6/64 iface "$UNDERLAY_NIC" || {
 #
 log_step "Configuring loopback and SRv6 addresses via grout"
 
-log "Adding VTEP IP $VTEP_IP/32 to $UNDERLAY_NIC..."
-grcli address add ${VTEP_IP}/32 iface $UNDERLAY_NIC || {
+log "Adding VTEP IP $VTEP_IP/32 to main VRF..."
+grcli address add ${VTEP_IP}/32 iface main || {
     log "WARNING: VTEP IP may already be configured"
 }
 
@@ -255,9 +262,9 @@ LOOPBACK_V6="$LOOPBACK_V6"
 # SRv6 addressing
 SRV6_SOURCE="$SRV6_SOURCE"
 SRV6_PREFIX="$SRV6_PREFIX"
-SRV6_NODE_ID="$SRV6_NODE_ID"
 
-# Underlay IPv6
+# Underlay addressing
+UNDERLAY_V4="$UNDERLAY_V4"
 UNDERLAY_V6="$UNDERLAY_V6"
 
 # ISIS
