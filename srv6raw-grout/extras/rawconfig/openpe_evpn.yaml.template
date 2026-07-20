@@ -23,7 +23,7 @@ rawfrrconfigs:
        ipv6 router isis PE
       exit
       !
-      interface lo
+      interface main
        ip router isis PE
        ipv6 router isis PE
       exit
