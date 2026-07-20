@@ -22,6 +22,8 @@ rawfrrconfigs:
       interface ${UNDERLAY_NIC}
        ip router isis PE
        ipv6 router isis PE
+       isis network point-to-point
+       isis circuit-type level-1
       exit
       !
       interface main

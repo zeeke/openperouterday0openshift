@@ -48,20 +48,21 @@ if [[ -z "$VTEP_IP" ]]; then
 fi
 
 grcli() {
-    echo "+ grcli $*"
+    echo "+ grcli $*" >&2
     podman exec grout grcli "$@"
 }
 
 L2_BRIDGE="br-pe-${L2_VNI}"
 L2_VXLAN="vni${L2_VNI}"
+TRUNK_MAC=$(grcli -j interface show name $TRUNK_NIC | jq -r .mac)
 
 log "Setting up network infrastructure via grout"
 
 # Create VRF, bridge, VXLAN, VLAN sub-interface
+grcli address add ${VTEP_IP}/32 iface $UNDERLAY_NIC
 grcli interface add vrf $VRF_NAME
-grcli interface add bridge $L2_BRIDGE vrf $VRF_NAME
+grcli interface add bridge $L2_BRIDGE vrf $VRF_NAME mac $TRUNK_MAC
 grcli interface add vxlan $L2_VXLAN vni $L2_VNI local $VTEP_IP encap_vrf main domain $L2_BRIDGE
-grcli interface add vlan $TRUNK_VLAN parent $TRUNK_NIC vlan_id 42 domain $L2_BRIDGE
 
 # Assign gateway IPs on bridge
 grcli address add $L2_GATEWAY_IP iface $L2_BRIDGE

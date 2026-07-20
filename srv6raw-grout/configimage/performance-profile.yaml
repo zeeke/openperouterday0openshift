@@ -21,5 +21,7 @@ spec:
   additionalKernelArgs:
     - iommu=pt
     - intel_iommu=on
+    - console=tty0
+    - console=ttyS0,115200n8
   nodeSelector:
     node-role.kubernetes.io/master: ""
