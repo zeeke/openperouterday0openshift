@@ -38,6 +38,8 @@ With `block-len 32`, the first 32 bits are the "block" (shared domain prefix). B
 
 In SRv6 uSID (`behavior usid`), all nodes in the domain MUST share the same block for micro-SID compression to work. Different blocks mean uSID chaining across nodes is broken.
 
+CTODO: does it work any way? or it is an optimization?
+
 **Impact for PoC:** Basic SRv6 VPN (single SID per hop) still works because End.DT46 only needs the destination node's SID. But uSID compression (the main feature of `behavior usid`) is non-functional.
 
 **Fix:** Make the block constant: `SRV6_PREFIX="fd00:0"` (or another fixed value). Only `SRV6_NODE_ID` should vary per node.
