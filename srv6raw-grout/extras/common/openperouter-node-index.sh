@@ -36,6 +36,7 @@ echo "Setting nodeIndex to ${NODE_INDEX} (from IP ${HOST_IP})"
 
 mkdir -p /var/lib/openperouter
 cat > /var/lib/openperouter/node-config.yaml <<EOF
-nodeIndex: ${NODE_INDEX}
+nodeIndex: 
+  index: ${NODE_INDEX}
 logLevel: info
 EOF
