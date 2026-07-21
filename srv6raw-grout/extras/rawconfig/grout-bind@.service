@@ -2,9 +2,9 @@
 Description=Bind netdev %i for grout usage
 Before=grout.service
 PartOf=grout.service
-Requires=routerpod-pod.service nmstate.service network-online.target
+Requires=routerpod-pod.service nmstate.service network-online.target generate-vpn-env.service
 Wants=routerpod-pod.service nmstate.service network-online.target
-After=routerpod-pod.service nmstate.service network-online.target
+After=routerpod-pod.service nmstate.service network-online.target generate-vpn-env.service
 
 [Service]
 Type=oneshot

@@ -4,10 +4,6 @@ metadata:
   name: 99-master-openperouter
   labels:
     machineconfiguration.openshift.io/role: master
-openshift:
-  kernel_arguments:
-    - console=tty0
-    - console=ttyS0,115200n8
 storage:
   files:
     # --- Rawconfig scripts (mode 0755) ---
@@ -61,12 +57,6 @@ storage:
       overwrite: true
       contents:
         local: quadlets/can_start.sh
-    # --- Empty openpe_config.yaml (controller needs it to exist) ---
-    - path: /var/lib/openperouter/configs/openpe_config.yaml
-      mode: 0644
-      overwrite: true
-      contents:
-        inline: ""
     # --- Rawconfig templates and env (mode 0644) ---
     - path: /etc/openperouter/templates/openpe_evpn.yaml.template
       mode: 0644
@@ -78,11 +68,16 @@ storage:
       overwrite: true
       contents:
         local: rawconfig/openpe_evpn.yaml_rr.template
-    - path: /etc/openperouter/vpn-setup.env
+    - path: /etc/openperouter/vpn-setup.env.defaults
       mode: 0644
       overwrite: true
       contents:
-        local: rawconfig/vpn-setup.env
+        local: rawconfig/vpn-setup.env.defaults
+    - path: /usr/local/bin/generate-vpn-env.sh
+      mode: 0755
+      overwrite: true
+      contents:
+        local: common/generate-vpn-env.sh
     - path: /etc/openperouter/grout.env
       mode: 0644
       overwrite: true
@@ -92,7 +87,7 @@ storage:
           GROUT_CPUS=4
           GROUT_HUGEPAGES_1G=8Gi
           GROUT_SOCKET_LIMIT=8192
-    # --- FRR daemons file (enables isisd for ISIS + SRv6, dplane_grout) ---
+    # --- FRR daemons file (enables isisd for ISIS + SRv6) ---
     - path: /etc/perouter/daemons
       mode: 0644
       overwrite: true
@@ -172,28 +167,41 @@ systemd:
       enabled: true
     - name: grout.service
       enabled: true
-    # --- Grout CPU isolation slice ---
+    # --- Rawconfig systemd services ---
     - name: grout.slice
       enabled: true
       contents: |
         [Slice]
-        AllowedCPUs=0-19
+        AllowedCPUs=0,1,20,21
         [Install]
         WantedBy=default.target
-    # --- Grout NIC bind ---
-    - name: grout-bind@eno12399v0.service
+    - name: generate-vpn-env.service
       enabled: true
-    - name: grout-bind@eno12399v1.service
-      enabled: true
-    # --- Rawconfig systemd services ---
+      contents: |
+        [Unit]
+        Description=Generate OpenPERouter VPN environment file
+        After=nmstate.service network-online.target
+        Wants=network-online.target
+        Before=setup-underlay.service grout.service
+
+        [Service]
+        Type=oneshot
+        RemainAfterExit=yes
+        ExecStart=/usr/local/bin/generate-vpn-env.sh
+        StandardOutput=journal
+        StandardError=journal
+        SyslogIdentifier=generate-vpn-env
+
+        [Install]
+        WantedBy=multi-user.target
     - name: setup-underlay.service
       enabled: true
       contents: |
         [Unit]
         Description=OpenPERouter Underlay Setup
         Documentation=https://github.com/openperouter/openperouter
-        After=network-online.target nmstate.service routerpod-pod.service grout.service frr.service
-        Requires=routerpod-pod.service
+        After=network-online.target generate-vpn-env.service routerpod-pod.service grout.service frr.service
+        Requires=routerpod-pod.service generate-vpn-env.service
         Wants=network-online.target
 
         [Service]
@@ -291,8 +299,8 @@ systemd:
       enabled: true
       contents: |
         [Unit]
-        Description=Set OpenPERouter nodeIndex from bridge IP
-        After=network-online.target
+        Description=Set OpenPERouter nodeIndex from host IP
+        After=network-online.target generate-vpn-env.service
         Before=controllerpod.service routerpod.service
         Wants=network-online.target
 

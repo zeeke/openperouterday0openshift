@@ -40,6 +40,7 @@ L2_VNI="${L2_VNI:-210}"
 L2_GATEWAY_IP="${L2_GATEWAY_IP:-192.168.110.1/24}"
 L2_GATEWAY_IP_V6="${L2_GATEWAY_IP_V6:-fd00:110::1/64}"
 
+UNDERLAY_NIC="${UNDERLAY_NIC:-eno12399v0}"
 
 # Paths
 VARS_FILE="${VARS_FILE:-/var/lib/openperouter/vpn-setup.vars}"
@@ -65,7 +66,7 @@ source "$VARS_FILE"
 log "Loaded variables from $VARS_FILE"
 log "  NODE_NAME=$NODE_NAME, LAST_OCTET=$LAST_OCTET"
 log "  ROUTER_ID=$ROUTER_ID, LOOPBACK_V6=$LOOPBACK_V6"
-log "  SRV6_SOURCE=$SRV6_SOURCE, SRV6_PREFIX=$SRV6_PREFIX"
+log "  SRV6_SOURCE=$SRV6_SOURCE, SRV6_PREFIX=$SRV6_PREFIX, SRV6_NODE_ID=$SRV6_NODE_ID"
 log "  ISIS_NET=$ISIS_NET"
 
 #
@@ -114,24 +115,14 @@ log_step "Rendering configuration from template"
 mkdir -p "$(dirname "$CONFIG_OUTPUT")"
 
 # Export all variables for envsubst
-export NODE_NAME UNDERLAY_NIC BGP_AS ROUTER_ID LOOPBACK_V6
-export SRV6_SOURCE SRV6_PREFIX ISIS_NET
-export VRF_NAME BR0_IP BR0_IP_V6 BR0_SUBNET BR0_SUBNET_V6 L2_GATEWAY_IP L2_GATEWAY_IP_V6 L2_VNI
+export NODE_NAME UNDERLAY_NIC BGP_AS ROUTER_ID LOOPBACK_V6 UNDERLAY_V6
+export SRV6_SOURCE SRV6_PREFIX SRV6_NODE_ID ISIS_NET
+export VRF_NAME HOST_SUBNET HOST_SUBNET_V6 L2_GATEWAY_IP L2_GATEWAY_IP_V6 L2_VNI
 
 envsubst < "$CONFIG_TEMPLATE" > "$CONFIG_OUTPUT" || {
     error "Failed to render configuration template"
     exit_error "Template rendering failed"
 }
-
-if [[ -z "${BR0_SUBNET_V6:-}" ]]; then
-    log "No IPv6 subnet — removing address-family ipv6 unicast block from VRF config"
-    sed -i '/address-family ipv6 unicast/{
-        :loop
-        N
-        /exit-address-family/!b loop
-        d
-    }' "$CONFIG_OUTPUT"
-fi
 
 log "Configuration written to: $CONFIG_OUTPUT"
 

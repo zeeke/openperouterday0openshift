@@ -49,11 +49,11 @@ fi
 
 pull_secret="$(jq -c . "${pull_secret_file}")"
 
-yq ".pullSecret = $(echo "${pull_secret}" | jq -R .)" "${base_config}" > "${config}"
+yq -y ".pullSecret = $(echo "${pull_secret}" | jq -R .)" "${base_config}" > "${config}"
 
 if [[ -n "${ssh_key_file}" ]]; then
     ssh_key="$(cat "${ssh_key_file}")"
-    yq ".sshKey = \"${ssh_key}\"" "${config}" > "${config}.tmp" && mv "${config}.tmp" "${config}"
+    yq -y ".sshKey = \"${ssh_key}\"" "${config}" > "${config}.tmp" && mv "${config}.tmp" "${config}"
 fi
 
 # ============================================================
@@ -68,7 +68,7 @@ sudo podman run -it --rm --privileged --net=host \
     -v "${asset_dir}:/assets:Z" \
     "${APPLIANCE_IMAGE}" clean
 
-sudo podman run -it --rm --pull newer --privileged --net=host \
+sudo podman run -it --rm --privileged --net=host \
     -v "${asset_dir}:/assets:Z" \
     "${APPLIANCE_IMAGE}" build live-iso --log-level=debug
 

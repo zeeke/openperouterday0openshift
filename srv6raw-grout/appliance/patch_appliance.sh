@@ -12,7 +12,7 @@
 #   appliance_iso         Path to the appliance ISO to patch
 #   ocp_dir               OCP working directory containing cache/*/cluster-resources
 #
-# Requires: coreos-installer, jq, yq (mikefarah v4), butane
+# Requires: coreos-installer, jq, yq, butane
 
 set -euo pipefail
 
@@ -43,7 +43,7 @@ trap 'rm -rf "${tmpdir}"' EXIT
 
 # butane --raw on an openshift-variant .bu outputs ignition JSON directly
 # (without --raw it would produce a MachineConfig YAML wrapper)
-butane --raw --files-dir="${EXTRASDIR}" "${RAWCONFIG_BU}" \
+butane --raw --strict --files-dir="${EXTRASDIR}" "${RAWCONFIG_BU}" \
     > "${tmpdir}/openperouter.ign"
 
 
@@ -74,9 +74,6 @@ cluster_resources="${ocp_dir}/cache/"*"/cluster-resources"
         fi
         yq -r '.spec.imageDigestMirrors // .spec.imageTagMirrors // [] | .[] | .source as $src | .mirrors[] | [$src, .] | @tsv' "${yaml_file}" | \
         while IFS=$'\t' read -r source mirror; do
-            if [[ -z "${source}" || -z "${mirror}" || "${source}" == "---" ]]; then
-                continue
-            fi
             cat <<TOML
 
 [[registry]]
@@ -117,6 +114,15 @@ if [[ -s "${registries_conf}" ]]; then
 "
 fi
 
+# --- Patch set-hostname.sh to wait for /etc/assisted/hostnames ---
+cp "${SCRIPTDIR}/set-hostname.sh" "${staging}/set-hostname.sh"
+bu_files+="    - path: /usr/local/bin/set-hostname.sh
+      mode: 0755
+      overwrite: true
+      contents:
+        local: set-hostname.sh
+"
+
 # --- Override container signature policy ---
 # The default policy.json requires GPG signatures for registry.redhat.io
 # images, but the appliance mirror copy is unsigned.
@@ -140,41 +146,6 @@ bu_files+="    - path: /etc/containers/policy.json
       overwrite: true
       contents:
         local: appliance-policy.json
-"
-
-# --- DNS hosts entries for disconnected install ---
-# During install, the overlay network doesn't exist yet so the DNS
-# server is unreachable. The API hostnames must resolve to the
-# rendezvous IP for bootkube and the MCS to work.
-rendezvous_ip="192.168.110.2"
-cluster_name="sno-lab"
-base_domain="example.com"
-
-hosts_content="${rendezvous_ip} api.${cluster_name}.${base_domain} api-int.${cluster_name}.${base_domain}"
-hosts_b64=$(echo "${hosts_content}" | base64 -w0)
-
-bu_files+="    - path: /etc/hosts.d/sno-lab-api.conf
-      mode: 0644
-      overwrite: true
-      contents:
-        source: data:text/plain;base64,${hosts_b64}
-"
-bu_units+="    - name: update-etc-hosts.service
-      enabled: true
-      contents: |
-        [Unit]
-        Description=Add API hostnames to /etc/hosts for disconnected install
-        DefaultDependencies=no
-        Before=bootkube.service kubelet.service
-        After=local-fs.target
-
-        [Service]
-        Type=oneshot
-        RemainAfterExit=yes
-        ExecStart=/bin/bash -c 'grep -qF api.${cluster_name}.${base_domain} /etc/hosts || cat /etc/hosts.d/sno-lab-api.conf >> /etc/hosts'
-
-        [Install]
-        WantedBy=multi-user.target
 "
 
 # --- Compile extras butane → ignition ---
@@ -240,8 +211,13 @@ sudo coreos-installer iso ignition embed -f -i "${tmpdir}/merged.ign" "${applian
 echo "==> Embedded OpenPERouter ignition into appliance ISO"
 
 # ============================================================
-# Step 4: Add kernel args for serial console, hugepages, IOMMU
+# Step 4: Embed ignition hack agent
 # ============================================================
+if [[ -x "${SCRIPTDIR}/hackagent.sh" ]]; then
+    "${SCRIPTDIR}/hackagent.sh" "${appliance_iso}"
+fi
+
+echo "==> Add kernel args for serial console, hugepages, IOMMU into appliance ISO"
 sudo coreos-installer iso kargs modify \
     -a console=tty0 -a console=ttyS0,115200n8 \
     -a default_hugepagesz=1G -a hugepagesz=1G -a hugepages=8 \

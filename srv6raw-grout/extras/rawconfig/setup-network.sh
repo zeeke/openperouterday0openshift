@@ -3,7 +3,7 @@ set -euo pipefail
 
 # setup-network.sh - Network infrastructure setup for SRv6 + L2 EVPN
 #
-# This script creates the network infrastructure (VRF, L2 VXLAN, bridge, VLAN)
+# This script creates the network infrastructure (VRF, L2 VXLAN, bridge)
 # via grout. L3VPN is handled by SRv6 (no L3VNI VXLAN needed).
 # L2VPN still uses VXLAN overlay.
 #
@@ -58,8 +58,14 @@ TRUNK_MAC=$(grcli -j interface show name $TRUNK_NIC | jq -r .mac)
 
 log "Setting up network infrastructure via grout"
 
-# Create VRF, bridge, VXLAN, VLAN sub-interface
+# Assign VTEP address to underlay nic to allow creation of the VXLAN interface
 grcli address add ${VTEP_IP}/32 iface $UNDERLAY_NIC
+grcli address add ${UNDERLAY_V6}/128 iface $UNDERLAY_NIC
+grcli address add ${LOOPBACK_V6}/128 iface $UNDERLAY_NIC
+grcli address add ${SRV6_SOURCE}/128 iface $UNDERLAY_NIC
+
+# Create VRF, bridge, VXLAN (VLAN bridge port is added later by
+# bridge-refresher after zebra has learned the VNI -- FRR #21190).
 grcli interface add vrf $VRF_NAME
 grcli interface add bridge $L2_BRIDGE vrf $VRF_NAME mac $TRUNK_MAC
 grcli interface add vxlan $L2_VXLAN vni $L2_VNI local $VTEP_IP encap_vrf main domain $L2_BRIDGE

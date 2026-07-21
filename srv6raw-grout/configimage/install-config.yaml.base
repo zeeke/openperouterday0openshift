@@ -1,5 +1,6 @@
 apiVersion: v1
 baseDomain: example.com
+cpuPartitioningMode: AllNodes
 compute:
 - hyperthreading: Enabled
   name: worker
@@ -35,5 +36,4 @@ platform:
     ingressVIPs:
     - 192.168.110.11
     - fd00:110::11
-sshKey: 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPkIQAEB6PXC8EC48b5G8D2AO93RLP92DPpGok4xtR3O dciteam@jumphost.vcp100.partnerci.bos2.lab'
 pullSecret: XXX
