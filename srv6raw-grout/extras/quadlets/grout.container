@@ -26,6 +26,8 @@ HealthInterval=30s
 HealthTimeout=5s
 HealthRetries=3
 HealthOnFailure=none
+LogDriver=k8s-file
+LogOpt=path=/var/log/grout.json
 
 [Service]
 Slice=grout.slice
