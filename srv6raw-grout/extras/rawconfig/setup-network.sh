@@ -60,7 +60,8 @@ log "Setting up network infrastructure via grout"
 
 # Assign VTEP address to underlay nic to allow creation of the VXLAN interface
 grcli address add ${VTEP_IP}/32 iface $UNDERLAY_NIC
-grcli address add ${UNDERLAY_V6}/128 iface $UNDERLAY_NIC
+grcli address add ${UNDERLAY_V4}/25 iface $UNDERLAY_NIC
+grcli address add ${UNDERLAY_V6}/64 iface $UNDERLAY_NIC
 grcli address add ${LOOPBACK_V6}/128 iface $UNDERLAY_NIC
 grcli address add ${SRV6_SOURCE}/128 iface $UNDERLAY_NIC
 

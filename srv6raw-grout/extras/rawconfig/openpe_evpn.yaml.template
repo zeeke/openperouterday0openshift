@@ -23,7 +23,6 @@ rawfrrconfigs:
       !
       interface ${UNDERLAY_NIC}
        ip address ${ROUTER_ID}/32
-       ipv6 address ${UNDERLAY_V6}/128
        ipv6 address ${LOOPBACK_V6}/128
        ipv6 address ${SRV6_SOURCE}/128
        ip router isis PE
