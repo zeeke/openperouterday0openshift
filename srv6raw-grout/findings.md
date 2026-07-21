@@ -1,98 +1,154 @@
 # Codebase Validation Findings
 
 Review of srv6raw-grout against architecture.md and internal consistency.
-Audited all files across build scripts, runtime scripts, butane/quadlets, and manifests.
+Audited: build scripts, runtime scripts, butane/quadlets, FRR templates, manifests, registry.
 
 ---
 
-## HIGH Severity (fixed)
+## CRITICAL — Will break deployment or cause wrong behavior
 
-### 1. `openperouter-node-index.sh:7` -- Extra `}` makes HOST_VF contain a literal brace
+### 1. `controllerpod.pod` — No `Network=host`; controller runs in bridge networking
+
+**File:** `extras/quadlets/controllerpod.pod` (entire `[Pod]` section)
+**Also:** `extras/quadlets/controller.container:27`
+
+`controller.container` specifies `Network=host`, but it's inside `controllerpod.pod`. In Podman, when a container is in a pod, the pod's infra container owns the network namespace — per-container `--network` flags are silently ignored. `controllerpod.pod` has no `Network=` directive, so it defaults to bridge networking.
+
+The controller needs host network access for Kubernetes API, systemd D-Bus, and host namespace operations. Without it, the controller cannot reach the API server, cannot manage network namespaces, and the health check (`http://127.0.0.1:9081/healthz`) may bind on the wrong loopback.
+
+**Fix:** Add `Network=host` to `controllerpod.pod` under `[Pod]`, or remove `Pod=controllerpod.pod` from `controller.container` and run it standalone.
+
+---
+
+### 2. `setup-underlay.sh:112-113` — SRv6 uSID block prefix varies per node
 
 ```bash
-HOST_VF="${1:-eno12399v2}}"
+SRV6_PREFIX="fd00:${LAST_OCTET}"
+SRV6_NODE_ID="${LAST_OCTET}"
 ```
 
-The trailing `}` is outside the parameter expansion. `HOST_VF` evaluates to `eno12399v2}` (with a trailing brace). Every `ip addr show dev "$HOST_VF"` lookup fails because interface `eno12399v2}` does not exist. The script wastes all 60 retries on the wrong name before falling through to `br-ex`. If `br-ex` isn't up yet either, the script fails entirely and `node-config.yaml` is never written -- blocking the controller.
+The FRR template renders the locator as:
+```
+prefix ${SRV6_PREFIX}:${SRV6_NODE_ID}::/48 block-len 32 node-len 16 func-bits 16
+```
 
-**Fix:** `HOST_VF="${1:-eno12399v2}"`
+With `block-len 32`, the first 32 bits are the "block" (shared domain prefix). But `SRV6_PREFIX` includes `LAST_OCTET`, so each node gets a different block:
+- Node 2: `fd00:0002:0002::/48` → block `fd00:0002`
+- Node 3: `fd00:0003:0003::/48` → block `fd00:0003`
+
+In SRv6 uSID (`behavior usid`), all nodes in the domain MUST share the same block for micro-SID compression to work. Different blocks mean uSID chaining across nodes is broken.
+
+**Impact for PoC:** Basic SRv6 VPN (single SID per hop) still works because End.DT46 only needs the destination node's SID. But uSID compression (the main feature of `behavior usid`) is non-functional.
+
+**Fix:** Make the block constant: `SRV6_PREFIX="fd00:0"` (or another fixed value). Only `SRV6_NODE_ID` should vary per node.
 
 ---
 
-### 2. `controller.container:14,24` + `controllerpod.pod` -- `Network=host` silently ignored inside pod (fixed)
+### 3. `set-hostname.sh:25` — `MAX_WAIT` undefined; wait loop always infinite
 
-`controller.container` specifies `Network=host` (line 24) and `Pod=controllerpod.pod` (line 14). In Podman, when a container is part of a pod, the pod's infra container owns the network namespace -- per-container `--network` flags are ignored. `controllerpod.pod` has no `Network=` directive, so it defaults to bridge networking. The controller runs without host network access despite the explicit comment stating it needs it.
+```bash
+while [ -z "$(ls -A ${HOSTNAMES_PATH} 2>/dev/null)" ]; do
+    if [ $WAIT_COUNT -ge $MAX_WAIT ]; then
+```
 
-**Fix:** Add `Network=host` to `controllerpod.pod` under `[Pod]`, or run controller as a standalone container without `Pod=`.
+`MAX_WAIT` is never defined anywhere in the script. The comparison `[ $WAIT_COUNT -ge $MAX_WAIT ]` with an empty `$MAX_WAIT` produces a bash arithmetic error, which returns exit code 2 (treated as false by `if`). The timeout branch is never taken — the script blocks forever if no hostname files appear.
+
+During the live ISO phase, this blocks `set-hostname.service`. If `/etc/assisted/hostnames` is populated but empty for longer than expected, the script hangs.
+
+**Fix:** Add `MAX_WAIT="${MAX_WAIT:-60}"` near the top of the script.
 
 ---
 
-### 3. FRR templates + `setup-underlay.sh:230,250` -- Empty `BR0_SUBNET_V6` produces invalid FRR config
+### 4. `hackagent.sh` (workers) — Master MCS ignition fetched twice; infinite loop without timeout
 
-If no IPv6 address is found, `BR0_SUBNET_V6=""` (line 230). In `openpe_evpn.yaml.template:86`, this renders as:
+For workers (lines 200-210), after the master ignition was already fetched and validated at lines 126-142, the worker branch fetches it AGAIN in an infinite `while true` loop with no timeout:
 
+```bash
+while true; do
+    if curl ... -o "$MASTER_IGN_FILE" "https://192.168.110.2:22623/config/master" ...; then
+        break
+    fi
+    sleep 5
+done
 ```
- address-family ipv6 unicast
-  network 
-```
 
-Invalid FRR syntax. FRR rejects the entire config block, which can break BGP for all address families in that VRF, not just IPv6.
+If the bootstrap MCS goes down between the first and second fetch (which is plausible — bootstrap can reboot), this loop runs forever and the worker never installs.
 
-**Fix:** Guard the `network` line in the template with a conditional, or set a sane default.
+Additionally, the first fetch (lines 126-142) already succeeded for `MASTER_IGN_READY=1`, so the second fetch is redundant and overwrites the already-valid file.
+
+**Fix:** Remove the second fetch in the worker branch (lines 200-210) — `$MASTER_IGN_FILE` is already populated.
 
 ---
 
-### 4. `setup-underlay.sh:128` -- SRv6 uSID node-ID of 0 when LAST_OCTET=0
+### 5. `hackagent.sh` — Bootstrap IP `192.168.110.2` hardcoded in appliance ISO
+
+**File:** `appliance/hackagent.sh`, lines 37, 132, 202
+
+The bootstrap MCS URL uses hardcoded IP `192.168.110.2`, which matches the current `agent-config.yaml` rendezvousIP. But this is baked into the appliance ISO (the "generic" one), not the per-cluster config ISO. Any cluster using a different rendezvous IP or machine-network subnet cannot use this appliance ISO — the ignition hack contacts a non-existent MCS.
+
+**Fix:** Source the rendezvous IP from the config ISO (e.g., read it from agent-config at runtime), or accept that the appliance ISO is cluster-specific.
+
+---
+
+## HIGH — Likely to cause issues in some configurations
+
+### 6. `setup-underlay.sh:113` — SRv6 node-ID of 0 when LAST_OCTET=0
 
 ```bash
 SRV6_NODE_ID="${LAST_OCTET}"
 ```
 
-If a host IP ends in `.0` (valid in /23 or larger subnets), `SRV6_NODE_ID` becomes `0`. The `0000` node field is the uSID End-of-Container marker -- this corrupts SRv6 packet processing for the entire domain.
+If a host IP ends in `.0` (valid in /23 or larger subnets), `SRV6_NODE_ID=0`. In uSID, the `0000` node field is the End-of-Container marker. This corrupts SRv6 packet processing — any packet hitting this locator is treated as end-of-SID-list, causing silent black-holing.
 
-**Fix:** Validate `LAST_OCTET != 0` or offset by 1.
+**Fix:** Validate `LAST_OCTET != 0` or offset by 1 (`SRV6_NODE_ID=$((LAST_OCTET + 1))`).
 
 ---
 
-### 5. `setup-underlay.sh:268` -- Stale FRR PID baked into vars file
+### 7. `setup-underlay.sh:174` — `HOST_SUBNET_V6` may capture link-local `fe80::/64`
 
 ```bash
-FRR_PID="$FRR_PID"
+HOST_SUBNET_V6="$(ip -6 route list dev "$HOST_IFACE" proto kernel | awk '{print $1; exit}')"
 ```
 
-The PID is captured once at runtime and persisted. If FRR restarts (crash, OOM, podman restart), any downstream script sourcing this file operates on a dead or wrong process. Additionally, no downstream script actually consumes `FRR_PID` from this file.
+On Linux, `ip -6 route` typically lists `fe80::/64` (link-local) before global-scope routes. Since `awk '{print $1; exit}'` takes the first entry, `HOST_SUBNET_V6` may be set to `fe80::/64` instead of the intended global IPv6 prefix.
 
-**Fix:** Remove `FRR_PID` from the vars file; look it up dynamically via `frr_netns_pid` when needed.
+This value is exported by `generate-config.sh` and substituted into the FRR template as `network ${HOST_SUBNET_V6}` under `router bgp ... vrf red / address-family ipv6 unicast`. FRR would advertise `fe80::/64` as a VPN route — breaking L3VPN IPv6 reachability between PEs.
+
+**Fix:** Filter out link-local routes: `ip -6 route list dev "$HOST_IFACE" proto kernel | grep -v '^fe80' | awk '{print $1; exit}'`
 
 ---
 
-### 6. `hackagent.sh` (embedded script) -- No error handling; silent failures in critical operations
+### 8. FRR templates — Empty `HOST_SUBNET_V6` produces invalid FRR config
 
-The embedded `ignition-hack.sh` (~330 lines) runs without `set -e` or `set -o pipefail`:
+**File:** `extras/rawconfig/openpe_evpn.yaml.template:88`
+**File:** `extras/rawconfig/openpe_evpn.yaml_rr.template:90`
 
-- `sgdisk` partition operations pipe through `tee`, masking exit codes. A failed `sgdisk -d` lets `sgdisk -n` proceed on the same partition, potentially corrupting the GPT.
-- `dd` writing ignition to the boot partition suppresses stderr (`2>/dev/null`) with no exit-code check. If it fails, the script reboots the node with missing/stale ignition -- unrecoverable.
-- Multiple `jq` transforms have no error handling.
+If the host interface has no IPv6 address (or `ip -6 route` returns nothing), `HOST_SUBNET_V6=""`. The template renders:
 
-**Fix:** Add `set -eo pipefail` to the embedded script. Check exit codes after `dd` and `sgdisk`.
+```
+ address-family ipv6 unicast
+  network
+```
+
+This is syntactically invalid FRR configuration. FRR rejects the entire `router bgp ... vrf red` block, breaking BGP for both IPv4 and IPv6 in that VRF.
+
+**Fix:** Guard the `network` line with a conditional in `generate-config.sh` (e.g., strip the line if `HOST_SUBNET_V6` is empty), or ensure `HOST_SUBNET_V6` always has a value.
 
 ---
 
-## MEDIUM Severity
+### 8. `openperouter-raw.bu:304` — `Before=controllerpod.service routerpod.service` references wrong unit names
 
-### 7. `openperouter-raw.bu:267` / `openperouter-raw-worker.bu:247` -- `Before=` references non-existent systemd unit names
-
-```
+```yaml
 Before=controllerpod.service routerpod.service
 ```
 
-Quadlet pod files generate service names with a `-pod` suffix: `controllerpod-pod.service` and `routerpod-pod.service`. systemd silently ignores `Before=` constraints on non-existent units, so `openperouter-node-index.service` has no ordering guarantee relative to the pods. Race condition on `node-config.yaml`.
+Quadlet pod files generate systemd service names with a `-pod` suffix: `controllerpod-pod.service` and `routerpod-pod.service`. The non-suffixed names don't exist, so systemd silently ignores the `Before=` constraint. `openperouter-node-index.service` has no ordering guarantee relative to the pods — race condition on `node-config.yaml`.
 
 **Fix:** `Before=controllerpod-pod.service routerpod-pod.service`
 
 ---
 
-### 8. `openperouter-raw.bu:158-163` -- Butane enables non-existent service names
+### 9. `openperouter-raw.bu:158-169` — Butane enables non-existent quadlet service names
 
 ```yaml
 - name: controllerpod.service
@@ -101,90 +157,86 @@ Quadlet pod files generate service names with a `-pod` suffix: `controllerpod-po
   enabled: true
 ```
 
-Creates dangling symlinks. Functionally harmless (container units pull in pods transitively), but produces `systemctl` warnings.
+These create dangling symlinks in `/etc/systemd/system/default.target.wants/`. The actual services are `controllerpod-pod.service` and `routerpod-pod.service`. The pods still start (container units pull them in transitively), but `systemctl` logs warnings and `is-enabled` returns misleading results.
 
-**Fix:** Use `controllerpod-pod.service` and `routerpod-pod.service`.
-
----
-
-### 9. `frr.container:26-27` + `reloader.container:9` -- SELinux `:Z` conflict on overlapping volume paths
-
-FRR mounts individual files from `/etc/perouter/frr/` with `:Z` (private label); reloader mounts the entire `/etc/perouter/frr` directory with `:Z`. Both are in the same `routerpod` pod. The last container to process its volumes wins; the other gets SELinux denials.
-
-**Fix:** Change `:Z` to `:z` (lowercase -- shared label) on volumes shared between containers in the same pod.
+**Fix:** Use `controllerpod-pod.service` and `routerpod-pod.service`, or remove these entries (pods are pulled in by container dependencies).
 
 ---
 
-### 10. `openperouter-raw.bu:190-192` -- `setup-underlay.service` has `After=grout.service frr.service` but no `Requires=`/`Wants=`
+### 10. `frr.container:34` + `reloader.container:28` — SELinux `:Z` conflict on overlapping paths
 
-`After=` only affects ordering *if both units are starting*. If grout or frr fail to start, setup-underlay starts without them and crashes on `grcli` calls.
+FRR mounts `/etc/perouter/frr/frr.conf` with `:Z` (private label). Reloader mounts `/etc/perouter/frr` (the parent directory) with `:Z`. Both are in the same `routerpod` pod. The last container to process its volumes wins the SELinux relabel; the other gets `Permission denied`.
 
-**Fix:** Add `Wants=grout.service frr.service`.
+On RHCOS with SELinux enforcing, this can prevent FRR from reading its own config file.
 
----
-
-### 11. `setup-underlay.sh:57` -- `UNDERLAY_NIC` used before guaranteed set
-
-If the env file (`vpn-setup.env`) is missing, `UNDERLAY_NIC` has no default. `set -u` triggers "unbound variable" on the log line at line 57, before any useful logic runs.
-
-**Fix:** Add a default: `UNDERLAY_NIC="${UNDERLAY_NIC:-eno12399np0}"`.
+**Fix:** Change `:Z` to `:z` (lowercase — shared label) on volumes shared between containers in the same pod.
 
 ---
 
-### 12. `setup-underlay.sh:229` -- Hardcoded /24 assumption for BR0_SUBNET
+### 11. `setup-underlay.sh:192` — Stale FRR PID baked into vars file
 
 ```bash
-BR0_SUBNET="${HOST_IP%.*}.0/24"
+FRR_PID="$FRR_PID"
 ```
 
-Blindly assumes the host network is a /24. Wrong for /23, /25, or other prefix lengths -- causes incorrect BGP route advertisement.
+The PID is captured once and persisted. If FRR restarts (crash, OOM, pod restart), any downstream script sourcing this file operates on a dead PID. No script actually consumes `FRR_PID` from this file — they all use `frr_netns_pid()` which does live lookup.
 
-**Fix:** Parse the actual prefix length from `ip addr` output.
+**Fix:** Remove `FRR_PID` from the vars file.
 
 ---
 
-### 13. `setup-underlay.sh:231-233` -- Fragile IPv6 subnet derivation via sed
+### 12. `grout.slice` (bu:175) — `AllowedCPUs=0,1,20,21` hardcoded for specific hardware
 
-```bash
-BR0_SUBNET_V6="$(echo "$BR0_IP_V6" | sed 's/:[^:]*$//' | sed 's/:*$//')::/64"
+```
+AllowedCPUs=0,1,20,21
 ```
 
-Breaks for addresses where `::` appears before the last group (e.g. `fd00:110::1:2` produces `fd00:110::1::/64` -- invalid double `::`). Also wrong for fully-expanded addresses where the /64 boundary is at the 4th group.
+This assumes a specific server topology (e.g., dual-socket with CPUs 0,1 on socket 0 and 20,21 as HT siblings). On servers with fewer than 22 CPUs or a different layout, systemd fails to apply this property and grout cannot start — the entire dataplane is broken before the reservation DaemonSet gets a chance to dynamically expand the slice.
 
-**Fix:** Use `ip -j addr show` with jq to extract the prefix, or parse the prefix length.
-
----
-
-### 14. `setup-network.sh:40` -- Unbound variable crash if vars file missing
-
-With `set -u` active, expanding `$ROUTER_ID` (never set if vars file is absent) crashes with a cryptic bash error before the friendly error message at lines 45-48 is reached.
-
-**Fix:** Guard the variable access or check vars file existence before sourcing.
+**Fix:** Use a broader initial range (e.g., `AllowedCPUs=0-3`) that is valid on most hardware, or derive the initial CPUs at boot time.
 
 ---
 
-### 15. `setup-network.sh:61-64` -- No rollback on partial grcli failure
+### 13. `setup-underlay.service` (bu:203) — `After=grout.service frr.service` but no `Wants=`
 
-VRF, bridge, VXLAN, and VLAN are created sequentially. A failure partway through leaves orphaned objects in grout. Re-runs fail ("already exists") without manual cleanup.
+`After=` only affects ordering IF both units are starting. If `grout.service` or `frr.service` fail to start (or aren't pulled in), `setup-underlay.service` starts without them and immediately crashes on `grcli` calls or FRR readiness checks.
 
-**Fix:** Add a `trap` to clean up partial state, or make commands idempotent.
+The unit has `Requires=routerpod-pod.service` which transitively pulls in containers, so this may work in practice. But if grout or FRR fail within the pod, setup-underlay starts anyway.
+
+**Fix:** Add `Wants=grout.service frr.service` to ensure they're at least attempted.
 
 ---
 
-### 16. `mount-agent-data.sh:69-70` -- Hardcoded `"true" = "true"` -- dead code branches
+## MEDIUM — Could cause issues in edge cases
+
+### 12. `setup-network.sh:40` — Unbound variable crash if vars file missing
+
+With `set -u` active, expanding `$ROUTER_ID` (line 40 via `$VTEP_IP`) when the vars file is absent crashes with a cryptic bash error before the friendly error message at lines 44-48 is reached.
+
+**Fix:** Use `VTEP_IP="${VTEP_IP:-${ROUTER_ID:-}}"` or check vars file existence before sourcing.
+
+---
+
+### 13. `setup-network.sh` — No rollback on partial grcli failure
+
+VRF, bridge, VXLAN are created sequentially. A failure partway through leaves orphaned objects in grout. Re-runs fail with "already exists" without manual cleanup. With `set -e`, any failure aborts the script but doesn't clean up.
+
+**Fix:** Make commands idempotent (check before create), or add a trap to clean up partial state.
+
+---
+
+### 14. `mount-agent-data.sh:69-70` — Hardcoded `"true" = "true"` dead-code branches
 
 ```bash
 if [ "true" = "true" ]; then
     if [ "true" = "true" ]; then
 ```
 
-Likely template placeholders that were never substituted. The "disk image mode" and alternative mount paths are unreachable.
-
-**Fix:** Remove dead branches or restore the template variables.
+Template placeholders that were never substituted. The `else` branches (disk-image mode, ISO mode) are unreachable. Functionally harmless for the current path, but confusing and prevents using alternative mount modes.
 
 ---
 
-### 17. `mount-agent-data.sh:42-45` -- Infinite wait loop with no timeout
+### 15. `mount-agent-data.sh:42-45` — Infinite wait loop with no timeout
 
 ```bash
 while ! mountpoint -q $ISO_DIR; do
@@ -192,157 +244,148 @@ while ! mountpoint -q $ISO_DIR; do
 done
 ```
 
-If the ISO is never mounted, this blocks the entire bootstrap forever.
+If the ISO is never mounted, this blocks the entire bootstrap forever with no diagnostic output.
 
 **Fix:** Add a retry limit with a diagnostic message.
 
 ---
 
-### 18. `load-registry-image.sh` -- Missing `set -euo pipefail`
-
-If `podman pull` fails, `IMAGE_ID_FROM_PULL` is empty and the script exits 0. The registry container later fails with a confusing "image not found" error.
-
----
-
-### 19. `apply-manifests.sh:20-22` -- API server wait loop has no timeout
+### 16. `apply-manifests.sh:20-22` — API server wait loop has no timeout
 
 ```bash
 until oc get ns >/dev/null 2>&1; do sleep 5; done
 ```
 
-Loops forever if the API server never comes up.
+If the API server never comes up (SRv6 fabric broken, etcd quorum lost), this loops forever. The `TimeoutStartSec=600` on the systemd unit provides an external timeout, but the script itself gives no diagnostics during the wait.
 
 ---
 
-### 20. `apply-manifests.sh:14` -- No existence check for `grout.env`
+### 17. `hackagent.sh` (embedded) — No `set -o pipefail`; pipe failures silently swallowed
 
-`source /etc/openperouter/grout.env` crashes if the file is missing. Variables `GROUT_CPUS` and `GROUT_HUGEPAGES_1G` would then be undefined.
+The embedded `ignition-hack.sh` uses `set -e` but not `set -o pipefail`. Commands piped through `tee -a "$LOG_FILE"` mask exit codes. A failed `sgdisk -d` lets `sgdisk -n` proceed on the same partition, potentially corrupting the GPT.
 
----
+The `dd` writing ignition checks for errors, but other critical operations (curl, jq transforms) could silently fail.
 
-### 21. `patch_appliance.sh:186-191` -- `SSH_PUB_KEY` env var never set by caller
-
-`generate_appliance.sh` never exports `SSH_PUB_KEY`. The SSH-key-into-ignition code path in `patch_appliance.sh` is dead code.
+**Fix:** Add `set -eo pipefail` to the embedded script.
 
 ---
 
-### 22. `generate_appliance.sh:67,71` -- `podman run -it` requires a TTY
+### 18. `bridge-refresher.sh:45-48` — Infinite loop waiting for VNI with no timeout
 
-Both `sudo podman run` commands use `-it`. Fails or warns in CI/cron/non-interactive contexts.
+```bash
+while ! podman exec frr vtysh ... | grep -q "VNI: ${L2_VNI}"; do
+    sleep 1
+done
+```
 
----
+If FRR never learns the VNI (BGP session not established, EVPN not configured), this blocks forever. The VLAN bridge port is never added, and north-south traffic never works.
 
-### 23. `generate_config_image.sh:31` -- Default work directory nests `configimage/configimage/`
-
-When `$2` is not provided, `config_image_dir` defaults to `${SCRIPTDIR}/configimage`. Since `SCRIPTDIR` is already `configimage/`, the actual path becomes `configimage/configimage/`.
-
----
-
-### 24. `patch_appliance.sh:247` -- Hardcoded cluster identity duplicates YAML config sources
-
-`rendezvous_ip`, `cluster_name`, and `base_domain` are hardcoded. If someone updates `agent-config.yaml` or `install-config.yaml.base` but not this script, `/etc/hosts` entries and DNS resolution break.
+**Fix:** Add a timeout with a diagnostic error.
 
 ---
 
-### 25. `patch-installer-config.sh:28-36` -- Silent fallthrough if `load-config-iso` never completes
-
-The 60-retry loop (5min) has no failure log if exhausted. The script then proceeds to modify `assisted-service.env`, which may be in an intermediate state -- a race condition that can produce a corrupt env file.
-
----
-
-### 26. Inconsistent `HOST_VF` defaults across scripts
+### 19. Inconsistent `HOST_VF` defaults across scripts
 
 | Script | Default | Interface |
 |--------|---------|-----------|
-| `can_start.sh:17` | `eno12399np0` | PF (SR-IOV physical function) |
-| `setup-underlay.sh:88` | `eno12399v2` | VF2 (host virtual function) |
-| `openperouter-node-index.sh:7` | `eno12399v2` (plus extra `}`) | VF2 (host VF) |
+| `can_start.sh:16` | `eno12399v2` | VF2 |
+| `setup-underlay.sh:48` | `eno12399v2` | VF2 |
+| `openperouter-node-index.sh` | from vpn-setup.env | dynamic |
 
-Since `vpn-setup.env` does not define `HOST_VF`, each script falls through to its own default. `can_start.sh` checks NM migration on the PF, while the other two look for the host IP on VF2.
+The defaults are now mostly consistent (`eno12399v2`), but `generate-vpn-env.sh` dynamically detects VF names from sysfs. If sysfs detection fails but the env file is still written (without VF names), scripts fall back to their hardcoded defaults which may not match the actual interface names.
 
 ---
 
-## LOW Severity
+### 20. Worker MachineConfig inherits master-only content
 
-### 27. `grout-bind.sh:31` -- `SECONDS` under `#!/bin/sh` shebang
+`generate_machineconfigs.sh` uses `sed` to swap `role: master` → `role: worker`, producing worker MachineConfigs from the master butane. This means workers get `apply-manifests.sh`, the DaemonSet manifests, and `apply-manifests.path` — all marked "M only" in architecture.md.
 
-`SECONDS` is a bash-ism that auto-increments. Under POSIX `sh`, it stays 0 and the 120s timeout never fires. Works on CoreOS only because `/bin/sh` is symlinked to bash.
+**Impact:** `apply-manifests.path` watches for a kubeconfig that won't exist on workers, so it won't trigger. Functionally harmless but wastes disk space and could cause confusing systemd unit states on workers.
 
-### 28. `set-hostname.sh:45` -- Case-sensitive MAC grep
+---
 
-`ip address` outputs lowercase MACs; hostnames filenames may be uppercase. `grep` without `-i` won't match.
+## LOW — Cosmetic, robustness, or unlikely to cause issues
 
-### 29. `grout-bind@.service:5-6` -- Redundant `Requires=` + `Wants=` for the same units
+### 21. `grout-bind.sh:31` — `SECONDS` under `#!/bin/sh`
+
+`SECONDS` is a bash-ism that auto-increments. Under POSIX `sh`, it stays 0 and the 120s timeout never fires. Works on CoreOS because `/bin/sh` → bash.
+
+### 22. `set-hostname.sh:38` — Case-sensitive MAC grep
+
+`ip address` outputs lowercase MACs; hostname filenames may use uppercase. `grep` without `-i` won't match.
+
+### 23. `grout-bind@.service:5-6` — Redundant `Requires=` + `Wants=` for the same units
 
 `Requires=` is strictly stronger than `Wants=`. Having both is noise.
 
-### 30. `setup-underlay.sh:50` -- `TRUNK_VLAN` defined but unused
+### 24. `setup-underlay.sh:115` — ISIS NET system-ID uses decimal
 
-Dead code. `TRUNK_VLAN` is independently re-derived in `setup-network.sh`.
+`printf '%04d'` produces decimal digits, but ISIS system-ID fields are conventionally hex. Functionally correct but confusing during troubleshooting (`show isis neighbor` shows decimal system-IDs).
 
-### 31. `setup-underlay.sh:130` -- ISIS NET system-ID uses decimal
-
-`printf '%04d'` produces decimal digits, but ISIS system-ID fields are conventionally hex. Functionally correct but confusing during troubleshooting.
-
-### 32. `grout-daemonset.yaml:98` -- Metrics sidecar uses mutable `:latest` tag
+### 25. `grout-daemonset.yaml:98` — Metrics sidecar uses mutable `:latest` tag
 
 ```yaml
 image: docker.io/alpine/socat:latest
 ```
 
-All other images are pinned to a specific SHA. Mutable tag breaks in air-gapped environments.
+All other images are pinned to a specific SHA. Mutable tag breaks in air-gapped environments (the tag can't be resolved from the local mirror if it wasn't mirrored).
 
-### 33. Worker butane has no `kernel_arguments`
+### 26. `registry.bu:67` — Non-absolute path in `ExecStartPre`
 
-Master butane configures serial console (`console=ttyS0,115200n8`). Workers missing it makes debugging boot failures harder on identical hardware.
+```
+ExecStartPre=mkdir -p /media/iso
+```
 
-### 34. `registry.bu:68` -- Non-absolute path in `ExecStartPre`
+systemd requires absolute paths for executables. Should be `/usr/bin/mkdir`.
 
-`ExecStartPre=mkdir -p /media/iso` should be `/usr/bin/mkdir`. systemd requires absolute paths for executables.
+### 27. `install-config.yaml.base` — Cluster name `sno-lab` misleading for 3-node cluster
 
-### 35. `install-config.yaml.base:15` -- Cluster name `sno-lab` misleading for 3-node cluster
+`controlPlane.replicas: 3` with name `sno-lab` (Single Node OpenShift). Cosmetic but confusing.
 
-`controlPlane.replicas: 3` with 3 hosts, but named `sno-lab` (Single Node OpenShift).
+### 28. `can_start.sh` deployed to two paths
 
-### 36. `can_start.sh` deployed to two paths
+Same script at `/usr/local/bin/can_start.sh` and `/var/lib/openperouter/can_start.sh` (butane lines 54-59). Both are installed from the same source, so they're identical. Maintenance risk if one path is updated without the other in future changes.
 
-Same script at `/usr/local/bin/can_start.sh` and `/var/lib/openperouter/can_start.sh`. Maintenance risk if one is updated without the other.
-
-### 37. `setup-local-registry.sh:30-31` -- Non-atomic `/etc/hosts` update
+### 29. `setup-local-registry.sh` — Non-atomic `/etc/hosts` update
 
 `sed -i` delete then `echo >>` append has a window where the hostname is unresolvable.
 
-### 38. `grout-bind.sh:39,57` -- Unquoted variable expansions
+### 30. VLAN ID 42 hardcoded in two separate files
 
-`$netdev` and inner `$(readlink ...)` are unquoted. Edge-case breakage risk.
+`setup-underlay.sh` and `setup-network.sh` both use VLAN ID 42 with `TRUNK_VLAN="${TRUNK_NIC}.42"`. No shared variable — must be kept in sync manually.
 
-### 39. VLAN ID 42 hardcoded in two separate files
-
-`setup-underlay.sh:50` and `setup-network.sh:42,64` both hardcode VLAN 42 with no configuration variable.
-
----
-
-## Documentation vs Code Drift
-
-### 40. Architecture doc references `sr0 dummy interface`
-
-The doc says `setup-underlay.sh` creates an `sr0 dummy interface in FRR namespace for SRv6`. The code does not create any sr0 dummy -- it configures SRv6 addresses directly on `$UNDERLAY_NIC` via grcli.
-
-### 41. Architecture doc systemd ordering diagram is misleading
-
-The diagram shows `can_start.sh` directly above `grout-bind@` services, implying it gates them. But `grout-bind@.service` does not use `can_start.sh`. Only `setup-underlay.service` and the controller container run `can_start.sh`.
-
----
-
-## Cleanup
-
-### 42. Unused environment variables in `vpn-setup.env`
-
-Three variables defined but never consumed:
-- `VRF_TABLE=1100` -- `setup-network.sh` creates VRF via grcli with no table ID
-- `VXLAN_PORT=4789` -- never referenced
-- `VTEP_INTERFACE=lo` -- never referenced
-
-### 43. `apply-manifests.sh` applies `namespace.yaml` twice
+### 31. `apply-manifests.sh` applies `namespace.yaml` twice
 
 Line 42 applies it explicitly, then line 44 applies everything in the directory (including it again). Idempotent but redundant.
+
+### 32. `load-registry-image.sh` — Missing `set -euo pipefail`
+
+If `podman pull` fails, `IMAGE_ID_FROM_PULL` is empty and the script exits 0. The registry container later fails with "image not found".
+
+---
+
+## Architecture Doc vs Code Drift
+
+### 33. Doc references `vpn-setup.env` at `/etc/openperouter/vpn-setup.env`
+
+The file in extras is `vpn-setup.env.defaults` (not `vpn-setup.env`). At runtime, `generate-vpn-env.sh` copies the defaults file and appends detected NIC names, producing the final `vpn-setup.env`. This is correct behavior but the architecture doc's file map table (line 505) shows `rawconfig/vpn-setup.env` → `/etc/openperouter/vpn-setup.env`, which is inaccurate.
+
+### 34. Doc systemd ordering diagram is misleading
+
+The diagram shows `can_start.sh` directly above `grout-bind@` services, implying it gates them. But `grout-bind@.service` does NOT use `can_start.sh`. Only `setup-underlay.service` and `controller.container` run `can_start.sh` as `ExecStartPre`.
+
+### 35. No worker butane files exist
+
+Architecture.md references `openperouter-raw-worker.bu` and `registry-worker.bu`, but these don't exist as separate files. `generate_machineconfigs.sh` derives worker configs from master butane files via sed substitution. This works but differs from what the doc describes.
+
+---
+
+## Previously Found Issues — Now Fixed
+
+The following issues from an earlier review have been resolved:
+
+- **Extra `}` in `openperouter-node-index.sh`** — Fixed. Script now sources `vpn-setup.env` instead of hardcoding the interface name.
+- **Hardcoded /24 assumption for `BR0_SUBNET`** — Fixed. `HOST_SUBNET` is now derived from `ip route` output.
+- **Fragile IPv6 subnet derivation via sed** — Fixed. `HOST_SUBNET_V6` is now derived from `ip -6 route`.
+- **`SSH_PUB_KEY` dead code in `patch_appliance.sh`** — Still present but harmless (gated by `[[ -n "${SSH_PUB_KEY:-}" ]]`).
+- **`generate_config_image.sh` nested directory** — Not verified; may still exist.
