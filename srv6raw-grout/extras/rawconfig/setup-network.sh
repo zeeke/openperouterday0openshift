@@ -77,4 +77,10 @@ if [[ -n "${L2_GATEWAY_IP_V6}" ]]; then
     grcli address add $L2_GATEWAY_IP_V6 iface $L2_BRIDGE
 fi
 
+# Workaround for grout ARP flux: when both VFs share the same
+# broadcast domain, grout replies to ARP on the trunk VF with the wrong MAC.
+# Cycling the underlay NIC triggers GARPs that overwrite the wrong entries.
+grcli interface set $UNDERLAY_NIC down
+grcli interface set $UNDERLAY_NIC up
+
 exit 0
