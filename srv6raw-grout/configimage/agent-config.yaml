@@ -74,6 +74,7 @@ hosts:
     - name: eno12399v2
       type: ethernet
       state: up
+      mtu: 1400
       ipv4:
         enabled: true
         auto-dns: false
@@ -172,6 +173,7 @@ hosts:
     - name: eno12399v2
       type: ethernet
       state: up
+      mtu: 1400
       ipv4:
         enabled: true
         auto-dns: false
@@ -270,6 +272,7 @@ hosts:
     - name: eno12399v2
       type: ethernet
       state: up
+      mtu: 1400
       ipv4:
         enabled: true
         auto-dns: false
