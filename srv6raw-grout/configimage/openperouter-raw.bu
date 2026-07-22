@@ -84,7 +84,7 @@ storage:
       contents:
         inline: |
           GROUT_SOCK_PATH=/run/grout/api.sock
-          GROUT_CPUS=4
+          GROUT_CPUS=8
           GROUT_HUGEPAGES_1G=8Gi
           GROUT_SOCKET_LIMIT=8192
     # --- FRR daemons file (enables isisd for ISIS + SRv6) ---
