@@ -8,6 +8,19 @@
 
 [ "$2" = "up" ] || exit 0
 
+# If this is a PF with SR-IOV VFs, disable RA and IP on all VFs.
+# Prevents eswitch-leaked RAs from poisoning the host routing table.
+# The host VF re-enables what it needs via nmstate.
+if [ -f "/sys/class/net/$1/device/sriov_numvfs" ]; then
+	for vf_net in /sys/class/net/$1/device/virtfn*/net/*; do
+		[ -d "$vf_net" ] || continue
+		vf=$(basename "$vf_net")
+		sysctl -w "net.ipv6.conf.$vf.accept_ra=0"
+		sysctl -w "net.ipv6.conf.$vf.disable_ipv6=1"
+	done
+	exit 0
+fi
+
 # Only act on SR-IOV VFs
 physfn=/sys/class/net/$1/device/physfn
 [ -d "$physfn" ] || exit 0

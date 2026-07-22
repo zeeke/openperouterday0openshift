@@ -79,3 +79,6 @@ logLevel: info
 EOF
 
 echo "perouter-host-dispatch: wrote $VARS_FILE + $NODE_CONFIG (LAST_OCTET=$LAST_OCTET)"
+
+# Start the controller now that node-config.yaml exists
+systemctl start --no-block controllerpod.service

@@ -132,7 +132,7 @@ systemd:
   units:
     # --- Quadlet services ---
     - name: controllerpod.service
-      enabled: true
+      enabled: false
     - name: controller.service
       enabled: true
     - name: routerpod.service

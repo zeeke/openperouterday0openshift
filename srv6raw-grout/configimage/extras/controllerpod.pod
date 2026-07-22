@@ -9,7 +9,7 @@
 Description=OpenPERouter Controller Pod
 Documentation=https://github.com/openperouter
 Wants=network-online.target
-After=network-online.target
+After=network-online.target routerpod-pod.service
 
 [Pod]
 # Pod name - will create Podman pod named "systemd-controllerpod"
