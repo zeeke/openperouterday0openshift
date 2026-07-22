@@ -2,16 +2,15 @@
 #
 # Each node needs:
 #   - Two PFs with total-vfs: 16 and mtu: 1800 (for VXLAN/SRv6 overhead)
-#   - PF0 VF0: grout underlay port (dispatch: perouter-bind.sh)
-#   - PF1 VF0: grout underlay port (dispatch: perouter-bind.sh)
-#   - PF0 VF1: host VF, VLAN 42, cluster IP (dispatch: perouter-host-dispatch.sh)
+#   - PF0 VF0: grout underlay port (auto-detected by 99-perouter dispatcher)
+#   - PF1 VF0: grout underlay port (auto-detected by 99-perouter dispatcher)
+#   - PF0 VF1: host VF, VLAN 42, cluster IP, alt-name "host"
 #   - VF2+: available for pod workloads
 #
-# The dispatch scripts are called by NetworkManager on VF activation:
-#   - perouter-bind.sh: moves VF to perouter netns (mlx5) or binds to
-#     vfio-pci (ice), writes state to /run/perouter-bind/<name>
-#   - perouter-host-dispatch.sh: derives all per-node addresses from
-#     the host IP's last octet and writes vpn-setup.vars + node-config.yaml
+# VF binding and address derivation are handled automatically by the
+# NM dispatcher script 99-perouter (shipped via butane):
+#   - VF index 0 on any PF: calls perouter-bind.sh
+#   - VF with altname "host": calls perouter-host-dispatch.sh
 #
 # Tune: MAC addresses, host IPs, rendezvousIP, DNS/NTP servers.
 # The addressing scheme is defined in openperouter.env, not here.
@@ -76,24 +75,17 @@ hosts:
             vlan-id: 0
             spoof-check: false
             trust: true
-    - name: sriov:ens1f0np0:0
+    - name: sriov:ens1f0np0:0 # underlay0
       type: ethernet
       state: up
-      dispatch:
-        post-activation: |
-          /usr/local/bin/perouter-bind.sh "$1"
-    - name: sriov:ens1f1np1:0
+    - name: sriov:ens1f1np1:0 # underlay1
       type: ethernet
       state: up
-      dispatch:
-        post-activation: |
-          /usr/local/bin/perouter-bind.sh "$1"
-    - name: sriov:ens1f0np0:1
+    - name: sriov:ens1f0np0:1 # host
       type: ethernet
       state: up
-      dispatch:
-        post-activation: |
-          /usr/local/bin/perouter-host-dispatch.sh "$1" up
+      alt-names:
+      - name: host
       ipv4:
         enabled: true
         auto-dns: false
@@ -175,24 +167,17 @@ hosts:
             vlan-id: 0
             spoof-check: false
             trust: true
-    - name: sriov:ens1f0np0:0
+    - name: sriov:ens1f0np0:0 # underlay0
       type: ethernet
       state: up
-      dispatch:
-        post-activation: |
-          /usr/local/bin/perouter-bind.sh "$1"
-    - name: sriov:ens1f1np1:0
+    - name: sriov:ens1f1np1:0 # underlay1
       type: ethernet
       state: up
-      dispatch:
-        post-activation: |
-          /usr/local/bin/perouter-bind.sh "$1"
-    - name: sriov:ens1f0np0:1
+    - name: sriov:ens1f0np0:1 # host
       type: ethernet
       state: up
-      dispatch:
-        post-activation: |
-          /usr/local/bin/perouter-host-dispatch.sh "$1" up
+      alt-names:
+      - name: host
       ipv4:
         enabled: true
         auto-dns: false
@@ -274,24 +259,17 @@ hosts:
             vlan-id: 0
             spoof-check: false
             trust: true
-    - name: sriov:eno12399:0
+    - name: sriov:eno12399:0 # underlay0
       type: ethernet
       state: up
-      dispatch:
-        post-activation: |
-          /usr/local/bin/perouter-bind.sh "$1"
-    - name: sriov:eno12409:0
+    - name: sriov:eno12409:0 # underlay1
       type: ethernet
       state: up
-      dispatch:
-        post-activation: |
-          /usr/local/bin/perouter-bind.sh "$1"
-    - name: sriov:eno12399:1
+    - name: sriov:eno12399:1 # host
       type: ethernet
       state: up
-      dispatch:
-        post-activation: |
-          /usr/local/bin/perouter-host-dispatch.sh "$1" up
+      alt-names:
+      - name: host
       ipv4:
         enabled: true
         auto-dns: false

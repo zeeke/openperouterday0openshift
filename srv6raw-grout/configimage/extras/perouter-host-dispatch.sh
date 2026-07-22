@@ -4,17 +4,14 @@
 # Called by NM dispatch post-activation on the host VF. Derives all
 # addresses from the host IP's last octet and writes vpn-setup.vars.
 #
-# Usage: perouter-host-dispatch.sh <interface> <action>
-#   Called by NetworkManager dispatcher with interface name and action.
+# Usage: perouter-host-dispatch.sh <interface>
+#   Called by 99-perouter NM dispatcher on the host VF.
 
 set -euo pipefail
 
 die() { echo "error: $*" >&2; exit 1; }
 
 iface="$1"
-action="${2:-up}"
-
-[ "$action" = "up" ] || exit 0
 
 source /etc/openperouter/openperouter.env
 
