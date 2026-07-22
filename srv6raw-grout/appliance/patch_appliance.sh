@@ -217,11 +217,23 @@ if [[ -x "${SCRIPTDIR}/hackagent.sh" ]]; then
     "${SCRIPTDIR}/hackagent.sh" "${appliance_iso}"
 fi
 
-echo "==> Add kernel args for serial console, hugepages, IOMMU into appliance ISO"
-sudo coreos-installer iso kargs modify \
-    -a console=tty0 -a console=ttyS0,115200n8 \
-    -a default_hugepagesz=1G -a hugepagesz=1G -a hugepages=8 \
-    -a iommu=pt -a intel_iommu=on \
-    "${appliance_iso}"
+echo "==> Add kernel args from performance-profile.yaml into appliance ISO"
+PERF_PROFILE="${SCRIPTDIR}/../configimage/performance-profile.yaml"
+kargs=()
+if [[ -f "${PERF_PROFILE}" ]]; then
+    default_sz=$(yq -r '.spec.hugepages.defaultHugepagesSize | values' "${PERF_PROFILE}")
+    if [[ -n "${default_sz}" ]]; then
+        kargs+=(-a "default_hugepagesz=${default_sz}")
+    fi
+    while IFS=$'\t' read -r count size; do
+        kargs+=(-a "hugepagesz=${size}" -a "hugepages=${count}")
+    done < <(yq -r '.spec.hugepages.pages[]? | [.count, .size] | @tsv' "${PERF_PROFILE}")
+    while IFS= read -r arg; do
+        kargs+=(-a "${arg}")
+    done < <(yq -r '.spec.additionalKernelArgs[]?' "${PERF_PROFILE}")
+fi
+if [[ ${#kargs[@]} -gt 0 ]]; then
+    sudo coreos-installer iso kargs modify "${kargs[@]}" "${appliance_iso}"
+fi
 
 echo "==> Done! Appliance ISO patched: ${appliance_iso}"

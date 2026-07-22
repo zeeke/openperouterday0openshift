@@ -7,6 +7,7 @@ if [ $# -lt 1 ]; then
     exit 1
 fi
 
+SCRIPTDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ISO_PATH="$1"
 OUTPUT_ISO="${2:-$1}"
 WORK_DIR=$(mktemp -d)
@@ -347,6 +348,22 @@ if [ "$_OWN_BOOT_MOUNT" -eq 1 ]; then
 fi
 log "Successfully wrote ignition to boot partition"
 
+# Inject performance-profile kernel args into the installed system's BLS
+# entries so that day-1 boots with hugepages and IOMMU before NTO exists.
+# The args string is replaced at build time by hackagent.sh.
+PERF_KARGS="@@PERF_KARGS@@"
+if [ -n "$PERF_KARGS" ]; then
+    log "Injecting kernel args into installed BLS entries: $PERF_KARGS"
+    for entry in "$BOOT_MNT"/loader/entries/*.conf; do
+        [ -f "$entry" ] || continue
+        if ! grep -q "default_hugepagesz" "$entry"; then
+            sed -i "s/^options /options ${PERF_KARGS} /" "$entry"
+            log "Updated $(basename "$entry")"
+        fi
+    done
+    sync
+fi
+
 # Wait for "Rebooting node" before triggering the actual reboot.
 # The local assisted-installer logs this just before calling shutdown -r,
 # meaning it has already sent the "Rebooting" stage update to the
@@ -359,7 +376,25 @@ systemctl unmask reboot.target
 systemctl reboot
 HACKSCRIPT_EOF
 
-# Base64 encode the script (use printf to avoid trailing newline)
+# Derive kernel args from performance-profile.yaml at build time
+PERF_PROFILE="${SCRIPTDIR}/../configimage/performance-profile.yaml"
+PERF_KARGS=""
+if [[ -f "${PERF_PROFILE}" ]] && command -v yq &>/dev/null; then
+    default_sz=$(yq -r '.spec.hugepages.defaultHugepagesSize | values' "${PERF_PROFILE}")
+    if [[ -n "${default_sz}" ]]; then
+        PERF_KARGS+="default_hugepagesz=${default_sz} "
+    fi
+    while IFS=$'\t' read -r count size; do
+        PERF_KARGS+="hugepagesz=${size} hugepages=${count} "
+    done < <(yq -r '.spec.hugepages.pages[]? | [.count, .size] | @tsv' "${PERF_PROFILE}")
+    while IFS= read -r arg; do
+        PERF_KARGS+="${arg} "
+    done < <(yq -r '.spec.additionalKernelArgs[]?' "${PERF_PROFILE}")
+    PERF_KARGS="${PERF_KARGS% }"
+fi
+sed -i "s|@@PERF_KARGS@@|${PERF_KARGS}|" "$HACK_SCRIPT_FILE"
+
+# Base64 encode the script
 SCRIPT_B64=$(base64 -w0 < "$HACK_SCRIPT_FILE")
 
 # Systemd unit file
