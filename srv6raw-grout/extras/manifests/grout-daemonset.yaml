@@ -34,7 +34,7 @@ spec:
       # reservation. Integer CPU request ensures the CPU manager assigns
       # exclusive cores from the isolated pool.
       - name: reservation
-        image: quay.io/redhat-user-workloads/telco-5g-tenant/openperouter-operator-edge-5-0:on-pr-9f66f308eb275e6f423b702121832c4606e2022f
+        image: quay.io/redhat-user-workloads/telco-5g-tenant/openperouter-operator-edge-5-0:on-pr-035c6528292b046d5c1fcf0b4ee2775bdf127ab6
         securityContext:
           privileged: true
         command: ["/bin/bash", "-c"]

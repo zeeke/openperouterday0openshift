@@ -5,7 +5,7 @@ Description=tcpdump on perouter netns
 After=grout.service
 
 [Container]
-Image=quay.io/redhat-user-workloads/telco-5g-tenant/openperouter-operator-edge-5-0:on-pr-9f66f308eb275e6f423b702121832c4606e2022f
+Image=quay.io/redhat-user-workloads/telco-5g-tenant/openperouter-operator-edge-5-0:on-pr-035c6528292b046d5c1fcf0b4ee2775bdf127ab6
 ContainerName=tcpdump
 Pod=routerpod.pod
 AddCapability=CAP_NET_RAW CAP_NET_ADMIN

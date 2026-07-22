@@ -145,7 +145,7 @@ grcli() {
 
 log "Applying grout configuration..."
 
-grcli interface add port $UNDERLAY_NIC devargs $UNDERLAY_PCI
+grcli interface add port $UNDERLAY_NIC devargs $UNDERLAY_PCI down
 grcli interface add port $TRUNK_NIC devargs $TRUNK_PCI
 
 log "$UNDERLAY_NIC and $TRUNK_NIC configured"
