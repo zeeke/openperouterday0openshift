@@ -8,7 +8,7 @@ storage:
   files:
     # --- NM dispatcher (VF binding + address derivation) ---
     - path: /etc/NetworkManager/dispatcher.d/99-perouter
-      mode: 0755
+      mode: 0750
       overwrite: true
       contents:
         local: nmdispatcher.sh

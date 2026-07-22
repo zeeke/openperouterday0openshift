@@ -4,13 +4,13 @@
 #   - Two PFs with total-vfs: 16 and mtu: 1800 (for VXLAN/SRv6 overhead)
 #   - PF0 VF0: grout underlay port (auto-detected by 99-perouter dispatcher)
 #   - PF1 VF0: grout underlay port (auto-detected by 99-perouter dispatcher)
-#   - PF0 VF1: host VF, VLAN 42, cluster IP, alt-name "host"
+#   - PF0 VF1: host VF, VLAN 42, cluster IP
 #   - VF2+: available for pod workloads
 #
 # VF binding and address derivation are handled automatically by the
 # NM dispatcher script 99-perouter (shipped via butane):
 #   - VF index 0 on any PF: calls perouter-bind.sh
-#   - VF with altname "host": calls perouter-host-dispatch.sh
+#   - VF with a default route: calls perouter-host-dispatch.sh
 #
 # Tune: MAC addresses, host IPs, rendezvousIP, DNS/NTP servers.
 # The addressing scheme is defined in openperouter.env, not here.
@@ -75,17 +75,15 @@ hosts:
             vlan-id: 0
             spoof-check: false
             trust: true
-    - name: sriov:ens1f0np0:0 # underlay0
+    - name: ens1f0v0 # underlay0 (grout)
       type: ethernet
       state: up
-    - name: sriov:ens1f1np1:0 # underlay1
+    - name: ens1f1v0 # underlay1 (grout)
       type: ethernet
       state: up
     - name: ens1f0v1 # host
       type: ethernet
       state: up
-      alt-names:
-      - name: host
       ipv4:
         enabled: true
         auto-dns: false
@@ -167,17 +165,15 @@ hosts:
             vlan-id: 0
             spoof-check: false
             trust: true
-    - name: sriov:ens1f0np0:0 # underlay0
+    - name: ens1f0v0 # underlay0 (grout)
       type: ethernet
       state: up
-    - name: sriov:ens1f1np1:0 # underlay1
+    - name: ens1f1v0 # underlay1 (grout)
       type: ethernet
       state: up
     - name: ens1f0v1 # host
       type: ethernet
       state: up
-      alt-names:
-      - name: host
       ipv4:
         enabled: true
         auto-dns: false
@@ -259,17 +255,15 @@ hosts:
             vlan-id: 0
             spoof-check: false
             trust: true
-    - name: sriov:eno12399:0 # underlay0
+    - name: eno12399v0 # underlay0 (grout)
       type: ethernet
       state: up
-    - name: sriov:eno12409:0 # underlay1
+    - name: eno12409v0 # underlay1 (grout)
       type: ethernet
       state: up
     - name: eno12399v1 # host
       type: ethernet
       state: up
-      alt-names:
-      - name: host
       ipv4:
         enabled: true
         auto-dns: false

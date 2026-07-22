@@ -21,6 +21,7 @@ for vfn in "$physfn"/virtfn*; do
 	break
 done
 
-# Host VF: identified by altname
-ip link show "$1" | grep -q 'altname host' \
-	&& exec /usr/local/bin/perouter-host-dispatch.sh "$1"
+# Host VF: the VF carrying the default route
+if ip -4 route show default dev "$1" 2>/dev/null | grep -q default; then
+	exec /usr/local/bin/perouter-host-dispatch.sh "$1"
+fi
