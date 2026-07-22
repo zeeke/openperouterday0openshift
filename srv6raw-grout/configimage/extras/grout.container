@@ -13,7 +13,7 @@ Notify=true
 Environment=NOTIFY_SOCKET
 Environment=GROUT_OVERRIDE_DEFAULT_ROUTE=true
 PodmanArgs=--privileged
-PodmanArgs=--env-file=/etc/openperouter/grout.env
+PodmanArgs=--env-file=/etc/openperouter/openperouter.env
 Entrypoint=/usr/bin/grout
 Exec=-o root:frr -M unix:/run/grout/metrics.sock -- --socket-limit $GROUT_SOCKET_LIMIT
 Volume=/dev/hugepages:/dev/hugepages
@@ -29,7 +29,7 @@ HealthOnFailure=none
 
 [Service]
 Slice=grout.slice
-EnvironmentFile=/etc/openperouter/grout.env
+EnvironmentFile=/etc/openperouter/openperouter.env
 Restart=on-failure
 RestartSec=10
 

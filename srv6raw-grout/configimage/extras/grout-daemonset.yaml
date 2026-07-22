@@ -42,7 +42,7 @@ spec:
         - |
           set -euo pipefail
           set -a
-          source /etc/openperouter/grout.env
+          source /etc/openperouter/openperouter.env
           set +a
 
           echo "Waiting for grout..."

@@ -37,7 +37,7 @@ Volume=/etc/perouter/frr/frr.conf:/etc/frr/frr.conf:Z
 Volume=/etc/perouter/daemons:/etc/frr/daemons:Z
 
 # Additional Podman arguments not yet supported by native quadlet directives
-PodmanArgs=--env-file=/etc/openperouter/grout.env
+PodmanArgs=--env-file=/etc/openperouter/openperouter.env
 PodmanArgs=--pidfile=/etc/perouter/frr/frr.pid
 
 # Override container entrypoint
