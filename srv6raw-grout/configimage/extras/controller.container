@@ -99,7 +99,3 @@ ExecStartPre=/usr/bin/mkdir -p /var/run/openvswitch
 # This allows deferring startup until external dependencies are ready
 # (e.g., waiting for configure-ovs.sh to finish on second boot).
 ExecStartPre=/bin/bash -c 'f=/var/lib/openperouter/can_start.sh; [ ! -x "$f" ] || "$f"'
-
-[Install]
-# Automatically enable this container at boot
-WantedBy=default.target

@@ -50,7 +50,3 @@ Restart=on-failure
 
 # Timeout for stopping the container
 TimeoutStopSec=70
-
-[Install]
-# Automatically enable this container at boot
-WantedBy=default.target

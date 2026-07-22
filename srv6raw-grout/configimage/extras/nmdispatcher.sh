@@ -16,7 +16,6 @@ if [ -f "/sys/class/net/$1/device/sriov_numvfs" ]; then
 		[ -d "$vf_net" ] || continue
 		vf=$(basename "$vf_net")
 		sysctl -w "net.ipv6.conf.$vf.accept_ra=0"
-		sysctl -w "net.ipv6.conf.$vf.disable_ipv6=1"
 	done
 	exit 0
 fi

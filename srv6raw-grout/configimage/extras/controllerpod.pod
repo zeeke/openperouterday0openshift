@@ -24,6 +24,5 @@ Restart=on-failure
 # Timeout for stopping the pod
 TimeoutStopSec=70
 
-[Install]
-# Automatically enable this pod at boot
-WantedBy=default.target
+# No [Install] section -- started by perouter-host-dispatch.sh
+# after node-config.yaml is written.
