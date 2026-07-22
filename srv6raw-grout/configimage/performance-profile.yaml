@@ -4,8 +4,8 @@ metadata:
   name: grout-performance
 spec:
   cpu:
-    reserved: "0-19"
-    isolated: "20-191"
+    reserved: "0-29"
+    isolated: "30-191"
   hugepages:
     defaultHugepagesSize: 1G
     pages:
