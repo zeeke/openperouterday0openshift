@@ -131,17 +131,7 @@ storage:
 systemd:
   units:
     # --- Quadlet services ---
-    - name: controllerpod.service
-      enabled: false
-    - name: controller.service
-      enabled: true
     - name: routerpod.service
-      enabled: true
-    - name: frr.service
-      enabled: true
-    - name: reloader.service
-      enabled: true
-    - name: grout.service
       enabled: true
     # --- Rawconfig systemd services ---
     - name: grout.slice
