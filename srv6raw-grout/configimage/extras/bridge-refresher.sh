@@ -34,7 +34,19 @@ while ! podman exec frr vtysh -c "show evpn vni ${L2_VNI}" 2>/dev/null | grep -q
 	sleep 1
 done
 echo "VNI ${L2_VNI} discovered, adding VLAN bridge port (VLAN $HOST_VLAN)"
-podman exec grout grcli interface add vlan underlay0.$HOST_VLAN parent underlay0 vlan_id $HOST_VLAN domain $BRIDGE_NAME
+
+grcli() {
+	echo "+ grcli $*" >&2
+	podman exec grout grcli "$@"
+}
+
+n=0
+for state in /run/perouter-bind/*; do
+	[ -f "$state" ] || continue
+	port="underlay$n"
+	grcli interface add vlan $port.$HOST_VLAN parent $port vlan_id $HOST_VLAN domain $BRIDGE_NAME
+	n=$((n + 1))
+done
 
 echo "Bridge refresher started (interval=${REFRESH_INTERVAL}s, bridge=${BRIDGE_NAME})"
 echo "  VIPs: $API_VIP, $INGRESS_VIP"

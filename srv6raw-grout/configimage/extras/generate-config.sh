@@ -23,7 +23,7 @@ source /var/lib/openperouter/vpn-setup.vars
 
 : ${BGP_AS:=65500}
 : ${RR_NODE_IDX:=2}
-: ${SRV6_GATEWAY:=fc00:0:20::1}
+: ${SRV6_GATEWAY:=fc00:0:14::1}
 : ${VRF_NAME:=red}
 : ${L2_VNI:=210}
 : ${L2_GATEWAY_IP:=192.168.110.1/24}
@@ -42,7 +42,7 @@ if [ "$LAST_OCTET" == "$RR_NODE_IDX" ]; then
 else
 	echo "This node is an EVPN/VPN client (idx=$LAST_OCTET, RR=$RR_NODE_IDX)"
 	CONFIG_TEMPLATE="${TEMPLATE_DIR}/openpe_evpn.yaml.template"
-	RR_LOOPBACK="fc00:0:${RR_NODE_IDX}::1"
+	RR_LOOPBACK=$(printf "$LOOPBACK_V6_FMT" "$RR_NODE_IDX")
 	export RR_LOOPBACK
 fi
 

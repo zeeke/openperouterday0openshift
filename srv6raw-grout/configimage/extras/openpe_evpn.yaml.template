@@ -21,7 +21,7 @@ rawfrrconfigs:
       log stdout debug
       debug zebra dplane dpdk
       !
-      interface underlay
+      interface underlay0
        ip address ${ROUTER_ID}/32
        ipv6 address ${UNDERLAY_V6}/128
        ipv6 address ${LOOPBACK_V6}/128
