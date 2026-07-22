@@ -17,6 +17,8 @@ set -euo pipefail
 #   1   - General error
 #   124 - Timeout waiting for FRR
 
+set -x
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Source common utilities
@@ -86,8 +88,8 @@ HOST_IFACE=""
 SECONDS=0
 while [[ -z "$HOST_IP" ]] || [[ -z "$HOST_IP6" ]]; do
     for iface in "$HOST_VF" br-ex; do
-        HOST_IP=$(ip -4 addr show "$iface" scope global 2>/dev/null | sed -En 's,.*\<inet ([0-9\./]+).*,\1,p' | head -1)
-        HOST_IP6=$(ip -6 addr show "$iface" scope global 2>/dev/null | sed -En 's,.*\<inet6 ([0-9a-f:/]+).*,\1,p' | head -1)
+        HOST_IP=$(ip -4 addr show "$iface" scope global 2>/dev/null | sed -En 's,.*\<inet ([0-9\./]+).*,\1,p' | head -1 || true)
+        HOST_IP6=$(ip -6 addr show "$iface" scope global 2>/dev/null | sed -En 's,.*\<inet6 ([0-9a-f:/]+).*,\1,p' | head -1 || true)
         if [[ -n "$HOST_IP" ]] && [[ -n "$HOST_IP6" ]]; then
             HOST_IFACE="$iface"
             break

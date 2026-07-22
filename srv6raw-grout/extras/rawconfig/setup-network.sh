@@ -13,6 +13,8 @@ set -euo pipefail
 #   0   - Success
 #   1   - Error
 
+set -x
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Source common utilities
