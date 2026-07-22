@@ -1,0 +1,322 @@
+# agent-config.yaml - Per-node hardware configuration
+#
+# Each node needs:
+#   - Two PFs with total-vfs: 16 and mtu: 1800 (for VXLAN/SRv6 overhead)
+#   - PF0 VF0: grout underlay port (dispatch: perouter-bind.sh)
+#   - PF1 VF0: grout underlay port (dispatch: perouter-bind.sh)
+#   - PF0 VF1: host VF, VLAN 42, cluster IP (dispatch: perouter-host-dispatch.sh)
+#   - VF2+: available for pod workloads
+#
+# The dispatch scripts are called by NetworkManager on VF activation:
+#   - perouter-bind.sh: moves VF to perouter netns (mlx5) or binds to
+#     vfio-pci (ice), writes state to /run/perouter-bind/<name>
+#   - perouter-host-dispatch.sh: derives all per-node addresses from
+#     the host IP's last octet and writes vpn-setup.vars + node-config.yaml
+#
+# Tune: MAC addresses, host IPs, rendezvousIP, DNS/NTP servers.
+# The addressing scheme is defined in openperouter.env, not here.
+apiVersion: v1alpha1
+metadata:
+  name: sno-lab
+  namespace: cluster0
+additionalNTPSources:
+- 10.100.0.1
+rendezvousIP: 192.168.110.2
+hosts:
+- hostname: master-0
+  rootDeviceHints:
+    deviceName: /dev/sda
+  interfaces:
+  - name: ens1f0np0
+    macAddress: b8:3f:d2:fa:53:86
+  networkConfig:
+    interfaces:
+    - name: eno8303 # lab connectivity for debug
+      type: ethernet
+      state: up
+      ipv4:
+        enabled: true
+        auto-dns: false
+        dhcp: true
+      ipv6:
+        enabled: false
+    - name: ens1f0np0
+      type: ethernet
+      state: up
+      mtu: 1800
+      ipv4:
+        enabled: false
+      ipv6:
+        enabled: false
+      ethernet:
+        sr-iov:
+          total-vfs: 16
+          vfs:
+          - id: 0 # underlay0
+            vlan-id: 0
+            spoof-check: false
+            trust: true
+          - id: 1 # host
+            vlan-id: 42
+            spoof-check: false
+            trust: true
+    - name: ens1f1np1
+      type: ethernet
+      state: up
+      mtu: 1800
+      ipv4:
+        enabled: false
+      ipv6:
+        enabled: false
+      ethernet:
+        sr-iov:
+          total-vfs: 16
+          vfs:
+          - id: 0 # underlay1
+            vlan-id: 0
+            spoof-check: false
+            trust: true
+    - name: sriov:ens1f0np0:0
+      type: ethernet
+      state: up
+      dispatch:
+        post-activation: |
+          /usr/local/bin/perouter-bind.sh "$1"
+    - name: sriov:ens1f1np1:0
+      type: ethernet
+      state: up
+      dispatch:
+        post-activation: |
+          /usr/local/bin/perouter-bind.sh "$1"
+    - name: sriov:ens1f0np0:1
+      type: ethernet
+      state: up
+      dispatch:
+        post-activation: |
+          /usr/local/bin/perouter-host-dispatch.sh "$1" up
+      ipv4:
+        enabled: true
+        auto-dns: false
+        address:
+        - ip: 192.168.110.2
+          prefix-length: 24
+        dhcp: false
+      ipv6:
+        enabled: true
+        auto-dns: false
+        autoconf: false
+        address:
+        - ip: fd00:110::2
+          prefix-length: 64
+        dhcp: false
+    dns-resolver:
+      config:
+        server:
+        - 10.100.0.1
+        - fd00:100::1
+    routes:
+      config:
+      - destination: 0.0.0.0/0
+        next-hop-address: 192.168.110.1
+        next-hop-interface: ens1f0v1
+      - destination: ::/0
+        next-hop-address: fd00:110::1
+        next-hop-interface: ens1f0v1
+- hostname: master-1
+  rootDeviceHints:
+    deviceName: /dev/sda
+  interfaces:
+  - name: ens1f0np0
+    macAddress: b8:3f:d2:fa:53:7a
+  networkConfig:
+    interfaces:
+    - name: eno8303 # lab connectivity for debug
+      type: ethernet
+      state: up
+      ipv4:
+        enabled: true
+        auto-dns: false
+        dhcp: true
+      ipv6:
+        enabled: false
+    - name: ens1f0np0
+      type: ethernet
+      state: up
+      mtu: 1800
+      ipv4:
+        enabled: false
+      ipv6:
+        enabled: false
+      ethernet:
+        sr-iov:
+          total-vfs: 16
+          vfs:
+          - id: 0 # underlay0
+            vlan-id: 0
+            spoof-check: false
+            trust: true
+          - id: 1 # host
+            vlan-id: 42
+            spoof-check: false
+            trust: true
+    - name: ens1f1np1
+      type: ethernet
+      state: up
+      mtu: 1800
+      ipv4:
+        enabled: false
+      ipv6:
+        enabled: false
+      ethernet:
+        sr-iov:
+          total-vfs: 16
+          vfs:
+          - id: 0 # underlay1
+            vlan-id: 0
+            spoof-check: false
+            trust: true
+    - name: sriov:ens1f0np0:0
+      type: ethernet
+      state: up
+      dispatch:
+        post-activation: |
+          /usr/local/bin/perouter-bind.sh "$1"
+    - name: sriov:ens1f1np1:0
+      type: ethernet
+      state: up
+      dispatch:
+        post-activation: |
+          /usr/local/bin/perouter-bind.sh "$1"
+    - name: sriov:ens1f0np0:1
+      type: ethernet
+      state: up
+      dispatch:
+        post-activation: |
+          /usr/local/bin/perouter-host-dispatch.sh "$1" up
+      ipv4:
+        enabled: true
+        auto-dns: false
+        address:
+        - ip: 192.168.110.3
+          prefix-length: 24
+        dhcp: false
+      ipv6:
+        enabled: true
+        auto-dns: false
+        autoconf: false
+        address:
+        - ip: fd00:110::3
+          prefix-length: 64
+        dhcp: false
+    dns-resolver:
+      config:
+        server:
+        - 10.100.0.1
+        - fd00:100::1
+    routes:
+      config:
+      - destination: 0.0.0.0/0
+        next-hop-address: 192.168.110.1
+        next-hop-interface: ens1f0v1
+      - destination: ::/0
+        next-hop-address: fd00:110::1
+        next-hop-interface: ens1f0v1
+- hostname: master-2
+  rootDeviceHints:
+    deviceName: /dev/sda
+  interfaces:
+  - name: eno12399
+    macAddress: 30:3e:a7:0b:e8:6c
+  networkConfig:
+    interfaces:
+    - name: eno8303 # lab connectivity for debug
+      type: ethernet
+      state: up
+      ipv4:
+        enabled: true
+        auto-dns: false
+        dhcp: true
+      ipv6:
+        enabled: false
+    - name: eno12399
+      type: ethernet
+      state: up
+      mtu: 1800
+      ipv4:
+        enabled: false
+      ipv6:
+        enabled: false
+      ethernet:
+        sr-iov:
+          total-vfs: 16
+          vfs:
+          - id: 0 # underlay0
+            vlan-id: 0
+            spoof-check: false
+            trust: true
+          - id: 1 # host
+            vlan-id: 42
+            spoof-check: false
+            trust: true
+    - name: eno12409
+      type: ethernet
+      state: up
+      mtu: 1800
+      ipv4:
+        enabled: false
+      ipv6:
+        enabled: false
+      ethernet:
+        sr-iov:
+          total-vfs: 16
+          vfs:
+          - id: 0 # underlay1
+            vlan-id: 0
+            spoof-check: false
+            trust: true
+    - name: sriov:eno12399:0
+      type: ethernet
+      state: up
+      dispatch:
+        post-activation: |
+          /usr/local/bin/perouter-bind.sh "$1"
+    - name: sriov:eno12409:0
+      type: ethernet
+      state: up
+      dispatch:
+        post-activation: |
+          /usr/local/bin/perouter-bind.sh "$1"
+    - name: sriov:eno12399:1
+      type: ethernet
+      state: up
+      dispatch:
+        post-activation: |
+          /usr/local/bin/perouter-host-dispatch.sh "$1" up
+      ipv4:
+        enabled: true
+        auto-dns: false
+        address:
+        - ip: 192.168.110.4
+          prefix-length: 24
+        dhcp: false
+      ipv6:
+        enabled: true
+        auto-dns: false
+        autoconf: false
+        address:
+        - ip: fd00:110::4
+          prefix-length: 64
+        dhcp: false
+    dns-resolver:
+      config:
+        server:
+        - 10.100.0.1
+        - fd00:100::1
+    routes:
+      config:
+      - destination: 0.0.0.0/0
+        next-hop-address: 192.168.110.1
+        next-hop-interface: eno12399v1
+      - destination: ::/0
+        next-hop-address: fd00:110::1
+        next-hop-interface: eno12399v1

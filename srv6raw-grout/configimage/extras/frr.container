@@ -1,0 +1,69 @@
+# frr.container
+# OpenPERouter FRR Container
+#
+# Runs the FRR (Free Range Routing) daemon providing BGP/EVPN functionality.
+# This container requires elevated capabilities for network management.
+
+[Unit]
+Description=OpenPERouter FRR Container
+Documentation=https://github.com/openperouter
+
+[Container]
+# Container image - update this line to change versions
+# Can be updated via deployment script: sed -i 's|^Image=.*|Image=NEW_IMAGE|' frr.container
+Image=quay.io/redhat-user-workloads/telco-5g-tenant/openperouter-operator-edge-5-0:pr-398
+
+# Pod association - creates automatic dependency on routerpod-pod.service
+Pod=routerpod.pod
+
+# Container name within the pod
+ContainerName=frr
+
+# Network capabilities required for routing functionality
+# CAP_NET_BIND_SERVICE - Bind to privileged ports (BGP 179)
+# CAP_NET_ADMIN       - Configure network interfaces and routes
+# CAP_NET_RAW         - Use RAW and PACKET sockets
+# CAP_SYS_ADMIN       - Various system administration operations
+AddCapability=CAP_NET_BIND_SERVICE CAP_NET_ADMIN CAP_NET_RAW CAP_SYS_ADMIN
+
+# Environment variables passed to container
+Environment=TINI_SUBREAPER=true
+
+# Volume mounts
+# Named volume for FRR sockets - shared with reloader container
+Volume=/etc/perouter/frr/frr.conf:/etc/frr/frr.conf:Z
+
+# Custom daemons file (enables isisd, staticd, bfdd alongside bgpd/zebra)
+Volume=/etc/perouter/daemons:/etc/frr/daemons:Z
+
+# Additional Podman arguments not yet supported by native quadlet directives
+PodmanArgs=--env-file=/etc/openperouter/grout.env
+PodmanArgs=--pidfile=/etc/perouter/frr/frr.pid
+
+# Override container entrypoint
+Entrypoint=/bin/bash
+
+# Container startup command
+# Changes permissions on /var/run/frr for socket access, then starts FRR via tini.
+Exec=-c "chown frr:frr /run/frr && exec /sbin/tini -- /usr/lib/frr/docker-start"
+
+HealthCmd=vtysh -c "show zebra dplane providers" | grep -q zebra_dplane_grout
+HealthInterval=30s
+HealthTimeout=5s
+HealthRetries=3
+HealthOnFailure=none
+
+[Service]
+# Restart policy - restart container if it fails
+Restart=on-failure
+
+# Timeout for stopping the container
+TimeoutStopSec=70
+
+# Pre-start commands - create required host directories if they don't exist
+ExecStartPre=/usr/bin/mkdir -p /etc/perouter/frr
+ExecStartPre=/usr/bin/touch /etc/perouter/frr/frr.conf
+
+[Install]
+# Automatically enable this container at boot
+WantedBy=default.target

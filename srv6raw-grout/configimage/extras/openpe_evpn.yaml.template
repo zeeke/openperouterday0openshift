@@ -1,0 +1,127 @@
+# OpenPERouter FRR Configuration Template — EVPN Client (ISIS + SRv6)
+# Rendered by generate-config.sh using envsubst
+#
+# Peering model:
+#   - SRv6 gateway:  ipv4 vpn + ipv6 vpn  (SRv6 routes)
+#   - RR  (via RR):  l2vpn evpn           (EVPN routes reflected by RR)
+#
+# Variables:
+#   ${NODE_NAME}, ${UNDERLAY_NIC}, ${BGP_AS}, ${ROUTER_ID}
+#   ${LOOPBACK_V6}, ${SRV6_SOURCE}, ${SRV6_PREFIX}, ${ISIS_NET}
+#   ${VRF_NAME}, ${HOST_SUBNET}, ${HOST_SUBNET_V6}
+#   ${SRV6_GATEWAY}, ${RR_LOOPBACK}
+#   ${SRV6_NODE_ID}   - non-zero node-ID for the uSID locator (0x0000 is End-of-Container)
+
+rawfrrconfigs:
+  - priority: 100
+    rawConfig: |
+      frr version 10.6
+      frr defaults traditional
+      hostname ${NODE_NAME}
+      log stdout debug
+      debug zebra dplane dpdk
+      !
+      interface underlay
+       ip address ${ROUTER_ID}/32
+       ipv6 address ${UNDERLAY_V6}/128
+       ipv6 address ${LOOPBACK_V6}/128
+       ipv6 address ${SRV6_SOURCE}/128
+       ip router isis PE
+       ipv6 router isis PE
+       isis network point-to-point
+       isis circuit-type level-1
+      exit
+      !
+      router bgp ${BGP_AS}
+       bgp router-id ${ROUTER_ID}
+       no bgp ebgp-requires-policy
+       no bgp default ipv4-unicast
+       no bgp network import-check
+       bgp log-neighbor-changes
+       !
+       neighbor SRV6-GW peer-group
+       neighbor SRV6-GW remote-as ${BGP_AS}
+       neighbor SRV6-GW update-source ${LOOPBACK_V6}
+       neighbor ${SRV6_GATEWAY} peer-group SRV6-GW
+       !
+       neighbor EVPN-RR peer-group
+       neighbor EVPN-RR remote-as ${BGP_AS}
+       neighbor EVPN-RR update-source ${LOOPBACK_V6}
+       neighbor ${RR_LOOPBACK} peer-group EVPN-RR
+       !
+       segment-routing srv6
+        locator MAIN
+        encap-behavior H_Encaps_Red
+       exit
+       !
+       address-family ipv4 vpn
+        neighbor SRV6-GW activate
+       exit-address-family
+       !
+       address-family ipv6 vpn
+        neighbor SRV6-GW activate
+       exit-address-family
+       !
+       address-family l2vpn evpn
+        neighbor EVPN-RR activate
+        advertise-all-vni
+        advertise-svi-ip
+       exit-address-family
+      exit
+      !
+      router bgp ${BGP_AS} vrf ${VRF_NAME}
+       bgp router-id ${ROUTER_ID}
+       no bgp ebgp-requires-policy
+       no bgp default ipv4-unicast
+       no bgp network import-check
+       sid vpn per-vrf export auto
+       !
+       address-family ipv4 unicast
+        network ${HOST_SUBNET}
+        rd vpn export ${ROUTER_ID}:2
+        rt vpn both ${BGP_AS}:2
+        export vpn
+        import vpn
+       exit-address-family
+       !
+       address-family ipv6 unicast
+        network ${HOST_SUBNET_V6}
+        rd vpn export ${ROUTER_ID}:2
+        rt vpn both ${BGP_AS}:2
+        export vpn
+        import vpn
+       exit-address-family
+       !
+       address-family l2vpn evpn
+        advertise ipv4 unicast
+        advertise ipv6 unicast
+       exit-address-family
+      exit
+      !
+      router isis PE
+       is-type level-1
+       net ${ISIS_NET}
+       topology ipv6-unicast
+       lsp-gen-interval 2
+       log-adjacency-changes
+       log-pdu-drops
+       segment-routing srv6
+        locator MAIN
+       exit
+      exit
+      !
+      segment-routing
+       srv6
+        encapsulation
+         source-address ${SRV6_SOURCE}
+        exit
+        locators
+         locator MAIN
+          prefix ${SRV6_PREFIX}:${SRV6_NODE_ID}::/48 block-len 32 node-len 16 func-bits 16
+          behavior usid
+         exit
+        exit
+       exit
+      exit
+      !
+      end
