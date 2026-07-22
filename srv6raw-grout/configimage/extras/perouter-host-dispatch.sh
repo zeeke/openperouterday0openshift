@@ -28,7 +28,7 @@ if [ -z "$HOST_IP" ]; then
 	die "no IPv4 on $iface after 60s"
 fi
 
-LAST_OCTET=$(echo "$HOST_IP" | sed 's,.*/,,; s,.*\.,,' )
+LAST_OCTET=$(echo "$HOST_IP" | sed -En 's,.*\.([0-9]+)/.*,\1,p')
 ROUTER_ID=$(printf "$ROUTER_ID_FMT" "$LAST_OCTET")
 
 # Derive host VF VLAN from the PF's VF config
@@ -79,6 +79,3 @@ logLevel: info
 EOF
 
 echo "perouter-host-dispatch: wrote $VARS_FILE + $NODE_CONFIG (LAST_OCTET=$LAST_OCTET)"
-
-# Start the controller now that node-config.yaml exists
-systemctl start --no-block controllerpod.service

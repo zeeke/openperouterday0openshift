@@ -32,3 +32,6 @@ Slice=grout.slice
 EnvironmentFile=/etc/openperouter/openperouter.env
 Restart=on-failure
 RestartSec=10
+
+[Install]
+WantedBy=default.target

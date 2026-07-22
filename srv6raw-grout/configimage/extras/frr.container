@@ -63,3 +63,6 @@ TimeoutStopSec=70
 # Pre-start commands - create required host directories if they don't exist
 ExecStartPre=/usr/bin/mkdir -p /etc/perouter/frr
 ExecStartPre=/usr/bin/touch /etc/perouter/frr/frr.conf
+
+[Install]
+WantedBy=default.target

@@ -18,11 +18,12 @@ PodName=controllerpod
 # No namespace sharing needed for controller (default isolation)
 
 [Service]
-# Restart policy - restart pod if it fails
+# Wait for node-config.yaml before starting (written by NM dispatcher)
+ExecStartPre=/bin/bash -c 'until [ -f /var/lib/openperouter/node-config.yaml ]; do sleep 1; done'
 Restart=on-failure
 
 # Timeout for stopping the pod
 TimeoutStopSec=70
 
-# No [Install] section -- started by perouter-host-dispatch.sh
-# after node-config.yaml is written.
+[Install]
+WantedBy=default.target

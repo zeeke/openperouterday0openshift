@@ -50,3 +50,6 @@ Restart=on-failure
 
 # Timeout for stopping the container
 TimeoutStopSec=70
+
+[Install]
+WantedBy=default.target
