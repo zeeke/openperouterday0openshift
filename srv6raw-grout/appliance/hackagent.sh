@@ -342,10 +342,6 @@ fsfreeze --unfreeze "$BOOT_MNT" 2>/dev/null || true
 # dirty umount during shutdown would lose a plain cp+sync write.
 dd if="$IGN_FILE" of="$BOOT_MNT/ignition/config.ign" conv=fsync 2>/dev/null
 sync
-if [ "$_OWN_BOOT_MOUNT" -eq 1 ]; then
-    umount "$BOOT_MNT"
-    rmdir "$BOOT_MNT"
-fi
 log "Successfully wrote ignition to boot partition"
 
 # Inject performance-profile kernel args into the installed system's BLS
@@ -362,6 +358,11 @@ if [ -n "$PERF_KARGS" ]; then
         fi
     done
     sync
+fi
+
+if [ "$_OWN_BOOT_MOUNT" -eq 1 ]; then
+    umount "$BOOT_MNT"
+    rmdir "$BOOT_MNT"
 fi
 
 # Wait for "Rebooting node" before triggering the actual reboot.
