@@ -81,7 +81,7 @@ hosts:
     - name: sriov:ens1f1np1:0 # underlay1
       type: ethernet
       state: up
-    - name: sriov:ens1f0np0:1 # host
+    - name: ens1f0v1 # host
       type: ethernet
       state: up
       alt-names:
@@ -173,7 +173,7 @@ hosts:
     - name: sriov:ens1f1np1:0 # underlay1
       type: ethernet
       state: up
-    - name: sriov:ens1f0np0:1 # host
+    - name: ens1f0v1 # host
       type: ethernet
       state: up
       alt-names:
@@ -265,7 +265,7 @@ hosts:
     - name: sriov:eno12409:0 # underlay1
       type: ethernet
       state: up
-    - name: sriov:eno12399:1 # host
+    - name: eno12399v1 # host
       type: ethernet
       state: up
       alt-names:
