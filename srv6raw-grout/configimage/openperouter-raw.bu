@@ -138,7 +138,7 @@ systemd:
       enabled: true
       contents: |
         [Slice]
-        
+        AllowedCPUs=0,1,2,3,4,5,6
         [Install]
         WantedBy=default.target
     - name: setup-underlay.service
