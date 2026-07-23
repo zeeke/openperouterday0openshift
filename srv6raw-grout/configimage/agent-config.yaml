@@ -36,7 +36,7 @@ hosts:
       ipv4:
         enabled: true
         auto-dns: false
-        auto-hostname: false
+        dhcp-send-hostname: false
         dhcp: true
       ipv6:
         enabled: false
@@ -127,7 +127,7 @@ hosts:
       ipv4:
         enabled: true
         auto-dns: false
-        auto-hostname: false
+        dhcp-send-hostname: false
         dhcp: true
       ipv6:
         enabled: false
@@ -218,7 +218,7 @@ hosts:
       ipv4:
         enabled: true
         auto-dns: false
-        auto-hostname: false
+        dhcp-send-hostname: false
         dhcp: true
       ipv6:
         enabled: false
