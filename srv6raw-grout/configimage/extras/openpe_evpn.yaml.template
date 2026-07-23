@@ -29,7 +29,6 @@ rawfrrconfigs:
        ipv6 address ${SRV6_SOURCE}/128
        ip router isis PE
        ipv6 router isis PE
-       isis circuit-type level-1
       exit
       !
       router bgp ${BGP_AS}
@@ -43,6 +42,7 @@ rawfrrconfigs:
        neighbor SRV6-GW remote-as ${BGP_AS}
        neighbor SRV6-GW update-source ${LOOPBACK_V6}
        neighbor ${SRV6_GATEWAY} peer-group SRV6-GW
+       neighbor SRV6-GW capability extended-nexthop
        !
        neighbor EVPN-RR peer-group
        neighbor EVPN-RR remote-as ${BGP_AS}
