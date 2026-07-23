@@ -6,3 +6,4 @@
 /*/appliance/temp
 /*/configimage/configimage/
 /*/configimage/install-config.yaml
+*.ref

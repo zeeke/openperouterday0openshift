@@ -26,14 +26,14 @@ hosts:
   rootDeviceHints:
     deviceName: /dev/sda
   interfaces:
-  - name: ens1f0np0
-    macAddress: b8:3f:d2:fa:53:86
+  - name: ens3f0np0
+    macAddress: B8:E9:24:16:09:AC
+  - name: eno12399np0
+    macAddress: B8:E9:24:8F:D8:B6
   networkConfig:
     interfaces:
-    - name: eno8303
-      type: ethernet
-      state: down
-    - name: ens1f0np0
+    - name: eno12399np0
+      state: up
       type: ethernet
       state: up
       mtu: 1800
@@ -53,29 +53,12 @@ hosts:
             vlan-id: 42
             spoof-check: false
             trust: true
-    - name: ens1f1np1
+ 
+    - name: eno12399v0 # underlay0 (grout)
       type: ethernet
       state: up
-      mtu: 1800
-      ipv4:
-        enabled: false
-      ipv6:
-        enabled: false
-      ethernet:
-        sr-iov:
-          total-vfs: 16
-          vfs:
-          - id: 0 # underlay1
-            vlan-id: 0
-            spoof-check: false
-            trust: true
-    - name: ens1f0v0 # underlay0 (grout)
-      type: ethernet
-      state: up
-    - name: ens1f1v0 # underlay1 (grout)
-      type: ethernet
-      state: up
-    - name: ens1f0v1 # host
+
+    - name: eno12399v1
       type: ethernet
       state: up
       ipv4:
@@ -88,36 +71,68 @@ hosts:
       ipv6:
         enabled: true
         auto-dns: false
-        autoconf: false
         address:
         - ip: fd00:110::2
           prefix-length: 64
         dhcp: false
+
+    - name: eno12409np1
+      state: down
+      type: ethernet
+
+
+    - name: bond1
+      state: down
+      type: bond
+      link-aggregation:
+        mode: 802.3ad
+        options: {"miimon": 100}
+        ports:
+          - ens3f0np0
+          - ens3f1np1
+    - name: ens3f0np0
+      state: down
+      type: ethernet
+    - name: ens3f1np1
+      state: down
+      type: ethernet
+    - name: bond1.16
+      state: up
+      type: vlan
+      wait-ip: ipv4
+      ipv4:
+        address:
+          - ip: 192.168.21.31
+            prefix-length: 25
+        dhcp: false
+        enabled: true
+      vlan:
+        base-iface: bond1
+        id: 16
+    
     dns-resolver:
       config:
         server:
-        - 10.100.0.1
-        - fd00:100::1
+        - 192.168.110.1
+        - fd00:110::1
     routes:
       config:
       - destination: 0.0.0.0/0
         next-hop-address: 192.168.110.1
-        next-hop-interface: ens1f0v1
+        next-hop-interface: eno12399v1
       - destination: ::/0
         next-hop-address: fd00:110::1
-        next-hop-interface: ens1f0v1
+        next-hop-interface: eno12399v1
 - hostname: master-1.sno-lab.example.com
-  rootDeviceHints:
-    deviceName: /dev/sda
   interfaces:
-  - name: ens1f0np0
-    macAddress: b8:3f:d2:fa:53:7a
+  - name: ens3f0np0
+    macAddress: B8:E9:24:16:0E:0C
+  - name: eno12399np0
+    macAddress: B8:E9:24:8F:DB:EC
   networkConfig:
     interfaces:
-    - name: eno8303
-      type: ethernet
-      state: down
-    - name: ens1f0np0
+    - name: eno12399np0
+      state: up
       type: ethernet
       state: up
       mtu: 1800
@@ -137,29 +152,12 @@ hosts:
             vlan-id: 42
             spoof-check: false
             trust: true
-    - name: ens1f1np1
+ 
+    - name: eno12399v0 # underlay0 (grout)
       type: ethernet
       state: up
-      mtu: 1800
-      ipv4:
-        enabled: false
-      ipv6:
-        enabled: false
-      ethernet:
-        sr-iov:
-          total-vfs: 16
-          vfs:
-          - id: 0 # underlay1
-            vlan-id: 0
-            spoof-check: false
-            trust: true
-    - name: ens1f0v0 # underlay0 (grout)
-      type: ethernet
-      state: up
-    - name: ens1f1v0 # underlay1 (grout)
-      type: ethernet
-      state: up
-    - name: ens1f0v1 # host
+
+    - name: eno12399v1
       type: ethernet
       state: up
       ipv4:
@@ -172,36 +170,68 @@ hosts:
       ipv6:
         enabled: true
         auto-dns: false
-        autoconf: false
         address:
         - ip: fd00:110::3
           prefix-length: 64
         dhcp: false
+
+    - name: eno12409np1
+      state: down
+      type: ethernet
+
+
+    - name: bond1
+      state: down
+      type: bond
+      link-aggregation:
+        mode: 802.3ad
+        options: {"miimon": 100}
+        ports:
+          - ens3f0np0
+          - ens3f1np1
+    - name: ens3f0np0
+      state: down
+      type: ethernet
+    - name: ens3f1np1
+      state: down
+      type: ethernet
+    - name: bond1.16
+      state: up
+      type: vlan
+      wait-ip: ipv4
+      ipv4:
+        address:
+          - ip: 192.168.21.32
+            prefix-length: 25
+        dhcp: false
+        enabled: true
+      vlan:
+        base-iface: bond1
+        id: 16
+    
     dns-resolver:
       config:
         server:
-        - 10.100.0.1
-        - fd00:100::1
+        - 192.168.110.1
+        - fd00:110::1
     routes:
       config:
       - destination: 0.0.0.0/0
         next-hop-address: 192.168.110.1
-        next-hop-interface: ens1f0v1
+        next-hop-interface: eno12399v1
       - destination: ::/0
         next-hop-address: fd00:110::1
-        next-hop-interface: ens1f0v1
+        next-hop-interface: eno12399v1
 - hostname: master-2.sno-lab.example.com
-  rootDeviceHints:
-    deviceName: /dev/sda
   interfaces:
-  - name: eno12399
-    macAddress: 30:3e:a7:0b:e8:6c
+  - name: ens3f0np0
+    macAddress: B8:E9:24:16:09:84
+  - name: eno12399np0
+    macAddress: B8:E9:24:8F:D8:9E
   networkConfig:
     interfaces:
-    - name: eno8303
-      type: ethernet
-      state: down
-    - name: eno12399
+    - name: eno12399np0
+      state: up
       type: ethernet
       state: up
       mtu: 1800
@@ -221,29 +251,12 @@ hosts:
             vlan-id: 42
             spoof-check: false
             trust: true
-    - name: eno12409
-      type: ethernet
-      state: up
-      mtu: 1800
-      ipv4:
-        enabled: false
-      ipv6:
-        enabled: false
-      ethernet:
-        sr-iov:
-          total-vfs: 16
-          vfs:
-          - id: 0 # underlay1
-            vlan-id: 0
-            spoof-check: false
-            trust: true
+ 
     - name: eno12399v0 # underlay0 (grout)
       type: ethernet
       state: up
-    - name: eno12409v0 # underlay1 (grout)
-      type: ethernet
-      state: up
-    - name: eno12399v1 # host
+
+    - name: eno12399v1
       type: ethernet
       state: up
       ipv4:
@@ -256,16 +269,49 @@ hosts:
       ipv6:
         enabled: true
         auto-dns: false
-        autoconf: false
         address:
         - ip: fd00:110::4
           prefix-length: 64
         dhcp: false
+
+    - name: eno12409np1
+      state: down
+      type: ethernet
+
+    - name: bond1
+      state: down
+      type: bond
+      link-aggregation:
+        mode: 802.3ad
+        options: {"miimon": 100}
+        ports:
+          - ens3f0np0
+          - ens3f1np1
+    - name: ens3f0np0
+      state: down
+      type: ethernet
+    - name: ens3f1np1
+      state: down
+      type: ethernet
+    - name: bond1.16
+      state: up
+      type: vlan
+      wait-ip: ipv4
+      ipv4:
+        address:
+          - ip: 192.168.21.33
+            prefix-length: 25
+        dhcp: false
+        enabled: true
+      vlan:
+        base-iface: bond1
+        id: 16
+    
     dns-resolver:
       config:
         server:
-        - 10.100.0.1
-        - fd00:100::1
+        - 192.168.110.1
+        - fd00:110::1
     routes:
       config:
       - destination: 0.0.0.0/0
