@@ -23,12 +23,12 @@ rawfrrconfigs:
       !
       interface underlay0
        ip address ${ROUTER_ID}/32
-       ipv6 address ${UNDERLAY_V6}/128
+       ip address ${UNDERLAY_V4}/25
+       ipv6 address ${UNDERLAY_V6}/64
        ipv6 address ${LOOPBACK_V6}/128
        ipv6 address ${SRV6_SOURCE}/128
        ip router isis PE
        ipv6 router isis PE
-       isis network point-to-point
        isis circuit-type level-1
       exit
       !
