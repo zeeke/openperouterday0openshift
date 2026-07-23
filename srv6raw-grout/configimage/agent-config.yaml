@@ -30,16 +30,9 @@ hosts:
     macAddress: b8:3f:d2:fa:53:86
   networkConfig:
     interfaces:
-    - name: eno8303 # lab connectivity for debug
+    - name: eno8303
       type: ethernet
-      state: up
-      ipv4:
-        enabled: true
-        auto-dns: false
-        dhcp-send-hostname: false
-        dhcp: true
-      ipv6:
-        enabled: false
+      state: down
     - name: ens1f0np0
       type: ethernet
       state: up
@@ -121,16 +114,9 @@ hosts:
     macAddress: b8:3f:d2:fa:53:7a
   networkConfig:
     interfaces:
-    - name: eno8303 # lab connectivity for debug
+    - name: eno8303
       type: ethernet
-      state: up
-      ipv4:
-        enabled: true
-        auto-dns: false
-        dhcp-send-hostname: false
-        dhcp: true
-      ipv6:
-        enabled: false
+      state: down
     - name: ens1f0np0
       type: ethernet
       state: up
@@ -212,16 +198,9 @@ hosts:
     macAddress: 30:3e:a7:0b:e8:6c
   networkConfig:
     interfaces:
-    - name: eno8303 # lab connectivity for debug
+    - name: eno8303
       type: ethernet
-      state: up
-      ipv4:
-        enabled: true
-        auto-dns: false
-        dhcp-send-hostname: false
-        dhcp: true
-      ipv6:
-        enabled: false
+      state: down
     - name: eno12399
       type: ethernet
       state: up
