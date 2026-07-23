@@ -1,0 +1,2525 @@
+
+
+Tue Jul 21 09:55:58.144 UTC
+!! Building configuration...
+!! IOS XR Configuration 7.10.2
+!! Last configuration change at Tue Jul 14 09:51:17 2026 by admin
+!
+hostname tor-sw-114-cisco
+logging console disable
+username admin
+ group root-lr
+ group cisco-support
+ secret 10 $6$Ap7wM0R0DakX7M0.$ipfG98PLYt8uflp86zzcYKUZ1WwFlDc62D7RXcjpxtltevu5apHg.dJr9sAtiuKDcmSwuSB5bxnXmv4HJLct9.
+!
+username stampadmin
+ group root-lr
+ password 7 005543561D5A190209334349
+!
+username eco-gotest-stats
+ group operator
+ secret 10 $6$lHf9d1ouGuiYCd1.$T0YH1qu1AvpuByL60ZBCmsks3lA9DusVYEUgVD0QGNhG6rCIP.uHKgzQwMHRrqhbImSTBnIB/pkN8xnQ0Tkgw/
+!
+username read-only
+ group read-only-tg
+ password 7 09424726113238415D0E112E231404
+!
+username lpm-readonly
+ group read-only-tg
+ secret 10 $6$VQDZ0rHdI80.....$0McRBIX3GAazA3z2nHR0qB1L.fMk9OQ7.R8cURwhrNUzBGzMk58IQ22fuQTmUK4a6Ly/lt122Jq.4cIgvEIlr1
+!
+aaa authentication login default local
+vrf red
+ address-family ipv4 unicast
+  import from default-vrf route-policy LEAK-177-TO-RED advertise-as-vpn
+  import route-target
+   65500:2
+  !
+  export to default-vrf route-policy LEAK-110-TO-GLOBAL allow-imported-vpn
+  export route-target
+   65500:2
+  !
+ !
+ address-family ipv6 unicast
+  import route-target
+   65500:2
+  !
+  export route-target
+   65500:2
+  !
+ !
+!
+vrf mgmt
+!
+line default
+ exec-timeout 10 0
+ transport input ssh
+!
+call-home
+ service active
+ contact smart-licensing
+ profile CiscoTAC-1
+  active
+  destination transport-method email disable
+  destination transport-method http
+ !
+!
+interface Bundle-Ether1
+ description dell-6SQZJ74_master-0.vcp100_mlx-cx6-lx_bond0
+ mtu 9216
+ bundle lacp-fallback timeout 20
+!
+interface Bundle-Ether1.16 l2transport
+ encapsulation dot1q 16
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether1.132 l2transport
+ encapsulation untagged
+!
+interface Bundle-Ether1.1016 l2transport
+ encapsulation dot1q 1016
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether1.3804 l2transport
+ encapsulation dot1q 3804
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether1.3805 l2transport
+ encapsulation dot1q 3805
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether2
+ description dell-6SQZJ74_master-0.vcp100_mlx-cx6-dx_ens3f0np[01]_bond1
+ mtu 9216
+ bundle lacp-fallback timeout 20
+!
+interface Bundle-Ether2.16 l2transport
+ encapsulation dot1q 16
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether2.132 l2transport
+ encapsulation dot1q 132
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether2.1016 l2transport
+ encapsulation dot1q 1016
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether2.3804 l2transport
+ encapsulation dot1q 3804
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether2.3805 l2transport
+ encapsulation dot1q 3805
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether3
+ description dell-6SQZJ74_master-0.vcp100_mlx-cx6-dx_ens6f0np[01]_bond2
+ mtu 9216
+ bundle lacp-fallback timeout 20
+!
+interface Bundle-Ether3.3804 l2transport
+ encapsulation dot1q 3804
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether3.3805 l2transport
+ encapsulation dot1q 3805
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether4
+ description dell-BSQZJ74_master-1.vcp100_mlx-cx6-lx_bond0
+ mtu 9216
+ bundle lacp-fallback timeout 20
+!
+interface Bundle-Ether4.16 l2transport
+ encapsulation dot1q 16
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether4.132 l2transport
+ encapsulation untagged
+!
+interface Bundle-Ether4.1016 l2transport
+ encapsulation dot1q 1016
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether4.3804 l2transport
+ encapsulation dot1q 3804
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether4.3805 l2transport
+ encapsulation dot1q 3805
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether5
+ description dell-BSQZJ74_master-1.vcp100_mlx-cx6-dx_ens3f0np[01]_bond1
+ mtu 9216
+ bundle lacp-fallback timeout 20
+!
+interface Bundle-Ether5.16 l2transport
+ encapsulation dot1q 16
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether5.132 l2transport
+ encapsulation dot1q 132
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether5.1016 l2transport
+ encapsulation dot1q 1016
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether5.3804 l2transport
+ encapsulation dot1q 3804
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether5.3805 l2transport
+ encapsulation dot1q 3805
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether6
+ description dell-BSQZJ74_master-1.vcp100_mlx-cx6-dx_ens6f0np[01]_bond2
+ mtu 9216
+ bundle lacp-fallback timeout 20
+!
+interface Bundle-Ether6.3804 l2transport
+ encapsulation dot1q 3804
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether6.3805 l2transport
+ encapsulation dot1q 3805
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether7
+ description dell-7SQZJ74_master-2.vcp100_mlx-cx6-lx_bond0
+ mtu 9216
+ bundle lacp-fallback timeout 20
+!
+interface Bundle-Ether7.16 l2transport
+ encapsulation dot1q 16
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether7.132 l2transport
+ encapsulation untagged
+!
+interface Bundle-Ether7.1016 l2transport
+ encapsulation dot1q 1016
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether7.3804 l2transport
+ encapsulation dot1q 3804
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether7.3805 l2transport
+ encapsulation dot1q 3805
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether8
+ description dell-7SQZJ74_master-2.vcp100_mlx-cx6-dx_ens3f0np[01]_bond1
+ mtu 9216
+ bundle lacp-fallback timeout 20
+!
+interface Bundle-Ether8.16 l2transport
+ encapsulation dot1q 16
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether8.132 l2transport
+ encapsulation dot1q 132
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether8.1016 l2transport
+ encapsulation dot1q 1016
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether8.3804 l2transport
+ encapsulation dot1q 3804
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether8.3805 l2transport
+ encapsulation dot1q 3805
+ rewrite ingress tag pop 1 symmetric
+!
+! !
+interface Bundle-Ether9
+ description dell-7SQZJ74_master-2.vcp100_mlx-cx6-dx_ens6f0np[01]_bond2
+ mtu 9216
+ bundle lacp-fallback timeout 20
+!
+interface Bundle-Ether9.3804 l2transport
+ encapsulation dot1q 3804
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether9.3805 l2transport
+ encapsulation dot1q 3805
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether10
+ description dell-8SQZJ74_worker-0.vcp100_mlx-cx6-lx_bond0
+ mtu 9216
+ bundle lacp-fallback timeout 20
+!
+interface Bundle-Ether10.16 l2transport
+ encapsulation dot1q 16
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether10.132 l2transport
+ encapsulation untagged
+!
+interface Bundle-Ether10.1016 l2transport
+ encapsulation dot1q 1016
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether10.3804 l2transport
+ encapsulation dot1q 3804
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether10.3805 l2transport
+ encapsulation dot1q 3805
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether10.3820 l2transport
+ encapsulation dot1q 3820
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether10.3821 l2transport
+ encapsulation dot1q 3821
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether11
+ description dell-8SQZJ74_worker-0.vcp100_mlx-cx6-dx_ens3f0np[01]_bond1
+ mtu 9216
+ bundle lacp-fallback timeout 20
+!
+interface Bundle-Ether11.16 l2transport
+ encapsulation dot1q 16
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether11.132 l2transport
+ encapsulation dot1q 132
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether11.1016 l2transport
+ encapsulation dot1q 1016
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether11.3804 l2transport
+ encapsulation dot1q 3804
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether11.3805 l2transport
+ encapsulation dot1q 3805
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether11.3820 l2transport
+ encapsulation dot1q 3820
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether11.3821 l2transport
+ encapsulation dot1q 3821
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether12
+ description dell-8SQZJ74_worker-0.vcp100_mlx-cx6-dx_ens6f0np[01]_bond2
+ mtu 9216
+ bundle lacp-fallback timeout 20
+!
+interface Bundle-Ether12.3804 l2transport
+ encapsulation dot1q 3804
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether12.3805 l2transport
+ encapsulation dot1q 3805
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether12.3820 l2transport
+ encapsulation dot1q 3820
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether12.3821 l2transport
+ encapsulation dot1q 3821
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether13
+ description dell-9SQZJ74_worker-1.vcp100_mlx-cx6-lx_bond0
+ mtu 9216
+ bundle lacp-fallback timeout 20
+!
+interface Bundle-Ether13.16 l2transport
+ encapsulation dot1q 16
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether13.132 l2transport
+ encapsulation untagged
+!
+interface Bundle-Ether13.1016 l2transport
+ encapsulation dot1q 1016
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether13.3804 l2transport
+ encapsulation dot1q 3804
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether13.3805 l2transport
+ encapsulation dot1q 3805
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether13.3820 l2transport
+ encapsulation dot1q 3820
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether13.3821 l2transport
+ encapsulation dot1q 3821
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether14
+ description dell-9SQZJ74_worker-1.vcp100_mlx-cx6-dx_ens3f0np[01]_bond1
+ mtu 9216
+ bundle lacp-fallback timeout 20
+!
+interface Bundle-Ether14.16 l2transport
+ encapsulation dot1q 16
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether14.132 l2transport
+ encapsulation dot1q 132
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether14.1016 l2transport
+ encapsulation dot1q 1016
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether14.3804 l2transport
+ encapsulation dot1q 3804
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether14.3805 l2transport
+ encapsulation dot1q 3805
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether14.3820 l2transport
+ encapsulation dot1q 3820
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether14.3821 l2transport
+ encapsulation dot1q 3821
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether15
+ description dell-9SQZJ74_worker-1.vcp100_mlx-cx6-dx_ens6f0np[01]_bond2
+ mtu 9216
+ bundle lacp-fallback timeout 20
+!
+interface Bundle-Ether15.3804 l2transport
+ encapsulation dot1q 3804
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether15.3805 l2transport
+ encapsulation dot1q 3805
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether15.3820 l2transport
+ encapsulation dot1q 3820
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether15.3821 l2transport
+ encapsulation dot1q 3821
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether16
+ description dell-CSQZJ74_worker-2.vcp100_mlx-cx6-lx_bond0
+ mtu 9216
+ bundle lacp-fallback timeout 20
+!
+interface Bundle-Ether16.16 l2transport
+ encapsulation dot1q 16
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether16.132 l2transport
+ encapsulation untagged
+!
+interface Bundle-Ether16.1016 l2transport
+ encapsulation dot1q 1016
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether16.3804 l2transport
+ encapsulation dot1q 3804
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether16.3805 l2transport
+ encapsulation dot1q 3805
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether16.3820 l2transport
+ encapsulation dot1q 3820
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether16.3821 l2transport
+ encapsulation dot1q 3821
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether17
+ description dell-CSQZJ74_worker-2.vcp100_mlx-cx6-dx_ens3f0np[01]_bond1
+ mtu 9216
+ bundle lacp-fallback timeout 20
+!
+interface Bundle-Ether17.16 l2transport
+ encapsulation dot1q 16
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether17.132 l2transport
+ encapsulation dot1q 132
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether17.1016 l2transport
+ encapsulation dot1q 1016
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether17.3804 l2transport
+ encapsulation dot1q 3804
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether17.3805 l2transport
+ encapsulation dot1q 3805
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether17.3820 l2transport
+ encapsulation dot1q 3820
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether17.3821 l2transport
+ encapsulation dot1q 3821
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether18
+ description dell-CSQZJ74_worker-2.vcp100_mlx-cx6-dx_ens6f0np[01]_bond2
+ mtu 9216
+ bundle lacp-fallback timeout 20
+!
+interface Bundle-Ether18.3804 l2transport
+ encapsulation dot1q 3804
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether18.3805 l2transport
+ encapsulation dot1q 3805
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether18.3820 l2transport
+ encapsulation dot1q 3820
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether18.3821 l2transport
+ encapsulation dot1q 3821
+ rewrite ingress tag pop 1 symmetric
+!
+! !
+interface Bundle-Ether19
+ description dell-5SQZJ74_worker-3.vcp100_mlx-cx6-lx_bond0
+ mtu 9216
+ bundle lacp-fallback timeout 20
+!
+interface Bundle-Ether19.16 l2transport
+ encapsulation dot1q 16
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether19.132 l2transport
+ encapsulation untagged
+!
+interface Bundle-Ether19.1016 l2transport
+ encapsulation dot1q 1016
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether19.3804 l2transport
+ encapsulation dot1q 3804
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether19.3805 l2transport
+ encapsulation dot1q 3805
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether19.3820 l2transport
+ encapsulation dot1q 3820
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether19.3821 l2transport
+ encapsulation dot1q 3821
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether20
+ description dell-5SQZJ74_worker-3.vcp100_mlx-cx6-dx_ens3f0np[01]_bond1
+ mtu 9216
+ bundle lacp-fallback timeout 20
+!
+interface Bundle-Ether20.16 l2transport
+ encapsulation dot1q 16
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether20.132 l2transport
+ encapsulation dot1q 132
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether20.1016 l2transport
+ encapsulation dot1q 1016
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether20.3804 l2transport
+ encapsulation dot1q 3804
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether20.3805 l2transport
+ encapsulation dot1q 3805
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether20.3820 l2transport
+ encapsulation dot1q 3820
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether20.3821 l2transport
+ encapsulation dot1q 3821
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether21
+ description dell-5SQZJ74_worker-3.vcp100_mlx-cx6-dx_ens6f0np[01]_bond2
+ mtu 9216
+ bundle lacp-fallback timeout 20
+!
+interface Bundle-Ether21.3804 l2transport
+ encapsulation dot1q 3804
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether21.3805 l2transport
+ encapsulation dot1q 3805
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether21.3820 l2transport
+ encapsulation dot1q 3820
+ rewrite ingress tag pop 1 symmetric
+!
+interface Bundle-Ether21.3821 l2transport
+ encapsulation dot1q 3821
+ rewrite ingress tag pop 1 symmetric
+!
+interface Loopback0
+ ipv4 address 10.0.0.20 255.255.255.255
+ ipv6 address fc00:0:20::1/128
+!
+interface Loopback100
+ vrf red
+ ipv4 address 10.10.20.1 255.255.255.255
+ ipv6 address fc00:10:20::1/128
+!
+interface MgmtEth0/RP0/CPU0/0
+ vrf mgmt
+ ipv4 address 192.168.254.236 255.255.255.0
+!
+interface TenGigE0/0/0/56/0
+ description Link_to_mgmt-sw
+ mtu 9216
+!
+interface TenGigE0/0/0/56/0.32 l2transport
+ encapsulation dot1q 32
+ rewrite ingress tag pop 1 symmetric
+!
+interface TenGigE0/0/0/56/0.132 l2transport
+ encapsulation dot1q 132
+ rewrite ingress tag pop 1 symmetric
+!
+interface TenGigE0/0/0/56/0.1132 l2transport
+ encapsulation dot1q 1132
+ rewrite ingress tag pop 1 symmetric
+!
+interface TenGigE0/0/0/56/1
+ shutdown
+!
+interface TenGigE0/0/0/56/2
+ shutdown
+!
+interface TenGigE0/0/0/56/3
+ shutdown
+!
+controller Optics0/0/0/0
+ speed 4x25
+!
+controller Optics0/0/0/3
+ speed 4x25
+!
+controller Optics0/0/0/4
+ speed 100g
+!
+controller Optics0/0/0/5
+ speed 100g
+!
+controller Optics0/0/0/6
+ speed 100g
+!
+controller Optics0/0/0/7
+ speed 100g
+!
+controller Optics0/0/0/9
+ speed 100g
+!
+controller Optics0/0/0/10
+ speed 100g
+!
+controller Optics0/0/0/11
+ speed 100g
+!
+controller Optics0/0/0/12
+ speed 100g
+!
+controller Optics0/0/0/13
+ speed 100g
+!
+controller Optics0/0/0/14
+ speed 100g
+!
+controller Optics0/0/0/15
+ speed 100g
+!
+controller Optics0/0/0/16
+ speed 100g
+!
+controller Optics0/0/0/17
+ speed 100g
+!
+controller Optics0/0/0/18
+ speed 100g
+!
+controller Optics0/0/0/19
+ speed 100g
+!
+controller Optics0/0/0/21
+ speed 100g
+!
+controller Optics0/0/0/22
+ speed 100g
+!
+controller Optics0/0/0/23
+ speed 100g
+!
+controller Optics0/0/0/24
+ speed 100g
+!
+controller Optics0/0/0/25
+ speed 100g
+!
+controller Optics0/0/0/26
+ speed 100g
+!
+controller Optics0/0/0/27
+ speed 100g
+!
+controller Optics0/0/0/28
+ speed 100g
+!
+controller Optics0/0/0/29
+ speed 100g
+!
+controller Optics0/0/0/30
+ speed 100g
+!
+controller Optics0/0/0/31
+ speed 100g
+!
+controller Optics0/0/0/32
+ speed 4x25
+!
+controller Optics0/0/0/35
+ speed 4x25
+!
+controller Optics0/0/0/36
+ speed 4x25
+!
+controller Optics0/0/0/39
+ speed 4x25
+!
+controller Optics0/0/0/40
+ speed 4x25
+!
+controller Optics0/0/0/43
+ speed 4x25
+!
+controller Optics0/0/0/44
+ speed 4x25
+!
+controller Optics0/0/0/47
+ speed 4x25
+!
+controller Optics0/0/0/48
+ speed 4x25
+!
+controller Optics0/0/0/51
+ speed 4x25
+!
+controller Optics0/0/0/52
+ speed 4x25
+!
+controller Optics0/0/0/55
+ speed 4x25
+!
+controller Optics0/0/0/56
+ speed 4x10
+!
+controller Optics0/0/0/60
+ speed 100g
+!
+controller Optics0/0/0/61
+ speed 100g
+!
+controller Optics0/0/0/62
+ speed 100g
+!
+controller Optics0/0/0/63
+ speed 100g
+!
+interface BVI16
+!
+interface BVI132
+ description "server vlan 132"
+ ipv4 address 192.168.132.1 255.255.255.128
+ ipv4 address 192.168.177.1 255.255.255.128 secondary
+ ipv6 nd prefix fc00:0:132::/64 no-autoconfig
+ ipv6 nd prefix 2600:52:7:132::/64 no-autoconfig
+ ipv6 nd ra-interval 1800 1350
+ ipv6 nd ra-lifetime 0
+ ipv6 nd suppress-ra
+ ipv6 address 2600:52:7:132::1/64
+ ipv6 address fc00:0:132::20/64
+!
+interface BVI134
+ description "server vlan 134"
+ ipv4 address 192.168.134.1 255.255.255.128
+ ipv6 nd prefix default no-autoconfig
+ ipv6 nd prefix 2600:52:7:134::/64 no-adv
+ ipv6 address 2600:52:7:134::1/64
+!
+interface BVI1016
+!
+interface BVI1132
+ description "idrac vlan 1132"
+ ipv4 address 192.168.132.129 255.255.255.128
+ ipv6 nd prefix default no-autoconfig
+ ipv6 nd prefix 2600:52:7:1132::/64 no-adv
+ ipv6 address 2600:52:7:1132::1/64
+!
+interface BVI1700
+ description "generic vlan 1700"
+ ipv4 address 172.16.170.1 255.255.255.128
+ ipv6 nd prefix default no-autoconfig
+ ipv6 nd prefix fdb0:2260:527:170::/64 no-adv
+ ipv6 address fdb0:2260:527:170::1/64
+!
+interface BVI1701
+ description "generic vlan 1701"
+ ipv4 address 172.16.171.1 255.255.255.128
+ ipv6 nd prefix default no-autoconfig
+ ipv6 nd prefix fdb0:2260:527:171::/64 no-adv
+ ipv6 address fdb0:2260:527:171::1/64
+!
+interface BVI1702
+ description "generic vlan 1702"
+ ipv4 address 172.16.172.1 255.255.255.128
+ ipv6 nd prefix default no-autoconfig
+ ipv6 nd prefix fdb0:2260:527:172::/64 no-adv
+ ipv6 address fdb0:2260:527:172::1/64
+!
+interface BVI3132
+ description "uplink vlan 3132"
+ ipv4 address 192.168.249.18 255.255.255.252
+!
+interface BVI3804
+ description vcp-cni
+ ipv4 address 172.16.134.1 255.255.255.192
+!
+interface BVI3805
+ description vcp-edn
+ ipv4 address 172.16.135.1 255.255.255.192
+!
+interface BVI3820
+ description vanilla-sriov1
+ ipv4 address 172.16.150.1 255.255.255.192
+!
+interface BVI3821
+ description vanilla-sriov2
+ ipv4 address 172.16.151.1 255.255.255.192
+!
+interface TwentyFiveGigE0/0/0/0/0
+ description "6FX7Q54_PCI3_port_1"
+ mtu 9216
+!
+interface TwentyFiveGigE0/0/0/0/0.132 l2transport
+ encapsulation untagged
+!
+interface TwentyFiveGigE0/0/0/0/0.1700 l2transport
+ encapsulation dot1q 1700
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/0/0.1701 l2transport
+ encapsulation dot1q 1701
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/0/0.1702 l2transport
+ encapsulation dot1q 1702
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/0/1
+ description "6FX7Q54_PCI3_port_2"
+ mtu 9216
+!
+interface TwentyFiveGigE0/0/0/0/1.132 l2transport
+ encapsulation untagged
+!
+interface TwentyFiveGigE0/0/0/0/1.1700 l2transport
+ encapsulation dot1q 1700
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/0/1.1701 l2transport
+ encapsulation dot1q 1701
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/0/1.1702 l2transport
+ encapsulation dot1q 1702
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/0/2
+ description "6FX7Q54_PCI3_port_3"
+ mtu 9216
+!
+interface TwentyFiveGigE0/0/0/0/2.132 l2transport
+ encapsulation untagged
+!
+interface TwentyFiveGigE0/0/0/0/2.1700 l2transport
+ encapsulation dot1q 1700
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/0/2.1701 l2transport
+ encapsulation dot1q 1701
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/0/2.1702 l2transport
+ encapsulation dot1q 1702
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/0/3
+ description "6FX7Q54_PCI3_port_4"
+ mtu 9216
+!
+interface TwentyFiveGigE0/0/0/0/3.132 l2transport
+ encapsulation untagged
+!
+interface TwentyFiveGigE0/0/0/0/3.1700 l2transport
+ encapsulation dot1q 1700
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/0/3.1701 l2transport
+ encapsulation dot1q 1701
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/0/3.1702 l2transport
+ encapsulation dot1q 1702
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/3/0
+ shutdown
+!
+interface TwentyFiveGigE0/0/0/3/1
+ shutdown
+!
+interface TwentyFiveGigE0/0/0/3/2
+ shutdown
+!
+interface TwentyFiveGigE0/0/0/3/3
+ shutdown
+!
+interface HundredGigE0/0/0/4
+ description link-to-115_et-0/0/55
+ mtu 9216
+!
+interface HundredGigE0/0/0/4.16 l2transport
+ encapsulation dot1q 16
+ rewrite ingress tag pop 1 symmetric
+!
+interface HundredGigE0/0/0/4.1016 l2transport
+ encapsulation dot1q 1016
+ rewrite ingress tag pop 1 symmetric
+!
+interface HundredGigE0/0/0/5
+ description dell-6SQZJ74_master-0.vcp100_mlx-cx6-dx_ens6f0np1
+ bundle id 3 mode active
+ bundle port-priority 16000
+!
+interface HundredGigE0/0/0/6
+ description dell-6SQZJ74_master-0.vcp100_mlx-cx6-dx_ens6f0np0 
+ bundle id 3 mode active
+ bundle port-priority 15000
+!
+interface HundredGigE0/0/0/7
+ description dell-BSQZJ74_master-1.vcp100_mlx-cx6-dx_ens3f0np0
+ bundle id 5 mode active
+ bundle port-priority 15000
+!
+interface HundredGigE0/0/0/8
+ description dell-BSQZJ74_master-1.vcp100_mlx-cx6-dx_ens3f0np1
+ bundle id 5 mode active
+ bundle port-priority 16000
+!
+interface HundredGigE0/0/0/9
+ description dell-BSQZJ74_master-1.vcp100_mlx-cx6-dx_ens6f0np0
+ bundle id 6 mode active
+ bundle port-priority 15000
+!
+interface HundredGigE0/0/0/10
+ description dell-BSQZJ74_master-1.vcp100_mlx-cx6-dx_ens6f0np1
+ bundle id 6 mode active
+ bundle port-priority 16000
+!
+interface HundredGigE0/0/0/11
+ shutdown
+!
+interface HundredGigE0/0/0/12
+ description dell-7SQZJ74_master-2.vcp100_mlx-cx6-dx_ens3f0np0
+ bundle id 8 mode active
+ bundle port-priority 15000
+!
+interface HundredGigE0/0/0/13
+ description dell-7SQZJ74_master-2.vcp100_mlx-cx6-dx_ens3f0np1
+ bundle id 8 mode active
+ bundle port-priority 16000
+!
+interface HundredGigE0/0/0/14
+ description dell-7SQZJ74_master-2.vcp100_mlx-cx6-dx_ens6f0np0
+ bundle id 9 mode active
+ bundle port-priority 15000
+!
+interface HundredGigE0/0/0/15
+ description dell-7SQZJ74_master-2.vcp100_mlx-cx6-dx_ens6f0np1
+ bundle id 9 mode active
+ bundle port-priority 16000
+!
+interface HundredGigE0/0/0/16
+ shutdown
+!
+interface HundredGigE0/0/0/17
+ description dell-8SQZJ74_worker-0.vcp100_mlx-cx6-dx_ens3f0np0
+ bundle id 11 mode active
+ bundle port-priority 15000
+!
+interface HundredGigE0/0/0/18
+ description dell-8SQZJ74_worker-0.vcp100_mlx-cx6-dx_ens3f0np1
+ bundle id 11 mode active
+ bundle port-priority 16000
+!
+interface HundredGigE0/0/0/19
+ description dell-8SQZJ74_worker-0.vcp100_mlx-cx6-dx_ens6f0np0
+ bundle id 12 mode active
+ bundle port-priority 15000
+!
+interface HundredGigE0/0/0/20
+ description dell-8SQZJ74_worker-0.vcp100_mlx-cx6-dx_ens6f0np1
+ bundle id 12 mode active
+ bundle port-priority 16000
+!
+interface HundredGigE0/0/0/21
+ description dell-9SQZJ74_worker-1.vcp100_mlx-cx6-dx_ens3f0np0
+ bundle id 14 mode active
+ bundle port-priority 15000
+!
+interface HundredGigE0/0/0/22
+ description dell-9SQZJ74_worker-1.vcp100_mlx-cx6-dx_ens3f0np1
+ bundle id 14 mode active
+ bundle port-priority 16000
+!
+interface HundredGigE0/0/0/23
+ description dell-9SQZJ74_worker-1.vcp100_mlx-cx6-dx_ens6f0np0
+ bundle id 15 mode active
+ bundle port-priority 15000
+!
+interface HundredGigE0/0/0/24
+ description dell-9SQZJ74_worker-1.vcp100_mlx-cx6-dx_ens6f0np1
+ bundle id 15 mode active
+ bundle port-priority 16000
+!
+interface HundredGigE0/0/0/25
+ description dell-CSQZJ74_worker-2.vcp100_mlx-cx6-dx_ens3f0np0
+ bundle id 17 mode active
+ bundle port-priority 15000
+!
+interface HundredGigE0/0/0/26
+ description dell-CSQZJ74_worker-2.vcp100_mlx-cx6-dx_ens3f0np1
+ bundle id 17 mode active
+ bundle port-priority 16000
+!
+interface HundredGigE0/0/0/27
+ description dell-CSQZJ74_worker-2.vcp100_mlx-cx6-dx_ens6f0np0
+ bundle id 18 mode active
+ bundle port-priority 15000
+!
+interface HundredGigE0/0/0/28
+ description dell-CSQZJ74_worker-2.vcp100_mlx-cx6-dx_ens6f0np1
+ bundle id 18 mode active
+ bundle port-priority 16000
+!
+interface HundredGigE0/0/0/29
+ description dell-5SQZJ74_worker-3.vcp100_mlx-cx6-dx_ens3f0np0
+ bundle id 20 mode active
+ bundle port-priority 15000
+!
+interface HundredGigE0/0/0/30
+ description dell-5SQZJ74_worker-3.vcp100_mlx-cx6-dx_ens3f0np1
+ bundle id 20 mode active
+ bundle port-priority 16000
+!
+interface HundredGigE0/0/0/31
+ description dell-5SQZJ74_worker-3.vcp100_mlx-cx6-dx_ens6f0np0
+ bundle id 21 mode active
+ bundle port-priority 15000
+!
+interface TwentyFiveGigE0/0/0/32/0
+ description "GBLTZ44_PCI1_port_1"
+!
+!commit
+interface TwentyFiveGigE0/0/0/32/0.132 l2transport
+ encapsulation untagged
+!
+interface TwentyFiveGigE0/0/0/32/0.1700 l2transport
+ encapsulation dot1q 1700
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/32/0.1701 l2transport
+ encapsulation dot1q 1701
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/32/0.1702 l2transport
+ encapsulation dot1q 1702
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/32/1
+ description "GBLTZ44_PCI1_port_2"
+!
+interface TwentyFiveGigE0/0/0/32/1.132 l2transport
+ encapsulation untagged
+!
+interface TwentyFiveGigE0/0/0/32/1.1700 l2transport
+ encapsulation dot1q 1700
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/32/1.1701 l2transport
+ encapsulation dot1q 1701
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/32/1.1702 l2transport
+ encapsulation dot1q 1702
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/32/2
+ description "GBLTZ44_PCI1_port_3"
+!
+interface TwentyFiveGigE0/0/0/32/2.132 l2transport
+ encapsulation untagged
+!
+interface TwentyFiveGigE0/0/0/32/2.1700 l2transport
+ encapsulation dot1q 1700
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/32/2.1701 l2transport
+ encapsulation dot1q 1701
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/32/2.1702 l2transport
+ encapsulation dot1q 1702
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/32/3
+ description "GBLTZ44_PCI1_port_4"
+!
+!commit
+interface TwentyFiveGigE0/0/0/32/3.132 l2transport
+ encapsulation untagged
+!
+interface TwentyFiveGigE0/0/0/32/3.1700 l2transport
+ encapsulation dot1q 1700
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/32/3.1701 l2transport
+ encapsulation dot1q 1701
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/32/3.1702 l2transport
+ encapsulation dot1q 1702
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/35/0
+ description "GBLTZ44_PCI2_port_1"
+!
+interface TwentyFiveGigE0/0/0/35/0.132 l2transport
+ encapsulation untagged
+!
+interface TwentyFiveGigE0/0/0/35/0.1700 l2transport
+ encapsulation dot1q 1700
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/35/0.1701 l2transport
+ encapsulation dot1q 1701
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/35/0.1702 l2transport
+ encapsulation dot1q 1702
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/35/1
+ description "GBLTZ44_PCI2_port_2"
+!
+interface TwentyFiveGigE0/0/0/35/1.132 l2transport
+ encapsulation untagged
+!
+interface TwentyFiveGigE0/0/0/35/1.1700 l2transport
+ encapsulation dot1q 1700
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/35/1.1701 l2transport
+ encapsulation dot1q 1701
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/35/1.1702 l2transport
+ encapsulation dot1q 1702
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/35/2
+ description "GBLTZ44_PCI2_port_3"
+!
+interface TwentyFiveGigE0/0/0/35/2.132 l2transport
+ encapsulation untagged
+!
+interface TwentyFiveGigE0/0/0/35/2.1700 l2transport
+ encapsulation dot1q 1700
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/35/2.1701 l2transport
+ encapsulation dot1q 1701
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/35/2.1702 l2transport
+ encapsulation dot1q 1702
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/35/3
+ description "GBLTZ44_PCI2_port_4"
+!
+!commit
+interface TwentyFiveGigE0/0/0/35/3.132 l2transport
+ encapsulation untagged
+!
+interface TwentyFiveGigE0/0/0/35/3.1700 l2transport
+ encapsulation dot1q 1700
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/35/3.1701 l2transport
+ encapsulation dot1q 1701
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/35/3.1702 l2transport
+ encapsulation dot1q 1702
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/36/0
+ description "8BM35J4_PCI1_port_1"
+!
+!commit
+interface TwentyFiveGigE0/0/0/36/0.132 l2transport
+ encapsulation untagged
+!
+interface TwentyFiveGigE0/0/0/36/0.1700 l2transport
+ encapsulation dot1q 1700
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/36/0.1701 l2transport
+ encapsulation dot1q 1701
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/36/0.1702 l2transport
+ encapsulation dot1q 1702
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/36/1
+ description 8BM35J4_PCI1_port_2
+!
+interface TwentyFiveGigE0/0/0/36/1.1700 l2transport
+ encapsulation dot1q 1700
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/36/1.1701 l2transport
+ encapsulation dot1q 1701
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/36/1.1702 l2transport
+ encapsulation dot1q 1702
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/36/2
+ description 8BM35J4_PCI1_port_3
+!
+interface TwentyFiveGigE0/0/0/36/2.1700 l2transport
+ encapsulation dot1q 1700
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/36/2.1701 l2transport
+ encapsulation dot1q 1701
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/36/2.1702 l2transport
+ encapsulation dot1q 1702
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/36/3
+ description FreePort-before-GBLTZ44_PCI3_port_4
+!
+interface TwentyFiveGigE0/0/0/36/3.1700 l2transport
+ encapsulation dot1q 1700
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/36/3.1701 l2transport
+ encapsulation dot1q 1701
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/36/3.1702 l2transport
+ encapsulation dot1q 1702
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/39/0
+ description "HBLTZ44_PCI1_port_1"
+!
+interface TwentyFiveGigE0/0/0/39/0.132 l2transport
+ encapsulation untagged
+!
+interface TwentyFiveGigE0/0/0/39/0.1700 l2transport
+ encapsulation dot1q 1700
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/39/0.1701 l2transport
+ encapsulation dot1q 1701
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/39/0.1702 l2transport
+ encapsulation dot1q 1702
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/39/1
+ description "HBLTZ44_PCI1_port_2"
+!
+interface TwentyFiveGigE0/0/0/39/1.132 l2transport
+ encapsulation untagged
+!
+interface TwentyFiveGigE0/0/0/39/1.1700 l2transport
+ encapsulation dot1q 1700
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/39/1.1701 l2transport
+ encapsulation dot1q 1701
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/39/1.1702 l2transport
+ encapsulation dot1q 1702
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/39/2
+ description "HBLTZ44_PCI1_port_3"
+!
+interface TwentyFiveGigE0/0/0/39/2.132 l2transport
+ encapsulation untagged
+!
+interface TwentyFiveGigE0/0/0/39/2.1700 l2transport
+ encapsulation dot1q 1700
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/39/2.1701 l2transport
+ encapsulation dot1q 1701
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/39/2.1702 l2transport
+ encapsulation dot1q 1702
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/39/3
+ description "FreePort-before-HBLTZ44_PCI1_port_4"
+!
+interface TwentyFiveGigE0/0/0/39/3.132 l2transport
+ encapsulation untagged
+!
+interface TwentyFiveGigE0/0/0/39/3.1700 l2transport
+ encapsulation dot1q 1700
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/39/3.1701 l2transport
+ encapsulation dot1q 1701
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/39/3.1702 l2transport
+ encapsulation dot1q 1702
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/40/0
+ description "HBLTZ44_PCI2_port_1"
+!
+interface TwentyFiveGigE0/0/0/40/0.132 l2transport
+ encapsulation untagged
+!
+interface TwentyFiveGigE0/0/0/40/0.1700 l2transport
+ encapsulation dot1q 1700
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/40/0.1701 l2transport
+ encapsulation dot1q 1701
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/40/0.1702 l2transport
+ encapsulation dot1q 1702
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/40/1
+ description "HBLTZ44_PCI2_port_2"
+!
+interface TwentyFiveGigE0/0/0/40/1.132 l2transport
+ encapsulation untagged
+!
+interface TwentyFiveGigE0/0/0/40/1.1700 l2transport
+ encapsulation dot1q 1700
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/40/1.1701 l2transport
+ encapsulation dot1q 1701
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/40/1.1702 l2transport
+ encapsulation dot1q 1702
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/40/2
+ description "HBLTZ44_PCI2_port_3"
+!
+interface TwentyFiveGigE0/0/0/40/2.132 l2transport
+ encapsulation untagged
+!
+interface TwentyFiveGigE0/0/0/40/2.1700 l2transport
+ encapsulation dot1q 1700
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/40/2.1701 l2transport
+ encapsulation dot1q 1701
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/40/2.1702 l2transport
+ encapsulation dot1q 1702
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/40/3
+ description "HBLTZ44_PCI2_port_4"
+!
+interface TwentyFiveGigE0/0/0/40/3.132 l2transport
+ encapsulation untagged
+!
+interface TwentyFiveGigE0/0/0/40/3.1700 l2transport
+ encapsulation dot1q 1700
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/40/3.1701 l2transport
+ encapsulation dot1q 1701
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/40/3.1702 l2transport
+ encapsulation dot1q 1702
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/43/0
+ description "BCM35J4_PCI1_port_1"
+!
+interface TwentyFiveGigE0/0/0/43/0.132 l2transport
+ encapsulation untagged
+!
+interface TwentyFiveGigE0/0/0/43/0.1700 l2transport
+ encapsulation dot1q 1700
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/43/0.1701 l2transport
+ encapsulation dot1q 1701
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/43/0.1702 l2transport
+ encapsulation dot1q 1702
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/43/1
+ description BCM35J4_PCI1_port_2
+!
+interface TwentyFiveGigE0/0/0/43/1.1700 l2transport
+ encapsulation dot1q 1700
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/43/1.1701 l2transport
+ encapsulation dot1q 1701
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/43/1.1702 l2transport
+ encapsulation dot1q 1702
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/43/2
+ description BCM35J4_PCI1_port_3
+!
+interface TwentyFiveGigE0/0/0/43/2.1700 l2transport
+ encapsulation dot1q 1700
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/43/2.1701 l2transport
+ encapsulation dot1q 1701
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/43/2.1702 l2transport
+ encapsulation dot1q 1702
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/43/3
+ description "FreePort-before-HBLTZ44_PCI3_port_4"
+!
+interface TwentyFiveGigE0/0/0/43/3.1700 l2transport
+ encapsulation dot1q 1700
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/43/3.1701 l2transport
+ encapsulation dot1q 1701
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/43/3.1702 l2transport
+ encapsulation dot1q 1702
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/44/0
+ description "6FX7Q54_PCI1_port_1"
+ mtu 9216
+!
+interface TwentyFiveGigE0/0/0/44/0.132 l2transport
+ encapsulation untagged
+!
+interface TwentyFiveGigE0/0/0/44/0.1700 l2transport
+ encapsulation dot1q 1700
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/44/0.1701 l2transport
+ encapsulation dot1q 1701
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/44/0.1702 l2transport
+ encapsulation dot1q 1702
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/44/1
+ description "6FX7Q54_PCI1_port_2"
+ mtu 9216
+!
+interface TwentyFiveGigE0/0/0/44/1.132 l2transport
+ encapsulation untagged
+!
+interface TwentyFiveGigE0/0/0/44/1.1700 l2transport
+ encapsulation dot1q 1700
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/44/1.1701 l2transport
+ encapsulation dot1q 1701
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/44/1.1702 l2transport
+ encapsulation dot1q 1702
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/44/2
+ description "6FX7Q54_PCI1_port_3"
+ mtu 9216
+!
+interface TwentyFiveGigE0/0/0/44/2.132 l2transport
+ encapsulation untagged
+!
+interface TwentyFiveGigE0/0/0/44/2.1700 l2transport
+ encapsulation dot1q 1700
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/44/2.1701 l2transport
+ encapsulation dot1q 1701
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/44/2.1702 l2transport
+ encapsulation dot1q 1702
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/44/3
+ description "6FX7Q54_PCI1_port_4"
+ mtu 9216
+!
+interface TwentyFiveGigE0/0/0/44/3.132 l2transport
+ encapsulation untagged
+!
+interface TwentyFiveGigE0/0/0/44/3.1700 l2transport
+ encapsulation dot1q 1700
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/44/3.1701 l2transport
+ encapsulation dot1q 1701
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/44/3.1702 l2transport
+ encapsulation dot1q 1702
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/47/0
+ description "6FX7Q54_PCI2_port_1"
+ mtu 9216
+!
+interface TwentyFiveGigE0/0/0/47/0.132 l2transport
+ encapsulation untagged
+!
+interface TwentyFiveGigE0/0/0/47/0.1700 l2transport
+ encapsulation dot1q 1700
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/47/0.1701 l2transport
+ encapsulation dot1q 1701
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/47/0.1702 l2transport
+ encapsulation dot1q 1702
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/47/1
+ description "6FX7Q54_PCI2_port_2"
+ mtu 9216
+!
+interface TwentyFiveGigE0/0/0/47/1.132 l2transport
+ encapsulation untagged
+!
+interface TwentyFiveGigE0/0/0/47/1.1700 l2transport
+ encapsulation dot1q 1700
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/47/1.1701 l2transport
+ encapsulation dot1q 1701
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/47/1.1702 l2transport
+ encapsulation dot1q 1702
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/47/2
+ description "6FX7Q54_PCI2_port_3"
+ mtu 9216
+!
+interface TwentyFiveGigE0/0/0/47/2.132 l2transport
+ encapsulation untagged
+!
+interface TwentyFiveGigE0/0/0/47/2.1700 l2transport
+ encapsulation dot1q 1700
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/47/2.1701 l2transport
+ encapsulation dot1q 1701
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/47/2.1702 l2transport
+ encapsulation dot1q 1702
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/47/3
+ description "6FX7Q54_PCI2_port_4"
+ mtu 9216
+!
+interface TwentyFiveGigE0/0/0/47/3.132 l2transport
+ encapsulation untagged
+!
+interface TwentyFiveGigE0/0/0/47/3.1700 l2transport
+ encapsulation dot1q 1700
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/47/3.1701 l2transport
+ encapsulation dot1q 1701
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/47/3.1702 l2transport
+ encapsulation dot1q 1702
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/48/0
+ description dell-6SQZJ74_master-0.vcp100_mlx-cx6-lx_eno12399np0
+ bundle port-priority 15000
+ ipv4 address 192.168.135.1 255.255.255.128
+ ipv6 nd prefix default no-autoconfig
+ ipv6 nd prefix 2600:52:7:135::/64 no-adv
+ ipv6 address 2600:52:7:135::1/64
+!
+interface TwentyFiveGigE0/0/0/48/1
+ description dell-6SQZJ74_master-0.vcp100_mlx-cx6-lx_eno12409np1
+ bundle id 1 mode active
+ bundle port-priority 16000
+!
+interface TwentyFiveGigE0/0/0/48/2
+ description dell-BSQZJ74_master-1.vcp100_mlx-cx6-lx_eno12399np0
+ ipv4 address 192.168.136.1 255.255.255.128
+ ipv6 nd prefix default no-autoconfig
+ ipv6 nd prefix 2600:52:7:136::/64 no-adv
+ ipv6 address 2600:52:7:136::1/64
+!
+interface TwentyFiveGigE0/0/0/48/3
+ description dell-BSQZJ74_master-1.vcp100_mlx-cx6-lx_eno12409np1
+ bundle id 4 mode active
+ bundle port-priority 16000
+!
+interface TwentyFiveGigE0/0/0/51/0
+ description dell-7SQZJ74_master-2.vcp100_mlx-cx6-lx_eno12399np0
+ ipv4 address 192.168.137.1 255.255.255.128
+ ipv6 nd prefix default no-autoconfig
+ ipv6 nd prefix 2600:52:7:137::/64 no-adv
+ ipv6 address 2600:52:7:137::1/64
+!
+interface TwentyFiveGigE0/0/0/51/1
+ description dell-7SQZJ74_master-2.vcp100_mlx-cx6-lx_eno12409np1
+ bundle id 7 mode active
+ bundle port-priority 16000
+!
+interface TwentyFiveGigE0/0/0/51/2
+ description dell-8SQZJ74_worker-0.vcp100_mlx-cx6-lx_eno12399np0
+ bundle id 10 mode active
+ bundle port-priority 15000
+!
+interface TwentyFiveGigE0/0/0/51/3
+ description dell-8SQZJ74_worker-0.vcp100_mlx-cx6-lx_eno12409np1
+ bundle id 10 mode active
+ bundle port-priority 16000
+!
+interface TwentyFiveGigE0/0/0/52/0
+ description dell-9SQZJ74_worker-1.vcp100_mlx-cx6-lx_eno12399np0
+ bundle id 13 mode active
+ bundle port-priority 15000
+!
+interface TwentyFiveGigE0/0/0/52/1
+ description dell-9SQZJ74_worker-1.vcp100_mlx-cx6-lx_eno12409np1
+ bundle id 13 mode active
+ bundle port-priority 16000
+!
+interface TwentyFiveGigE0/0/0/52/2
+ description dell-CSQZJ74_worker-2.vcp100_mlx-cx6-lx_eno12399np0
+ bundle id 16 mode active
+ bundle port-priority 15000
+!
+interface TwentyFiveGigE0/0/0/52/3
+ description dell-CSQZJ74_worker-2.vcp100_mlx-cx6-lx_eno12409np1
+ bundle id 16 mode active
+ bundle port-priority 16000
+!
+interface TwentyFiveGigE0/0/0/55/0
+ description dell-5SQZJ74_worker-3.vcp100_mlx-cx6-lx_eno12399np0
+ ipv4 address 192.168.133.1 255.255.255.128
+ ipv6 enable
+!
+interface TwentyFiveGigE0/0/0/55/1
+ description dell-5SQZJ74_worker-3.vcp100_mlx-cx6-lx_eno12409np1
+!
+interface TwentyFiveGigE0/0/0/55/2
+ description hpe-jumphost-eno5
+ mtu 9216
+!
+interface TwentyFiveGigE0/0/0/55/2.16 l2transport
+ encapsulation dot1q 16
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/55/2.132 l2transport
+ encapsulation untagged
+!
+interface TwentyFiveGigE0/0/0/55/2.1016 l2transport
+ encapsulation dot1q 1016
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/55/2.3804 l2transport
+ encapsulation dot1q 3804
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/55/2.3805 l2transport
+ encapsulation dot1q 3805
+ rewrite ingress tag pop 1 symmetric
+!
+interface TwentyFiveGigE0/0/0/55/3
+ description hpe-jumphost-eno6
+!
+interface TwentyFiveGigE0/0/0/55/3.132 l2transport
+ encapsulation untagged
+!
+interface HundredGigE0/0/0/60
+ description dell-6SQZJ74_master-0.vcp100_mlx-cx6-dx_ens3f0np0
+ bundle id 2 mode active
+ bundle port-priority 15000
+!
+interface HundredGigE0/0/0/61
+ description dell-6SQZJ74_master-0.vcp100_mlx-cx6-dx_ens3f0np1
+ bundle id 2 mode active
+ bundle port-priority 16000
+!
+interface HundredGigE0/0/0/62
+ shutdown
+!
+interface HundredGigE0/0/0/63
+ description "uplink to 107_5120-48y-et-0/0/48"
+ mtu 9216
+!
+interface HundredGigE0/0/0/63.3132 l2transport
+ encapsulation dot1q 3132
+ rewrite ingress tag pop 1 symmetric
+!
+interface FourHundredGigE0/0/0/64
+ shutdown
+!
+interface FourHundredGigE0/0/0/65
+ shutdown
+!
+interface preconfigure HundredGigE0/0/0/0
+ shutdown
+!
+interface preconfigure HundredGigE0/0/0/32
+ shutdown
+!
+interface preconfigure TwentyFiveGigE0/0/0/32
+!
+interface preconfigure HundredGigE0/0/0/36
+ shutdown
+!
+interface preconfigure HundredGigE0/0/0/40
+ shutdown
+!
+interface preconfigure HundredGigE0/0/0/44
+ shutdown
+!
+interface preconfigure HundredGigE0/0/0/48
+ shutdown
+!
+interface preconfigure HundredGigE0/0/0/52
+ shutdown
+!
+interface preconfigure FortyGigE0/0/0/56
+ shutdown
+!
+interface preconfigure HundredGigE0/0/0/64
+ shutdown
+!
+!
+route-policy PASS-ALL
+  pass
+end-policy
+!
+route-policy ALLOW-CONNECTED
+  pass
+end-policy
+!
+route-policy LEAK-177-TO-RED
+  if destination in (192.168.177.0/25) then
+    pass
+  endif
+end-policy
+!
+route-policy LEAK-110-TO-GLOBAL
+  if destination in (192.168.110.0/24) then
+    pass
+  endif
+end-policy
+!
+router static
+ address-family ipv4 unicast
+  0.0.0.0/0 192.168.249.17
+ !
+ vrf mgmt
+  address-family ipv4 unicast
+   192.168.10.0/24 192.168.254.1
+   192.168.239.0/24 192.168.254.1
+  !
+ !
+!
+router isis PE
+ is-type level-1
+ net 49.0001.0000.0000.0020.00
+ log adjacency changes
+ lsp-gen-interval initial-wait 50 secondary-wait 200 maximum-wait 5000
+ address-family ipv4 unicast
+  metric-style wide
+ !
+ address-family ipv6 unicast
+  metric-style wide
+  advertise passive-only
+  segment-routing srv6
+   locator MAIN
+   !
+  !
+ !
+ interface Loopback0
+  passive
+  address-family ipv4 unicast
+  !
+  address-family ipv6 unicast
+  !
+ !
+ interface TwentyFiveGigE0/0/0/48/0
+  circuit-type level-1
+  address-family ipv4 unicast
+  !
+  address-family ipv6 unicast
+  !
+ !
+ interface TwentyFiveGigE0/0/0/48/2
+  circuit-type level-1
+  address-family ipv4 unicast
+  !
+  address-family ipv6 unicast
+  !
+ !
+ interface TwentyFiveGigE0/0/0/51/0
+  circuit-type level-1
+  address-family ipv4 unicast
+  !
+  address-family ipv6 unicast
+  !
+ !
+!
+router bgp 65500
+ bgp router-id 10.0.0.20
+ bgp graceful-restart
+ segment-routing srv6
+  locator MAIN
+ !
+ bgp log neighbor changes detail
+ bgp bestpath as-path multipath-relax
+ address-family ipv4 unicast
+  network 192.168.177.0/25
+ !
+ address-family vpnv4 unicast
+  segment-routing srv6
+   locator MAIN
+  !
+ !
+ address-family ipv6 unicast
+ !
+ address-family vpnv6 unicast
+  segment-routing srv6
+   locator MAIN
+  !
+ !
+ neighbor-group PE-NODES
+  remote-as 65500
+  update-source Loopback0
+  address-family vpnv4 unicast
+   route-policy PASS-ALL out
+  !
+  address-family vpnv6 unicast
+  !
+ !
+ neighbor fc00:0:2::1
+  use neighbor-group PE-NODES
+ !
+ neighbor fc00:0:3::1
+  use neighbor-group PE-NODES
+ !
+ neighbor fc00:0:4::1
+  use neighbor-group PE-NODES
+ !
+ neighbor fd00:3:9::1
+  use neighbor-group PE-NODES
+ !
+ vrf red
+  rd 65500:2
+  address-family ipv4 unicast
+   advertise best-external
+   segment-routing srv6
+    locator MAIN
+    alloc mode per-vrf
+   !
+   network 10.10.20.1/32
+   network 10.100.0.1/32
+   redistribute connected route-policy ALLOW-CONNECTED
+  !
+  address-family ipv6 unicast
+   advertise best-external
+   segment-routing srv6
+    locator MAIN
+    alloc mode per-vrf
+   !
+   network fc00:10:20::1/128
+  !
+ !
+!
+l2vpn
+ bridge group 1
+  bridge-domain 16
+   interface Bundle-Ether1.16
+   !
+   interface Bundle-Ether2.16
+   !
+   interface Bundle-Ether4.16
+   !
+   interface Bundle-Ether5.16
+   !
+   interface Bundle-Ether7.16
+   !
+   interface Bundle-Ether8.16
+   !
+   interface Bundle-Ether10.16
+   !
+   interface Bundle-Ether11.16
+   !
+   interface Bundle-Ether13.16
+   !
+   interface Bundle-Ether14.16
+   !
+   interface Bundle-Ether16.16
+   !
+   interface Bundle-Ether17.16
+   !
+   interface Bundle-Ether19.16
+   !
+   interface Bundle-Ether20.16
+   !
+   interface HundredGigE0/0/0/4.16
+   !
+   interface TwentyFiveGigE0/0/0/55/2.16
+   !
+   routed interface BVI16
+   !
+  !
+  bridge-domain 132
+   interface Bundle-Ether1.132
+   !
+   interface Bundle-Ether2.132
+   !
+   interface Bundle-Ether4.132
+   !
+   interface Bundle-Ether5.132
+   !
+   interface Bundle-Ether7.132
+   !
+   interface Bundle-Ether8.132
+   !
+   interface Bundle-Ether10.132
+   !
+   interface Bundle-Ether11.132
+   !
+   interface Bundle-Ether13.132
+   !
+   interface Bundle-Ether14.132
+   !
+   interface Bundle-Ether16.132
+   !
+   interface Bundle-Ether17.132
+   !
+   interface Bundle-Ether19.132
+   !
+   interface Bundle-Ether20.132
+   !
+   interface TenGigE0/0/0/56/0.132
+   !
+   interface TwentyFiveGigE0/0/0/0/0.132
+   !
+   interface TwentyFiveGigE0/0/0/0/1.132
+   !
+   interface TwentyFiveGigE0/0/0/0/2.132
+   !
+   interface TwentyFiveGigE0/0/0/0/3.132
+   !
+   interface TwentyFiveGigE0/0/0/32/0.132
+   !
+   interface TwentyFiveGigE0/0/0/36/0.132
+   !
+   interface TwentyFiveGigE0/0/0/39/0.132
+   !
+   interface TwentyFiveGigE0/0/0/43/0.132
+   !
+   interface TwentyFiveGigE0/0/0/44/0.132
+   !
+   interface TwentyFiveGigE0/0/0/44/1.132
+   !
+   interface TwentyFiveGigE0/0/0/44/2.132
+   !
+   interface TwentyFiveGigE0/0/0/44/3.132
+   !
+   interface TwentyFiveGigE0/0/0/47/0.132
+   !
+   interface TwentyFiveGigE0/0/0/47/1.132
+   !
+   interface TwentyFiveGigE0/0/0/47/2.132
+   !
+   interface TwentyFiveGigE0/0/0/47/3.132
+   !
+   interface TwentyFiveGigE0/0/0/48/1.132
+   !
+   interface TwentyFiveGigE0/0/0/48/3.132
+   !
+   interface TwentyFiveGigE0/0/0/51/1.132
+   !
+   interface TwentyFiveGigE0/0/0/55/2.132
+   !
+   interface TwentyFiveGigE0/0/0/55/3.132
+   !
+   routed interface BVI132
+   !
+  !
+  bridge-domain 1016
+   interface Bundle-Ether1.1016
+   !
+   interface Bundle-Ether2.1016
+   !
+   interface Bundle-Ether4.1016
+   !
+   interface Bundle-Ether5.1016
+   !
+   interface Bundle-Ether7.1016
+   !
+   interface Bundle-Ether8.1016
+   !
+   interface Bundle-Ether10.1016
+   !
+   interface Bundle-Ether11.1016
+   !
+   interface Bundle-Ether13.1016
+   !
+   interface Bundle-Ether14.1016
+   !
+   interface Bundle-Ether16.1016
+   !
+   interface Bundle-Ether17.1016
+   !
+   interface Bundle-Ether19.1016
+   !
+   interface Bundle-Ether20.1016
+   !
+   interface HundredGigE0/0/0/4.1016
+   !
+   interface TwentyFiveGigE0/0/0/55/2.1016
+   !
+  !
+  bridge-domain 1132
+   interface TenGigE0/0/0/56/0.1132
+   !
+   routed interface BVI1132
+   !
+  !
+  bridge-domain 1700
+   interface TwentyFiveGigE0/0/0/0/0.1700
+   !
+   interface TwentyFiveGigE0/0/0/0/1.1700
+   !
+   interface TwentyFiveGigE0/0/0/0/2.1700
+   !
+   interface TwentyFiveGigE0/0/0/0/3.1700
+   !
+   interface TwentyFiveGigE0/0/0/32/0.1700
+   !
+   interface TwentyFiveGigE0/0/0/32/1.1700
+   !
+   interface TwentyFiveGigE0/0/0/32/2.1700
+   !
+   interface TwentyFiveGigE0/0/0/32/3.1700
+   !
+   interface TwentyFiveGigE0/0/0/35/0.1700
+   !
+   interface TwentyFiveGigE0/0/0/35/1.1700
+   !
+   interface TwentyFiveGigE0/0/0/35/2.1700
+   !
+   interface TwentyFiveGigE0/0/0/35/3.1700
+   !
+   interface TwentyFiveGigE0/0/0/36/0.1700
+   !
+   interface TwentyFiveGigE0/0/0/36/1.1700
+   !
+   interface TwentyFiveGigE0/0/0/36/2.1700
+   !
+   interface TwentyFiveGigE0/0/0/36/3.1700
+   !
+   interface TwentyFiveGigE0/0/0/39/0.1700
+   !
+   interface TwentyFiveGigE0/0/0/39/1.1700
+   !
+   interface TwentyFiveGigE0/0/0/39/2.1700
+   !
+   interface TwentyFiveGigE0/0/0/39/3.1700
+   !
+   interface TwentyFiveGigE0/0/0/40/0.1700
+   !
+   interface TwentyFiveGigE0/0/0/40/1.1700
+   !
+   interface TwentyFiveGigE0/0/0/40/2.1700
+   !
+   interface TwentyFiveGigE0/0/0/40/3.1700
+   !
+   interface TwentyFiveGigE0/0/0/43/0.1700
+   !
+   interface TwentyFiveGigE0/0/0/43/1.1700
+   !
+   interface TwentyFiveGigE0/0/0/43/2.1700
+   !
+   interface TwentyFiveGigE0/0/0/43/3.1700
+   !
+   interface TwentyFiveGigE0/0/0/44/0.1700
+   !
+   interface TwentyFiveGigE0/0/0/44/1.1700
+   !
+   interface TwentyFiveGigE0/0/0/44/2.1700
+   !
+   interface TwentyFiveGigE0/0/0/44/3.1700
+   !
+   interface TwentyFiveGigE0/0/0/47/0.1700
+   !
+   interface TwentyFiveGigE0/0/0/47/1.1700
+   !
+   interface TwentyFiveGigE0/0/0/47/2.1700
+   !
+   interface TwentyFiveGigE0/0/0/47/3.1700
+   !
+   routed interface BVI1700
+   !
+  !
+  bridge-domain 1701
+   interface TwentyFiveGigE0/0/0/0/0.1701
+   !
+   interface TwentyFiveGigE0/0/0/0/1.1701
+   !
+   interface TwentyFiveGigE0/0/0/0/2.1701
+   !
+   interface TwentyFiveGigE0/0/0/0/3.1701
+   !
+   interface TwentyFiveGigE0/0/0/32/0.1701
+   !
+   interface TwentyFiveGigE0/0/0/32/1.1701
+   !
+   interface TwentyFiveGigE0/0/0/32/2.1701
+   !
+   interface TwentyFiveGigE0/0/0/32/3.1701
+   !
+   interface TwentyFiveGigE0/0/0/35/0.1701
+   !
+   interface TwentyFiveGigE0/0/0/35/1.1701
+   !
+   interface TwentyFiveGigE0/0/0/35/2.1701
+   !
+   interface TwentyFiveGigE0/0/0/35/3.1701
+   !
+   interface TwentyFiveGigE0/0/0/36/0.1701
+   !
+   interface TwentyFiveGigE0/0/0/36/1.1701
+   !
+   interface TwentyFiveGigE0/0/0/36/2.1701
+   !
+   interface TwentyFiveGigE0/0/0/36/3.1701
+   !
+   interface TwentyFiveGigE0/0/0/39/0.1701
+   !
+   interface TwentyFiveGigE0/0/0/39/1.1701
+   !
+   interface TwentyFiveGigE0/0/0/39/2.1701
+   !
+   interface TwentyFiveGigE0/0/0/39/3.1701
+   !
+   interface TwentyFiveGigE0/0/0/40/0.1701
+   !
+   interface TwentyFiveGigE0/0/0/40/1.1701
+   !
+   interface TwentyFiveGigE0/0/0/40/2.1701
+   !
+   interface TwentyFiveGigE0/0/0/40/3.1701
+   !
+   interface TwentyFiveGigE0/0/0/43/0.1701
+   !
+   interface TwentyFiveGigE0/0/0/43/1.1701
+   !
+   interface TwentyFiveGigE0/0/0/43/2.1701
+   !
+   interface TwentyFiveGigE0/0/0/43/3.1701
+   !
+   interface TwentyFiveGigE0/0/0/44/0.1701
+   !
+   interface TwentyFiveGigE0/0/0/44/1.1701
+   !
+   interface TwentyFiveGigE0/0/0/44/2.1701
+   !
+   interface TwentyFiveGigE0/0/0/44/3.1701
+   !
+   interface TwentyFiveGigE0/0/0/47/0.1701
+   !
+   interface TwentyFiveGigE0/0/0/47/1.1701
+   !
+   interface TwentyFiveGigE0/0/0/47/2.1701
+   !
+   interface TwentyFiveGigE0/0/0/47/3.1701
+   !
+   routed interface BVI1701
+   !
+  !
+  bridge-domain 1702
+   interface TwentyFiveGigE0/0/0/0/0.1702
+   !
+   interface TwentyFiveGigE0/0/0/0/1.1702
+   !
+   interface TwentyFiveGigE0/0/0/0/2.1702
+   !
+   interface TwentyFiveGigE0/0/0/0/3.1702
+   !
+   interface TwentyFiveGigE0/0/0/32/0.1702
+   !
+   interface TwentyFiveGigE0/0/0/32/1.1702
+   !
+   interface TwentyFiveGigE0/0/0/32/2.1702
+   !
+   interface TwentyFiveGigE0/0/0/32/3.1702
+   !
+   interface TwentyFiveGigE0/0/0/35/0.1702
+   !
+   interface TwentyFiveGigE0/0/0/35/1.1702
+   !
+   interface TwentyFiveGigE0/0/0/35/2.1702
+   !
+   interface TwentyFiveGigE0/0/0/35/3.1702
+   !
+   interface TwentyFiveGigE0/0/0/36/0.1702
+   !
+   interface TwentyFiveGigE0/0/0/36/1.1702
+   !
+   interface TwentyFiveGigE0/0/0/36/2.1702
+   !
+   interface TwentyFiveGigE0/0/0/36/3.1702
+   !
+   interface TwentyFiveGigE0/0/0/39/0.1702
+   !
+   interface TwentyFiveGigE0/0/0/39/1.1702
+   !
+   interface TwentyFiveGigE0/0/0/39/2.1702
+   !
+   interface TwentyFiveGigE0/0/0/39/3.1702
+   !
+   interface TwentyFiveGigE0/0/0/40/0.1702
+   !
+   interface TwentyFiveGigE0/0/0/40/1.1702
+   !
+   interface TwentyFiveGigE0/0/0/40/2.1702
+   !
+   interface TwentyFiveGigE0/0/0/40/3.1702
+   !
+   interface TwentyFiveGigE0/0/0/43/0.1702
+   !
+   interface TwentyFiveGigE0/0/0/43/1.1702
+   !
+   interface TwentyFiveGigE0/0/0/43/2.1702
+   !
+   interface TwentyFiveGigE0/0/0/43/3.1702
+   !
+   interface TwentyFiveGigE0/0/0/44/0.1702
+   !
+   interface TwentyFiveGigE0/0/0/44/1.1702
+   !
+   interface TwentyFiveGigE0/0/0/44/2.1702
+   !
+   interface TwentyFiveGigE0/0/0/44/3.1702
+   !
+   interface TwentyFiveGigE0/0/0/47/0.1702
+   !
+   interface TwentyFiveGigE0/0/0/47/1.1702
+   !
+   interface TwentyFiveGigE0/0/0/47/2.1702
+   !
+   interface TwentyFiveGigE0/0/0/47/3.1702
+   !
+   routed interface BVI1702
+   !
+  !
+  bridge-domain 3132
+   interface HundredGigE0/0/0/63.3132
+   !
+   routed interface BVI3132
+   !
+  !
+  bridge-domain 3804
+   interface Bundle-Ether1.3804
+   !
+   interface Bundle-Ether2.3804
+   !
+   interface Bundle-Ether3.3804
+   !
+   interface Bundle-Ether4.3804
+   !
+   interface Bundle-Ether5.3804
+   !
+   interface Bundle-Ether6.3804
+   !
+   interface Bundle-Ether7.3804
+   !
+   interface Bundle-Ether8.3804
+   !
+   interface Bundle-Ether9.3804
+   !
+   interface Bundle-Ether10.3804
+   !
+   interface Bundle-Ether11.3804
+   !
+   interface Bundle-Ether12.3804
+   !
+   interface Bundle-Ether13.3804
+   !
+   interface Bundle-Ether14.3804
+   !
+   interface Bundle-Ether15.3804
+   !
+   interface Bundle-Ether16.3804
+   !
+   interface Bundle-Ether17.3804
+   !
+   interface Bundle-Ether18.3804
+   !
+   interface Bundle-Ether19.3804
+   !
+   interface Bundle-Ether20.3804
+   !
+   interface Bundle-Ether21.3804
+   !
+   interface TwentyFiveGigE0/0/0/55/2.3804
+   !
+   routed interface BVI3804
+   !
+  !
+  bridge-domain 3805
+   interface Bundle-Ether1.3805
+   !
+   interface Bundle-Ether2.3805
+   !
+   interface Bundle-Ether3.3805
+   !
+   interface Bundle-Ether4.3805
+   !
+   interface Bundle-Ether5.3805
+   !
+   interface Bundle-Ether6.3805
+   !
+   interface Bundle-Ether7.3805
+   !
+   interface Bundle-Ether8.3805
+   !
+   interface Bundle-Ether9.3805
+   !
+   interface Bundle-Ether10.3805
+   !
+   interface Bundle-Ether11.3805
+   !
+   interface Bundle-Ether12.3805
+   !
+   interface Bundle-Ether13.3805
+   !
+   interface Bundle-Ether14.3805
+   !
+   interface Bundle-Ether15.3805
+   !
+   interface Bundle-Ether16.3805
+   !
+   interface Bundle-Ether17.3805
+   !
+   interface Bundle-Ether18.3805
+   !
+   interface Bundle-Ether19.3805
+   !
+   interface Bundle-Ether20.3805
+   !
+   interface Bundle-Ether21.3805
+   !
+   interface TwentyFiveGigE0/0/0/55/2.3805
+   !
+   routed interface BVI3805
+   !
+  !
+  bridge-domain 3820
+   interface Bundle-Ether10.3820
+   !
+   interface Bundle-Ether11.3820
+   !
+   interface Bundle-Ether12.3820
+   !
+   interface Bundle-Ether13.3820
+   !
+   interface Bundle-Ether14.3820
+   !
+   interface Bundle-Ether15.3820
+   !
+   interface Bundle-Ether16.3820
+   !
+   interface Bundle-Ether17.3820
+   !
+   interface Bundle-Ether18.3820
+   !
+   interface Bundle-Ether19.3820
+   !
+   interface Bundle-Ether20.3820
+   !
+   interface Bundle-Ether21.3820
+   !
+   routed interface BVI3820
+   !
+  !
+  bridge-domain 3821
+   interface Bundle-Ether10.3821
+   !
+   interface Bundle-Ether11.3821
+   !
+   interface Bundle-Ether12.3821
+   !
+   interface Bundle-Ether13.3821
+   !
+   interface Bundle-Ether14.3821
+   !
+   interface Bundle-Ether15.3821
+   !
+   interface Bundle-Ether16.3821
+   !
+   interface Bundle-Ether17.3821
+   !
+   interface Bundle-Ether18.3821
+   !
+   interface Bundle-Ether19.3821
+   !
+   interface Bundle-Ether20.3821
+   !
+   interface Bundle-Ether21.3821
+   !
+   routed interface BVI3821
+   !
+  !
+ !
+!
+segment-routing
+ srv6
+  logging locator status
+  formats
+   format usid-f3216
+   !
+  !
+  encapsulation
+   source-address fd00:20::1
+  !
+  locators
+   locator MAIN
+    micro-segment behavior unode psp-usd
+    prefix fd00:20:10::/48
+   !
+  !
+ !
+!
+lldp
+!
+crypto key generate rsa the_default general-keys 2048 | -----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0NIXi9j9UB5eURUhNtQk
+0hGZrNnbnocXyOkKlNhqWgSAHr3zkb1SWXrk1KTjimRxMiy0wv4qqM9D3ZXFhO7k
+cvVe5DEBsF8oPXg4N20Yvq/cmCVDnYcBod+9dr3whjbz3BTNWGJNbb/x7A6andrb
+SdNY6pbZVyynyTUmDflstqqexJBqTqK92/9q8G0A8OBVcfzkZi6ftm1f4TzAOsrh
+l9J2O+et/mUsYg8lRxGVMDhjHMdpwhxLP2Z8hEVJCzdlbjCwMSE1euCatObr4Y2G
+kbvUzDaLAzQYbtMPgJ09D7nFefc2mSyNJmOl1iGavgk74nWDqzPxI6ijWN+BlWRr
+ZQIDAQAB
+-----END PUBLIC KEY-----
+ |
+ssh server username admin
+ keystring ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDEY5UpcgnxHPKi8WD2U7yVcyd4hupm8sacuK1LupSquFlqmwtDAu2uJx+/yfng1voq60cNWHpthXiGnieZ2G2HclxJ+XV7kC/yEszZs19+sOqQoXBFH0tPB1Vl58RbXQzkFaNjb8FTJ74AUEAEDKK+m+1Zfm8CDY58xj4jB9A5VdZfwXxL2nZAnbz0JTUzEQUJcb3c9zySt3C3/DbYZH9C2czhDSPdiskpx0g3grU275VQj8l8WSdv8BgkLrf9dS5yUmJDz1x3Rd9xUAkv6fuT28AbAJflKx4U18pg19To7hmCrCQ2N/Cr9nBHmYvl+fPqU/vSVA38tuhwTT9Q+y1FlmU5zdJVujR3O4JCo0litziqA7rRwwwL3e/KaqmgitK6ty984fyUD3lML7w+WiKJkA/aap06pFPgLS6wlEsctk8IOawYMafwiTt651XckmgIGxZDgIr+zR8p+va0vVIYyQkzG75Lu+cqUZH0uKCs1xuugVBl1DHv0Eyl78Ogxjk=
+!
+ssh server v2
+ssh server vrf mgmt
+end
+

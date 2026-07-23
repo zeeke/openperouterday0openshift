@@ -41,6 +41,7 @@ rawfrrconfigs:
        neighbor TOR remote-as ${BGP_AS}
        neighbor TOR update-source ${LOOPBACK_V6}
        neighbor ${TOR_LOOPBACK} peer-group TOR
+       neighbor TOR capability extended-nexthop
        !
        neighbor EVPN-CLIENTS peer-group
        neighbor EVPN-CLIENTS remote-as ${BGP_AS}
