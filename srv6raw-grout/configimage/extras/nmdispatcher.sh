@@ -29,7 +29,10 @@ vf_pci=$(readlink -f /sys/class/net/$1/device)
 for vfn in "$physfn"/virtfn*; do
 	[ "$(readlink -f "$vfn")" = "$vf_pci" ] || continue
 	vf_idx=${vfn##*virtfn}
-	[ "$vf_idx" = 0 ] && exec /usr/local/bin/perouter-bind.sh "$1"
+	if [ "$vf_idx" = 0 ]; then
+		# VF 0 is for grout
+		exec /usr/local/bin/perouter-bind.sh "$1"
+	fi
 	break
 done
 

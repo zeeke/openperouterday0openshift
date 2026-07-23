@@ -13,9 +13,6 @@ source /etc/openperouter/openperouter.env
 source /var/lib/openperouter/vpn-setup.vars
 
 : ${REFRESH_INTERVAL:=10}
-: ${L2_VNI:=210}
-: ${L2_GATEWAY_IP:=192.168.110.1/24}
-: ${HOST_VLAN:=42}
 : ${BRIDGE_NAME:="br-pe-${L2_VNI}"}
 
 # Strip CIDR prefix to get the subnet base for VIP discovery

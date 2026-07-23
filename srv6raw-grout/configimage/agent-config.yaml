@@ -22,7 +22,7 @@ additionalNTPSources:
 - 10.100.0.1
 rendezvousIP: 192.168.110.2
 hosts:
-- hostname: master-0
+- hostname: master-0.sno-lab.example.com
   rootDeviceHints:
     deviceName: /dev/sda
   interfaces:
@@ -36,6 +36,7 @@ hosts:
       ipv4:
         enabled: true
         auto-dns: false
+        auto-hostname: false
         dhcp: true
       ipv6:
         enabled: false
@@ -112,7 +113,7 @@ hosts:
       - destination: ::/0
         next-hop-address: fd00:110::1
         next-hop-interface: ens1f0v1
-- hostname: master-1
+- hostname: master-1.sno-lab.example.com
   rootDeviceHints:
     deviceName: /dev/sda
   interfaces:
@@ -126,6 +127,7 @@ hosts:
       ipv4:
         enabled: true
         auto-dns: false
+        auto-hostname: false
         dhcp: true
       ipv6:
         enabled: false
@@ -202,7 +204,7 @@ hosts:
       - destination: ::/0
         next-hop-address: fd00:110::1
         next-hop-interface: ens1f0v1
-- hostname: master-2
+- hostname: master-2.sno-lab.example.com
   rootDeviceHints:
     deviceName: /dev/sda
   interfaces:
@@ -216,6 +218,7 @@ hosts:
       ipv4:
         enabled: true
         auto-dns: false
+        auto-hostname: false
         dhcp: true
       ipv6:
         enabled: false

@@ -21,14 +21,6 @@ set -a
 source /etc/openperouter/openperouter.env
 source /var/lib/openperouter/vpn-setup.vars
 
-: ${BGP_AS:=65500}
-: ${RR_NODE_IDX:=2}
-: ${SRV6_GATEWAY:=fc00:0:14::1}
-: ${VRF_NAME:=red}
-: ${L2_VNI:=210}
-: ${L2_GATEWAY_IP:=192.168.110.1/24}
-: ${L2_GATEWAY_IP_V6:=fd00:110::1/64}
-
 set +a
 
 echo "NODE_NAME=$NODE_NAME LAST_OCTET=$LAST_OCTET"

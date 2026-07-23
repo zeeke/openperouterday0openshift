@@ -31,18 +31,27 @@ fi
 LAST_OCTET=$(echo "$HOST_IP" | sed -En 's,.*\.([0-9]+)/.*,\1,p')
 ROUTER_ID=$(printf "$ROUTER_ID_FMT" "$LAST_OCTET")
 
-# Derive host VF VLAN from the PF's VF config
-HOST_VLAN=0
+# Derive host VF VLAN from the PF's VF config.
+# Retry: nmstate may not have applied the VLAN yet when NM fires the
+# dispatcher.
+HOST_VLAN=""
 vf_pci=$(readlink -ve /sys/class/net/$iface/device)
 pf_name=$(basename /sys/class/net/$iface/device/physfn/net/*)
 for vfn in /sys/class/net/$pf_name/device/virtfn*; do
 	if [ "$(readlink -ve $vfn)" = "$vf_pci" ]; then
 		vf_idx=$(basename "$vfn" | sed 's/virtfn//')
-		HOST_VLAN=$(ip link show "$pf_name" |
-			sed -En "s/.*vf $vf_idx.*vlan ([0-9]+).*/\\1/p")
+		for _ in $(seq 10); do
+			HOST_VLAN=$(ip link show "$pf_name" |
+				sed -En "s/.*vf \\<${vf_idx}\\>.*vlan ([0-9]+)\\>.*/\\1/p")
+			[ -n "$HOST_VLAN" ] && break
+			sleep 1
+		done
 		break
 	fi
 done
+if [ -z "$HOST_VLAN" ]; then
+	die "failed to detect VLAN on $pf_name vf $vf_idx"
+fi
 
 VARS_FILE=/var/lib/openperouter/vpn-setup.vars
 mkdir -p $(dirname $VARS_FILE)

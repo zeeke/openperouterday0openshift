@@ -11,15 +11,9 @@ set -euo pipefail
 
 die() { echo "error: $*" >&2; exit 1; }
 
-# Load variables from dispatch-generated vars
+# Load variables
+source /etc/openperouter/openperouter.env
 source /var/lib/openperouter/vpn-setup.vars
-
-# Parameters (from environment or defaults)
-: ${VRF_NAME:=red}
-: ${L2_VNI:=210}
-: ${L2_GATEWAY_IP:=192.168.110.1/24}
-: ${L2_GATEWAY_IP_V6:=fd00:110::1/64}
-: ${VTEP_IP:=$ROUTER_ID}
 
 [ -n "$VTEP_IP" ] || die "VTEP_IP not set -- run setup-underlay.service first"
 
@@ -50,3 +44,7 @@ grcli address add $L2_GATEWAY_IP iface $L2_BRIDGE
 if [ -n "${L2_GATEWAY_IP_V6}" ]; then
 	grcli address add $L2_GATEWAY_IP_V6 iface $L2_BRIDGE
 fi
+
+# Force GARP to be sent.
+grcli interface set port underlay0 down
+grcli interface set port underlay0 up
