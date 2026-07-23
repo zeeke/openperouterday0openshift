@@ -159,13 +159,37 @@ if [ -z "$IGN_VERSION" ] || [ "$IGN_VERSION" = "null" ]; then
 fi
 log "Ignition version from local file: $IGN_VERSION"
 
-# Extract hostname file config from local ignition
-HOSTNAME_CONFIG=$(jq '.storage.files[] | select(.path == "/etc/hostname")' "$LOCAL_IGN_FILE" 2>/dev/null)
-if [ -z "$HOSTNAME_CONFIG" ] || [ "$HOSTNAME_CONFIG" = "null" ]; then
-    log "WARNING: No /etc/hostname configuration found in local ignition file"
-    HOSTNAME_CONFIG=""
+# Resolve the correct hostname from /etc/assisted/hostnames/<mac>.
+# The appliance's load-config-iso creates these files from agent-config.yaml.
+# The assisted installer uses the runtime hostname (often wrong due to
+# DHCP) instead of the one from agent-config.yaml. We fix it here.
+CORRECT_HOSTNAME=""
+for hfile in /etc/assisted/hostnames/*; do
+    [ -f "$hfile" ] || continue
+    mac=$(basename "$hfile")
+    if ip -o link show | grep -qi "$mac"; then
+        CORRECT_HOSTNAME=$(cat "$hfile")
+        log "Matched MAC $mac -> hostname $CORRECT_HOSTNAME"
+        break
+    fi
+done
+
+if [ -n "$CORRECT_HOSTNAME" ]; then
+    HOSTNAME_CONFIG=$(jq -n --arg hostname "$CORRECT_HOSTNAME" '{
+        "path": "/etc/hostname",
+        "mode": 420,
+        "overwrite": true,
+        "contents": {
+            "source": ("data:," + $hostname)
+        }
+    }')
 else
-    log "Found hostname configuration in local ignition file"
+    log "WARNING: Could not resolve hostname from /etc/assisted/hostnames, using local ignition"
+    HOSTNAME_CONFIG=$(jq '.storage.files[] | select(.path == "/etc/hostname")' "$LOCAL_IGN_FILE" 2>/dev/null)
+    if [ -z "$HOSTNAME_CONFIG" ] || [ "$HOSTNAME_CONFIG" = "null" ]; then
+        log "WARNING: No /etc/hostname in local ignition either"
+        HOSTNAME_CONFIG=""
+    fi
 fi
 
 if [ "$NODE_ROLE" = "master" ]; then
