@@ -29,6 +29,10 @@ echo "Setting up network infrastructure via grout"
 
 # Assign VTEP address to underlay port to allow creation of the VXLAN interface
 grcli address add ${VTEP_IP}/32 iface underlay0
+grcli address add ${UNDERLAY_V4}/25 iface underlay0
+grcli address add ${UNDERLAY_V6}/64 iface underlay0
+grcli address add ${LOOPBACK_V6}/128 iface underlay0
+grcli address add ${SRV6_SOURCE}/128 iface underlay0
 
 # Create VRF, bridge, VXLAN (VLAN bridge port is added later by
 # bridge-refresher after zebra has learned the VNI -- FRR #21190).
@@ -43,5 +47,4 @@ if [ -n "${L2_GATEWAY_IP_V6}" ]; then
 fi
 
 # Force GARP to be sent.
-grcli interface set port underlay0 down
 grcli interface set port underlay0 up

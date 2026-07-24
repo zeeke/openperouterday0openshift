@@ -47,7 +47,7 @@ if [[ ${#idrac_hosts[@]} -eq 0 ]]; then
 	exit 1
 fi
 
-BASTION=$(hostname -f)
+BASTION=192.168.132.10:8080/hbn
 
 # ============================================================
 # Step 1: Build appliance ISO (skip if exists)
@@ -97,14 +97,11 @@ config_iso="${config_image_dir}/agentconfig.noarch.iso"
 
 # ============================================================
 # Step 5: Update nginx symlinks
-# ============================================================
-echo "==> Updating nginx symlinks..."
+echo "==> Updating httpd symlinks..."
+sudo rm -f /opt/cache/hbn/*
+mv ${appliance_iso} ${config_iso} /opt/cache/hbn/
+sudo restorecon -RFv /opt/cache/hbn/
 
-ln -sf "$(realpath "${appliance_iso}")" /usr/share/nginx/html/appliance.iso
-ln -sf "$(realpath "${config_iso}")" /usr/share/nginx/html/config.iso
-chcon -t httpd_sys_content_t /usr/share/nginx/html/*.iso || true
-
-systemctl reload nginx 2>/dev/null || true
 
 # ============================================================
 # Step 6: Boot all servers via iDRAC

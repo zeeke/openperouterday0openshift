@@ -30,7 +30,7 @@ if [[ -z "${idrac_host}" || $# -eq 0 ]]; then
 fi
 
 IDRAC_USER="${IDRAC_USER:-root}"
-IDRAC_PASS="${IDRAC_PASS:-calvin}"
+IDRAC_PASS="${IDRAC_PASS:-Thok7Zi90deJA8r0wEPr}"
 
 IDRAC="https://${idrac_host}"
 VMEDIA="${IDRAC}/redfish/v1/Systems/System.Embedded.1/VirtualMedia"
@@ -69,15 +69,28 @@ for url in "$@"; do
 	curl -X POST \
 		"${VMEDIA}/${slot}/Actions/VirtualMedia.InsertMedia" \
 		-H 'Content-Type: application/json' \
-		-d "{\"Image\": \"${url}\"}"
+		-d "{\"Image\": \"${url}\", \"Inserted\": true, \"WriteProtected\": true}"
 	slot_idx=$((slot_idx + 1))
 done
 
-# Verify
+
+# Verify all ISOs are actually inserted
 echo "==> Verifying virtual media..."
+verify_failed=0
 for slot in ${slots}; do
-	curl "${VMEDIA}/${slot}" | jq '{Id, Image, Inserted}'
+	info=$(curl "${VMEDIA}/${slot}")
+	echo "${info}" | jq '{Id, Image, Inserted}'
+	inserted=$(echo "${info}" | jq -r '.Inserted')
+	image=$(echo "${info}" | jq -r '.Image')
+	if [[ "${image}" != "null" && "${image}" != "" && "${inserted}" != "true" ]]; then
+		echo "ERROR: slot ${slot} has image ${image} but Inserted=${inserted}"
+		verify_failed=1
+	fi
 done
+if [[ ${verify_failed} -eq 1 ]]; then
+	echo "ERROR: Not all virtual media inserted successfully. Aborting."
+	exit 1
+fi
 
 # Set persistent Hdd boot so that subsequent reboots during install go
 # to disk instead of falling through to the still-mounted virtual media.
@@ -102,3 +115,4 @@ curl -X POST \
 	-o /dev/null
 
 echo "==> Done. Server is booting from virtual media."
+
