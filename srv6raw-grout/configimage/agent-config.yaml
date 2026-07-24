@@ -35,8 +35,6 @@ hosts:
     - name: eno12399np0
       state: up
       type: ethernet
-      state: up
-      mtu: 1800
       ipv4:
         enabled: false
       ipv6:
@@ -61,6 +59,7 @@ hosts:
     - name: eno12399v1
       type: ethernet
       state: up
+      mtu: 1400
       ipv4:
         enabled: true
         auto-dns: false
@@ -134,8 +133,6 @@ hosts:
     - name: eno12399np0
       state: up
       type: ethernet
-      state: up
-      mtu: 1800
       ipv4:
         enabled: false
       ipv6:
@@ -160,6 +157,7 @@ hosts:
     - name: eno12399v1
       type: ethernet
       state: up
+      mtu: 1400
       ipv4:
         enabled: true
         auto-dns: false
@@ -233,8 +231,6 @@ hosts:
     - name: eno12399np0
       state: up
       type: ethernet
-      state: up
-      mtu: 1800
       ipv4:
         enabled: false
       ipv6:
@@ -259,6 +255,7 @@ hosts:
     - name: eno12399v1
       type: ethernet
       state: up
+      mtu: 1400
       ipv4:
         enabled: true
         auto-dns: false
