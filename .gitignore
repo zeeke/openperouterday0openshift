@@ -7,3 +7,6 @@
 /*/configimage/configimage/
 /*/configimage/install-config.yaml
 *.ref
+venv
+pull-secret.json
+*.out
