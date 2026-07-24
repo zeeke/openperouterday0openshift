@@ -1,0 +1,9 @@
+# Disable IPv6 on SR-IOV VFs at creation time to prevent SLAAC addresses.
+# The assisted-service rejects hosts where the same IPv6 prefix appears on
+# multiple interfaces (non-overlapping-subnets validation).  All eno12399 VFs
+# share 2600:52:7:x::/64 from the switch's RAs; disable_ipv6=1 removes any
+# addresses that snuck in and prevents new ones.
+# VFs bound to DPDK (v0, v1) may briefly appear as net devices before rebind;
+# this is harmless — DPDK takes over regardless.
+# TODO try removeing the sysctl. NM_UNMANAGED=1 should be enough
+ACTION=="add", SUBSYSTEM=="net", KERNEL=="eno12399v*", ENV{NM_UNMANAGED}="1", RUN+="/usr/sbin/sysctl -w net.ipv6.conf.%k.disable_ipv6=1"
