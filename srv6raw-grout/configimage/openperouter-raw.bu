@@ -131,7 +131,7 @@ storage:
     - path: /etc/udev/rules.d/90-nm-unmanaged-sriov-vf.rules
       mode: 0644
       contents:
-        local: 90-disable-ipv6-sriov-vf.rules
+        local: 90-nm-unmanaged-sriov-vf.rules
 systemd:
   units:
     # --- Quadlet services ---
