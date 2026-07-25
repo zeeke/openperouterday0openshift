@@ -69,9 +69,12 @@ spec:
           # Force destroy and recreate datapath threads. The performance
           # profile may have repinned them and grout will not recreate
           # existing threads.
+          date
           echo "Repinning grout: datapath=$DATAPATH control=$CONTROL"
-          grcli affinity cpus set control 0 datapath 1
-          grcli affinity cpus set control "$CONTROL" datapath "$DATAPATH"
+          # TODO: re-enable CPU pinnging as it caused a coredump
+          #grcli affinity cpus set control 0 datapath 1
+          #grcli affinity cpus set control "$CONTROL" datapath "$DATAPATH"
+          date
 
           echo "Reservation active"
           exec sleep infinity
