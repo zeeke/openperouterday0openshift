@@ -6,7 +6,7 @@ FLAVOR="${1:-}"
 sudo rm -rfv ${FLAVOR}/appliance/cache/* ${FLAVOR}/appliance/temp/*
 sudo rm -fv $(find . | grep openshift_install)
 ./${FLAVOR}/appliance/generate_appliance.sh /home/dciteam/apanatto/pull_secret.json ~/.ssh/id_ed25519.pub
-./${FLAVOR}/configimage/generate_config_image.sh /home/dciteam/apanatto/pull_secret.json
+./${FLAVOR}/configimage/generate_config_image.sh /home/dciteam/apanatto/pull_secret.json ~/.ssh/id_ed25519.pub
 sudo rm -f /opt/cache/hbn/*
 mv ${FLAVOR}/appliance/appliance.iso ${FLAVOR}/configimage/configimage/agentconfig.noarch.iso /opt/cache/hbn/
 sudo restorecon -RFv /opt/cache/hbn/
