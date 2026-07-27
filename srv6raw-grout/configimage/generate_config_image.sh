@@ -28,8 +28,8 @@ if [[ -z "${pull_secret_file}" || ! -f "${pull_secret_file}" ]]; then
     exit 1
 fi
 
-config_image_dir="$(realpath "${2:-${SCRIPTDIR}/configimage}")"
-ssh_key_file="${3:-}"
+config_image_dir="${SCRIPTDIR}/configimage"
+ssh_key_file="${2:-}"
 
 # Use openshift-install from the appliance cache
 openshift_install=$(find "${APPLIANCE_CACHE}" -name 'openshift-install' -type f 2>/dev/null | head -1)
