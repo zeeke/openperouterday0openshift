@@ -1,8 +1,0 @@
-zebra=yes
-bgpd=yes
-isisd=yes
-staticd=yes
-bfdd=yes
-
-frr_global_options="-A 127.0.0.1 --log stdout"
-zebra_options="-s 90000000 -M dplane_grout"
