@@ -38,6 +38,7 @@ compile_bu() {
 echo "==> Generating MachineConfig manifests into ${output_dir}..."
 
 compile_bu openperouter-raw.bu 99 openperouter
+compile_bu second-boot-kargs.bu 98 second-boot-kargs
 compile_bu registry.bu 01 registry
 
 if [[ -f "${SCRIPTDIR}/performance-profile.yaml" ]]; then
