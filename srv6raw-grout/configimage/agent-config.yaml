@@ -75,6 +75,21 @@ hosts:
           prefix-length: 64
         dhcp: false
 
+    - {name: eno12399v2, type: ethernet, state: up, ipv4: {enabled: false}, ipv6: {enabled: false}}
+    - {name: eno12399v3, type: ethernet, state: up, ipv4: {enabled: false}, ipv6: {enabled: false}}
+    - {name: eno12399v4, type: ethernet, state: up, ipv4: {enabled: false}, ipv6: {enabled: false}}
+    - {name: eno12399v5, type: ethernet, state: up, ipv4: {enabled: false}, ipv6: {enabled: false}}
+    - {name: eno12399v6, type: ethernet, state: up, ipv4: {enabled: false}, ipv6: {enabled: false}}
+    - {name: eno12399v7, type: ethernet, state: up, ipv4: {enabled: false}, ipv6: {enabled: false}}
+    - {name: eno12399v8, type: ethernet, state: up, ipv4: {enabled: false}, ipv6: {enabled: false}}
+    - {name: eno12399v9, type: ethernet, state: up, ipv4: {enabled: false}, ipv6: {enabled: false}}
+    - {name: eno12399v10, type: ethernet, state: up, ipv4: {enabled: false}, ipv6: {enabled: false}}
+    - {name: eno12399v11, type: ethernet, state: up, ipv4: {enabled: false}, ipv6: {enabled: false}}
+    - {name: eno12399v12, type: ethernet, state: up, ipv4: {enabled: false}, ipv6: {enabled: false}}
+    - {name: eno12399v13, type: ethernet, state: up, ipv4: {enabled: false}, ipv6: {enabled: false}}
+    - {name: eno12399v14, type: ethernet, state: up, ipv4: {enabled: false}, ipv6: {enabled: false}}
+    - {name: eno12399v15, type: ethernet, state: up, ipv4: {enabled: false}, ipv6: {enabled: false}}
+
     - name: eno12409np1
       state: down
       type: ethernet
@@ -108,7 +123,7 @@ hosts:
       vlan:
         base-iface: bond1
         id: 16
-    
+
     dns-resolver:
       config:
         server:
@@ -173,6 +188,21 @@ hosts:
           prefix-length: 64
         dhcp: false
 
+    - {name: eno12399v2, type: ethernet, state: up, ipv4: {enabled: false}, ipv6: {enabled: false}}
+    - {name: eno12399v3, type: ethernet, state: up, ipv4: {enabled: false}, ipv6: {enabled: false}}
+    - {name: eno12399v4, type: ethernet, state: up, ipv4: {enabled: false}, ipv6: {enabled: false}}
+    - {name: eno12399v5, type: ethernet, state: up, ipv4: {enabled: false}, ipv6: {enabled: false}}
+    - {name: eno12399v6, type: ethernet, state: up, ipv4: {enabled: false}, ipv6: {enabled: false}}
+    - {name: eno12399v7, type: ethernet, state: up, ipv4: {enabled: false}, ipv6: {enabled: false}}
+    - {name: eno12399v8, type: ethernet, state: up, ipv4: {enabled: false}, ipv6: {enabled: false}}
+    - {name: eno12399v9, type: ethernet, state: up, ipv4: {enabled: false}, ipv6: {enabled: false}}
+    - {name: eno12399v10, type: ethernet, state: up, ipv4: {enabled: false}, ipv6: {enabled: false}}
+    - {name: eno12399v11, type: ethernet, state: up, ipv4: {enabled: false}, ipv6: {enabled: false}}
+    - {name: eno12399v12, type: ethernet, state: up, ipv4: {enabled: false}, ipv6: {enabled: false}}
+    - {name: eno12399v13, type: ethernet, state: up, ipv4: {enabled: false}, ipv6: {enabled: false}}
+    - {name: eno12399v14, type: ethernet, state: up, ipv4: {enabled: false}, ipv6: {enabled: false}}
+    - {name: eno12399v15, type: ethernet, state: up, ipv4: {enabled: false}, ipv6: {enabled: false}}
+
     - name: eno12409np1
       state: down
       type: ethernet
@@ -206,7 +236,7 @@ hosts:
       vlan:
         base-iface: bond1
         id: 16
-    
+
     dns-resolver:
       config:
         server:
@@ -271,6 +301,21 @@ hosts:
           prefix-length: 64
         dhcp: false
 
+    - {name: eno12399v2, type: ethernet, state: up, ipv4: {enabled: false}, ipv6: {enabled: false}}
+    - {name: eno12399v3, type: ethernet, state: up, ipv4: {enabled: false}, ipv6: {enabled: false}}
+    - {name: eno12399v4, type: ethernet, state: up, ipv4: {enabled: false}, ipv6: {enabled: false}}
+    - {name: eno12399v5, type: ethernet, state: up, ipv4: {enabled: false}, ipv6: {enabled: false}}
+    - {name: eno12399v6, type: ethernet, state: up, ipv4: {enabled: false}, ipv6: {enabled: false}}
+    - {name: eno12399v7, type: ethernet, state: up, ipv4: {enabled: false}, ipv6: {enabled: false}}
+    - {name: eno12399v8, type: ethernet, state: up, ipv4: {enabled: false}, ipv6: {enabled: false}}
+    - {name: eno12399v9, type: ethernet, state: up, ipv4: {enabled: false}, ipv6: {enabled: false}}
+    - {name: eno12399v10, type: ethernet, state: up, ipv4: {enabled: false}, ipv6: {enabled: false}}
+    - {name: eno12399v11, type: ethernet, state: up, ipv4: {enabled: false}, ipv6: {enabled: false}}
+    - {name: eno12399v12, type: ethernet, state: up, ipv4: {enabled: false}, ipv6: {enabled: false}}
+    - {name: eno12399v13, type: ethernet, state: up, ipv4: {enabled: false}, ipv6: {enabled: false}}
+    - {name: eno12399v14, type: ethernet, state: up, ipv4: {enabled: false}, ipv6: {enabled: false}}
+    - {name: eno12399v15, type: ethernet, state: up, ipv4: {enabled: false}, ipv6: {enabled: false}}
+
     - name: eno12409np1
       state: down
       type: ethernet
@@ -303,7 +348,7 @@ hosts:
       vlan:
         base-iface: bond1
         id: 16
-    
+
     dns-resolver:
       config:
         server:
