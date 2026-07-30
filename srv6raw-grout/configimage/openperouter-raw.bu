@@ -128,11 +128,13 @@ storage:
       overwrite: true
       contents:
         local: grout.container
-    - path: /usr/local/bin/disable-vf-accept-ra.sh
-      mode: 0755
+    - path: /etc/NetworkManager/conf.d/99-no-slaac.conf
+      mode: 0644
       overwrite: true
       contents:
-        local: disable-vf-accept-ra.sh
+        inline: |
+          [connection]
+          ipv6.method=disabled
 systemd:
   units:
     # --- Quadlet services ---
@@ -146,21 +148,6 @@ systemd:
         AllowedCPUs=0,1
         [Install]
         WantedBy=default.target
-    - name: disable-vf-accept-ra.service
-      enabled: true
-      contents: |
-        [Unit]
-        Description=Disable accept_ra on SR-IOV VFs
-        After=nmstate.service network-online.target
-        Wants=network-online.target
-
-        [Service]
-        Type=oneshot
-        RemainAfterExit=yes
-        ExecStart=/usr/local/bin/disable-vf-accept-ra.sh
-
-        [Install]
-        WantedBy=multi-user.target
     - name: setup-underlay.service
       enabled: true
       contents: |
