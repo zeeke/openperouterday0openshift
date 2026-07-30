@@ -29,8 +29,8 @@ echo "Setting up network infrastructure via grout"
 
 # Assign VTEP address to underlay port to allow creation of the VXLAN interface
 grcli address add ${VTEP_IP}/32 iface underlay0
-grcli address add ${UNDERLAY_V4}/25 iface underlay0
-grcli address add ${UNDERLAY_V6}/64 iface underlay0
+[ -n "${UNDERLAY_V4:-}" ] && grcli address add ${UNDERLAY_V4} iface underlay0
+[ -n "${UNDERLAY_V6:-}" ] && grcli address add ${UNDERLAY_V6} iface underlay0
 grcli address add ${LOOPBACK_V6}/128 iface underlay0
 grcli address add ${SRV6_SOURCE}/128 iface underlay0
 
