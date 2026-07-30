@@ -1,0 +1,15 @@
+variant: openshift
+version: 4.20.0
+metadata:
+  name: 98-master-second-boot-kargs
+  labels:
+    machineconfiguration.openshift.io/role: master
+openshift:
+  kernel_arguments:
+    - iommu=pt
+    - intel_iommu=on
+    - console=tty0
+    - console=ttyS0,115200n8
+    - default_hugepagesz=1G 
+    - hugepagesz=1G
+    - hugepages=8
