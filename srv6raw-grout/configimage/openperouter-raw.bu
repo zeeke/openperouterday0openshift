@@ -128,14 +128,11 @@ storage:
       overwrite: true
       contents:
         local: grout.container
-    - path: /etc/udev/rules.d/90-nm-unmanaged-sriov-vf.rules
-      mode: 0644
+    - path: /usr/local/bin/disable-vf-accept-ra.sh
+      mode: 0755
+      overwrite: true
       contents:
-        local: 90-nm-unmanaged-sriov-vf.rules
-    - path: /etc/NetworkManager/conf.d/90-unmanage-unused-vf.conf
-      mode: 0644
-      contents:
-        local: 90-unmanage-unused-vf.conf
+        local: disable-vf-accept-ra.sh
 systemd:
   units:
     # --- Quadlet services ---
@@ -149,6 +146,21 @@ systemd:
         AllowedCPUs=0,1
         [Install]
         WantedBy=default.target
+    - name: disable-vf-accept-ra.service
+      enabled: true
+      contents: |
+        [Unit]
+        Description=Disable accept_ra on SR-IOV VFs
+        After=nmstate.service network-online.target
+        Wants=network-online.target
+
+        [Service]
+        Type=oneshot
+        RemainAfterExit=yes
+        ExecStart=/usr/local/bin/disable-vf-accept-ra.sh
+
+        [Install]
+        WantedBy=multi-user.target
     - name: setup-underlay.service
       enabled: true
       contents: |
