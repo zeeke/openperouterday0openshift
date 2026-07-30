@@ -2,312 +2,185 @@
 
 ## Overview
 
-An ISIS + SRv6 fabric running on top of an OpenShift cluster (3 masters + N
-workers), with an external SRv6 gateway (bastion) providing north-south
-connectivity, DNS, NTP and internet access via NAT.
+An ISIS + SRv6 fabric running on top of an OpenShift cluster (3 masters + N workers),
+with a TOR router peering externally.
 
-- **Underlay**: ISIS Level-1, single area `49.0001`, point-to-point
-- **L3VPN** (north-south): BGP IPv4/IPv6 VPN with SRv6 encapsulation (uSID, H.Encaps.Red)
-- **L2VPN** (east-west): BGP EVPN with VXLAN (VNI 210) between all cluster nodes
+- **Underlay**: ISIS Level-1, single area `49.0001`
+- **L3VPN** (north-south): BGP IPv4/IPv6 VPN with SRv6 encapsulation between all nodes and the TOR
+- **L2VPN** (east-west): BGP EVPN with VXLAN (VNI 210) between all cluster nodes, reflected by master-0
 - **Dataplane**: grout (DPDK), two SR-IOV VFs per PF bound for underlay
 - **AS**: 65500 (all iBGP)
 
 ```
-                       ┌───────────────────────────────┐
-                       │    SRv6 Gateway               │
-                       │   Router ID: 10.0.0.20        │
-                       │   Loopback:  fc00:0:14::1     │
-                       │   SRv6 pfx:  fd00:14::/48     │
-                       └──────────┬────────────────────┘
-                                  │ ISIS L1 p2p
-                 ┌────────────────┼────────────────┬──────────┐
-                 │                │                │          │
-     ┌───────────┴──┐   ┌─────────┴────┐   ┌───────┴──────┐   │
-     │  master-0    │   │  master-1    │   │  master-2    │   │
-     │  EVPN RR     │   │  EVPN client │   │  EVPN client │   │
-     │  10.0.0.2    │   │  10.0.0.3    │   │  10.0.0.4    │   │
-     │  fc00:0:2::1 │   │  fc00:0:3::1 │   │  fc00:0:4::1 │   │
-     │  fd00:2::/48 │   │  fd00:3::/48 │   │  fd00:4::/48 │   │
-     │  2x CX6 PFs  │   │  2x CX6 PFs  │   │  2x E810 PFs │   │
-     │              │   │              │   │              │   │
-     │  host .110.2 │   │  host .110.3 │   │  host .110.4 │   │
-     │  VRF red:    │   │  VRF red:    │   │  VRF red:    │   │
-     │   br-pe-210  │   │   br-pe-210  │   │   br-pe-210  │   │
-     │   VNI 210    │   │   VNI 210    │   │   VNI 210    │   │
-     └──────────────┘   └──────────────┘   └──────────────┘   │
-           ▲                   ▲                   ▲          │
-           └───── EVPN RR ─────┴───── EVPN RR ─────┘          │
-                (l2vpn evpn reflected by master-0)            │
-                                                              │
-     ┌──────────────┐                                         │
-     │ worker-0     │                                         │
-     │ EVPN Client  │─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ───┘
-     │ 10.0.0.5     │
-     │ fc00:0:5::1  │
-     │ fd00:5::/48  │
-     │ 2x ??? PFs   │      ....
-     │              │
-     │ host: .110.5 │
-     │  VRF red:    │
-     │   br-pe-210  │
-     │   VNI 210    │
-     └──────────────┘
-           ▲
-           └───── EVPN RR ─ ─ ─ ─
+                       ┌──────────────────────────────┐
+                       │        TOR / RemotePE        │
+                       │   Router ID: 10.0.0.20       │
+                       │   Loopback:  fc00:0:20::1    │
+                       │   SRv6 pfx:  fd00:20::/48    │
+                       │   VRF red:                   │
+                       │     lored:    10.10.20.1/32  │
+                       │     lo-extra: 10.100.0.1/32  │
+                       │       (DNS + NTP server)     │
+                       └─────────┬────────────────────┘
+                                 │ ISIS L1
+                 ┌───────────────┼───────────────┐
+                 │               │               │
+     ┌───────────┴──┐   ┌────────┴─────┐   ┌─────┴────────┐
+     │  master-0    │   │  master-1    │   │  master-2    │
+     │  EVPN RR     │   │  EVPN Client │   │  EVPN Client │
+     │  10.0.0.2    │   │  10.0.0.3    │   │  10.0.0.4    │
+     │  fc00:0:2::1 │   │  fc00:0:3::1 │   │  fc00:0:4::1 │
+     │  fd00:2::/48 │   │  fd00:3::/48 │   │  fd00:4::/48 │
+     │              │   │              │   │              │
+     │  br0: .110.2 │   │  br0: .110.3 │   │  br0: .110.4 │
+     │  VRF red:    │   │  VRF red:    │   │  VRF red:    │
+     │   br-pe-210  │   │   br-pe-210  │   │   br-pe-210  │
+     │   .110.1/24  │   │   .110.1/24  │   │   .110.1/24  │
+     │   VNI 210    │   │   VNI 210    │   │   VNI 210    │
+     └──────────────┘   └──────────────┘   └──────────────┘
+           ▲                   ▲                   ▲
+           └───── EVPN RR ─────┴───── EVPN RR ─────┘
+                (l2vpn evpn reflected by master-0)
+
+     ┌──────────────┐   ┌──────────────┐
+     │  worker-0    │   │  worker-1    │   ...
+     │  EVPN Client │   │  EVPN Client │
+     │  10.0.0.5    │   │  10.0.0.6    │
+     │  fc00:0:5::1 │   │  fc00:0:6::1 │
+     │  fd00:5::/48 │   │  fd00:6::/48 │
+     │              │   │              │
+     │  br0: .110.5 │   │  br0: .110.6 │
+     │  VRF red:    │   │  VRF red:    │
+     │   br-pe-210  │   │   br-pe-210  │
+     │   .110.1/24  │   │   .110.1/24  │
+     │   VNI 210    │   │   VNI 210    │
+     └──────────────┘   └──────────────┘
+           ▲                   ▲
+           └───── EVPN RR ─────┘
           (peers with master-0)
 ```
 
-## SR-IOV VF Layout
-
-Each node has two PFs (physical functions). Both are configured with 16 VFs.
-
-| VF     | Role       | Details                                          |
-|--------|------------|--------------------------------------------------|
-| VF0    | underlay   | bound to grout (mlx5: netns move, ice: vfio-pci) |
-| VF1    | host       | hardware VLAN 42, cluster IP, default route      |
-| VF2-15 | workload   | available for pod SR-IOV requests                |
-
-PF0 VF0 becomes grout port `underlay0`, PF1 VF0 becomes `underlay1`.
-PF MTU is set to 1800 in agent-config.yaml (VXLAN overhead over 1500).
-
-VF binding is triggered automatically by the NM dispatcher script
-`99-perouter`: on VF0 activation it calls `perouter-bind.sh`, on the
-VF carrying the default route it calls `perouter-host-dispatch.sh`.
-
 ## Addressing Scheme
 
-All per-node addresses are derived at boot from the host VF's last IPv4
-octet (`LAST_OCTET`) using printf format strings defined in
-`openperouter.env`. IPv6 groups use `%x` (hex), IPv4 octets use `%d`.
+All addresses are derived from the node's last octet of `br0` IPv4 (`LAST_OCTET`).
 
-### Format strings (from openperouter.env)
+| Node | Router ID | Loopback IPv6 | SRv6 Source | SRv6 Prefix | Underlay IPv6 | Bridge IPv4 | Bridge IPv6 |
+|---|---|---|---|---|---|---|---|
+| TOR | 10.0.0.20 | fc00:0:20::1 | fd00:20::1 | fd00:20::/48 | fc00:100::20 | — | — |
+| master-0 (RR) | 10.0.0.2 | fc00:0:2::1 | fd00:2::1 | fd00:2::/48 | fc00:100::2 | 192.168.110.2 | fd00:110::2 |
+| master-1 (client) | 10.0.0.3 | fc00:0:3::1 | fd00:3::1 | fd00:3::/48 | fc00:100::3 | 192.168.110.3 | fd00:110::3 |
+| master-2 (client) | 10.0.0.4 | fc00:0:4::1 | fd00:4::1 | fd00:4::/48 | fc00:100::4 | 192.168.110.4 | fd00:110::4 |
+| worker-0 (client) | 10.0.0.5 | fc00:0:5::1 | fd00:5::1 | fd00:5::/48 | fc00:100::5 | 192.168.110.5 | fd00:110::5 |
+| worker-1 (client) | 10.0.0.6 | fc00:0:6::1 | fd00:6::1 | fd00:6::/48 | fc00:100::6 | 192.168.110.6 | fd00:110::6 |
 
-| Variable        | Pattern                       | Example (node 2)          | Example (node 20)         |
-|-----------------|-------------------------------|---------------------------|---------------------------|
-| ROUTER_ID_FMT   | `10.0.0.%d`                   | 10.0.0.2                  | 10.0.0.20                 |
-| LOOPBACK_V6_FMT | `fc00:0:%x::1`                | fc00:0:2::1               | fc00:0:14::1              |
-| SRV6_SOURCE_FMT | `fd00:%x::1`                  | fd00:2::1                 | fd00:14::1                |
-| SRV6_PREFIX_FMT | `fd00:%x`                     | fd00:2                    | fd00:14                   |
-| UNDERLAY_V6_FMT | `fc00:100::%x`                | fc00:100::2               | fc00:100::14              |
-| ISIS_NET        | `49.0001.0000.0000.{%04d}.00` | 49.0001.0000.0000.0002.00 | 49.0001.0000.0000.0020.00 |
+Workers follow the same addressing formula as masters, continuing from LAST_OCTET 5 onward.
 
-### Current nodes
+### Address derivation formula
 
-| Node          | LAST_OCTET | Router ID | Loopback IPv6 | SRv6 Source | SRv6 Prefix  | Host IP       |
-|---------------|------------|-----------|---------------|-------------|--------------|---------------|
-| gateway       | 20         | 10.0.0.20 | fc00:0:14::1  | fd00:14::1  | fd00:14::/48 | —             |
-| master-0 (RR) | 2          | 10.0.0.2  | fc00:0:2::1   | fd00:2::1   | fd00:2::/48  | 192.168.110.2 |
-| master-1      | 3          | 10.0.0.3  | fc00:0:3::1   | fd00:3::1   | fd00:3::/48  | 192.168.110.3 |
-| master-2      | 4          | 10.0.0.4  | fc00:0:4::1   | fd00:4::1   | fd00:4::/48  | 192.168.110.4 |
+Given `LAST_OCTET` (e.g. `2`, `3`, `4`, `5`, `6`, `20`):
+
+| Address | Formula |
+|---|---|
+| Router ID / VTEP IP | `10.0.0.{LAST_OCTET}` |
+| Loopback IPv6 | `fc00:0:{LAST_OCTET}::1` |
+| SRv6 source | `fd00:{LAST_OCTET}::1` |
+| SRv6 prefix | `fd00:{LAST_OCTET}::/48` |
+| Underlay IPv6 | `fc00:100::{LAST_OCTET}` |
+| ISIS NET | `49.0001.0000.0000.{LAST_OCTET:04d}.00` |
 
 ## BGP Peering (AS 65500, all iBGP)
 
 ### L3VPN sessions (ipv4 vpn + ipv6 vpn)
 
-The SRv6 gateway peers with all cluster nodes for north-south traffic.
-The gateway uses `bgp listen range fc00::/16` for dynamic peering so
-new nodes are accepted automatically.
+The TOR peers with all cluster nodes (masters and workers) for north-south L3VPN over SRv6.
+
+| From | To | Peer Group | AFIs |
+|---|---|---|---|
+| TOR | master-0 (fc00:0:2::1) | PE-NODES | ipv4 vpn, ipv6 vpn |
+| TOR | master-1 (fc00:0:3::1) | PE-NODES | ipv4 vpn, ipv6 vpn |
+| TOR | master-2 (fc00:0:4::1) | PE-NODES | ipv4 vpn, ipv6 vpn |
+| TOR | worker-0 (fc00:0:5::1) | PE-NODES | ipv4 vpn, ipv6 vpn |
+| TOR | worker-1 (fc00:0:6::1) | PE-NODES | ipv4 vpn, ipv6 vpn |
 
 ### EVPN sessions (l2vpn evpn)
 
-master-0 (`RR_NODE_IDX=2`) is the EVPN route reflector. All other nodes
-peer with master-0 only. The RR also uses `bgp listen range fc00::/16`
-for dynamic client acceptance. The gateway does not participate in EVPN.
+master-0 is the EVPN route reflector. All other nodes (masters and workers) peer only with master-0.
+The TOR does not participate in EVPN — north-south traffic uses L3VPN only.
+
+| From | To | Peer Group | Role |
+|---|---|---|---|
+| master-0 (RR) | master-1 (fc00:0:3::1) | EVPN-CLIENTS | route-reflector-client |
+| master-0 (RR) | master-2 (fc00:0:4::1) | EVPN-CLIENTS | route-reflector-client |
+| master-0 (RR) | worker-0 (fc00:0:5::1) | EVPN-CLIENTS | route-reflector-client |
+| master-0 (RR) | worker-1 (fc00:0:6::1) | EVPN-CLIENTS | route-reflector-client |
+| master-1 | master-0 (fc00:0:2::1) | EVPN-RR | client |
+| master-2 | master-0 (fc00:0:2::1) | EVPN-RR | client |
+| worker-0 | master-0 (fc00:0:2::1) | EVPN-RR | client |
+| worker-1 | master-0 (fc00:0:2::1) | EVPN-RR | client |
 
 ## SRv6 SIDs
 
 Locator block: `/48`, node: `16 bits`, function: `16 bits` (uSID).
 
-| Node      | uN (node SID) | uDT46 (VRF decap) |
-|-----------|---------------|-------------------|
-| gateway   | fd00:14::     | fd00:14:0:1::     |
-| master-0  | fd00:2::      | fd00:2:0:1::      |
-| master-1  | fd00:3::      | fd00:3:0:1::      |
-| master-2  | fd00:4::      | fd00:4:0:1::      |
+| Node | uN (node SID) | uDT46 (VRF decap) |
+|---|---|---|
+| TOR | fd00:20:: | fd00:20:0:1:: |
+| master-0 | fd00:2:: | fd00:2:0:1:: |
+| master-1 | fd00:3:: | fd00:3:0:1:: |
+| master-2 | fd00:4:: | fd00:4:0:1:: |
+| worker-0 | fd00:5:: | fd00:5:0:1:: |
+| worker-1 | fd00:6:: | fd00:6:0:1:: |
+
+## L3VPN Routes (VRF red)
+
+### What each cluster node sees
+
+| Prefix | Next Hop | SRv6 SID | Source |
+|---|---|---|---|
+| 10.10.20.1/32 | 10.0.0.20 | fd00:20:0:1:: | TOR VRF loopback (lored) |
+| 10.100.0.1/32 | 10.0.0.20 | fd00:20:0:1:: | TOR DNS/NTP loopback (lo-extra) |
+| 192.168.110.0/24 | connected | — | Local br-pe-210 (L2 gateway) |
+
+### What the TOR sees
+
+| Prefix | Next Hop | SRv6 SID | Source |
+|---|---|---|---|
+| 192.168.110.2/32 | 10.0.0.2 | fd00:2:0:1:: | master-0 bridge IP |
+| 192.168.110.3/32 | 10.0.0.3 | fd00:3:0:1:: | master-1 bridge IP |
+| 192.168.110.4/32 | 10.0.0.4 | fd00:4:0:1:: | master-2 bridge IP |
+| 192.168.110.5/32 | 10.0.0.5 | fd00:5:0:1:: | worker-0 bridge IP |
+| 192.168.110.6/32 | 10.0.0.6 | fd00:6:0:1:: | worker-1 bridge IP |
+| 10.10.20.1/32 | connected | — | Local lored |
+| 10.100.0.1/32 | connected | — | Local lo-extra |
 
 ## L2VPN / EVPN (VNI 210)
 
-All cluster nodes share an L2 segment via VXLAN bridge `br-pe-210`:
-- Anycast gateway: `192.168.110.1/24` + `fd00:110::1/64` (same on all nodes)
+All cluster nodes (masters and workers) share an L2 segment via VXLAN bridge `br-pe-210`:
+- Gateway IP: `192.168.110.1/24` + `fd00:110::1/64` (anycast on all nodes)
 - VNI: 210
 - RT: 65500:210
 
-EVPN type-2 (MAC/IP) and type-3 (BUM/VTEP) routes are reflected by
-master-0. The gateway does not participate in EVPN L2.
+EVPN type-2 (MAC/IP) and type-3 (BUM/VTEP) routes are exchanged between
+all cluster nodes via master-0 as route reflector. The TOR does **not** participate
+in EVPN L2 — north-south traffic only via L3VPN.
 
-## SRv6 Gateway (Bastion) Architecture
+## Services on TOR (VRF red)
 
-The gateway runs FRR in a `perouter` network namespace with the private
-NIC (ISIS underlay). A VRF `red` inside that netns handles L3VPN traffic.
-A veth pair bridges VRF red to the default netns where DNS, NTP and NAT
-live. This avoids cross-VRF NAT issues (conntrack cannot track cross-VRF
-connections in Linux).
+### DNS (dnsmasq on 10.100.0.1)
 
-```
-perouter netns                         default netns
-┌─────────────────────────┐            ┌──────────────────────┐
-│  eno12399np0 (ISIS)     │            │  lo: 10.100.0.1 (DNS)│
-│  VRF red                │            │      10.10.20.1      │
-│    veth-frr 10.200.0.1 ─┼── veth ──▶ │  veth-host 10.200.0.2│
-│  FRR container          │            │  eno8303 → NAT       │
-└─────────────────────────┘            └──────────────────────┘
-```
+| Record | Target |
+|---|---|
+| api.sno-lab.example.com | 192.168.110.10 (API VIP) |
+| api-int.sno-lab.example.com | 192.168.110.10 (API VIP) |
+| *.apps.sno-lab.example.com | 192.168.110.11 (Ingress VIP) |
+
+### NTP (chronyd on 10.100.0.1)
+
+Stratum 3 orphan server. All cluster nodes sync to it via the SRv6 L3VPN path.
 
 ## ISIS Underlay
 
 - Area: `49.0001`
 - Level: L1 only
-- All interfaces: point-to-point
-- Addresses are configured directly on the ISIS interface (FRR
-  unnumbered is broken: https://github.com/FRRouting/frr/issues/16018)
-
-## Configuration Files
-
-Only two files need per-deployment tuning:
-
-- **`openperouter.env`** — fabric-wide settings: AS number, format
-  strings, VNI, gateway address, RR node index. Shared by all nodes.
-- **`agent-config.yaml`** — per-node hardware: PF names, MAC addresses,
-  host IPs, VF layout, DNS/NTP sources.
-
-Everything else (FRR config, grout ports, addresses) is derived at boot.
-
-## Adding Worker Nodes
-
-Workers participate in the same ISIS + SRv6 + EVPN fabric as masters.
-They use the same scripts, quadlets and openperouter.env. The only file
-that needs editing is `agent-config.yaml`.
-
-### Steps
-
-1. Pick a `LAST_OCTET` for the new worker. It must be unique across all
-   nodes and the gateway. In this deployment, masters use 2/3/4 and the
-   gateway uses 20, so workers can start at 5.
-
-2. Add a host entry in `agent-config.yaml`. The structure is identical
-   to a master entry — only the hostname, MAC address, PF/VF kernel
-   names, and host IP change. For example, a worker with a ConnectX-6:
-
-   ```yaml
-   - hostname: worker-0
-     rootDeviceHints:
-       deviceName: /dev/sda
-     interfaces:
-     - name: ens1f0np0
-       macAddress: aa:bb:cc:dd:ee:ff
-     networkConfig:
-       interfaces:
-       - name: ens1f0np0
-         type: ethernet
-         state: up
-         mtu: 1800
-         ipv4:
-           enabled: false
-         ipv6:
-           enabled: false
-         ethernet:
-           sr-iov:
-             total-vfs: 16
-             vfs:
-             - id: 0
-               vlan-id: 0
-               spoof-check: false
-               trust: true
-             - id: 1
-               vlan-id: 42
-               spoof-check: false
-               trust: true
-       - name: ens1f1np1
-         type: ethernet
-         state: up
-         mtu: 1800
-         ipv4:
-           enabled: false
-         ipv6:
-           enabled: false
-         ethernet:
-           sr-iov:
-             total-vfs: 16
-             vfs:
-             - id: 0
-               vlan-id: 0
-               spoof-check: false
-               trust: true
-       - name: ens1f0v0
-         type: ethernet
-         state: up
-       - name: ens1f1v0
-         type: ethernet
-         state: up
-       - name: ens1f0v1
-         type: ethernet
-         state: up
-         ipv4:
-           enabled: true
-           auto-dns: false
-           address:
-           - ip: 192.168.110.5
-             prefix-length: 24
-           dhcp: false
-         ipv6:
-           enabled: true
-           auto-dns: false
-           autoconf: false
-           address:
-           - ip: fd00:110::5
-             prefix-length: 64
-           dhcp: false
-       dns-resolver:
-         config:
-           server:
-           - 10.100.0.1
-           - fd00:100::1
-       routes:
-         config:
-         - destination: 0.0.0.0/0
-           next-hop-address: 192.168.110.1
-           next-hop-interface: ens1f0v1
-         - destination: ::/0
-           next-hop-address: fd00:110::1
-           next-hop-interface: ens1f0v1
-   ```
-
-3. Regenerate the config image. No changes to openperouter.env, butane,
-   scripts, or FRR templates are needed. The worker boots, the NM
-   dispatcher derives all addresses from the host IP (last octet 5),
-   and the node joins the fabric automatically:
-
-   - ISIS adjacency forms on underlay0/underlay1
-   - BGP L3VPN session establishes with the gateway (dynamic peering via
-     `bgp listen range`)
-   - EVPN session establishes with master-0 (dynamic peering via `bgp
-     listen range` on the RR)
-   - VXLAN bridge `br-pe-210` joins the L2 overlay
-
-### What makes this work without extra configuration
-
-- **Dynamic BGP peering**: both the SRv6 gateway and the EVPN RR
-  (master-0) use `bgp listen range fc00::/16`. Any node whose loopback
-  falls in that range is accepted as a peer automatically.
-- **Address derivation**: all per-node addresses (router ID, loopback,
-  SRv6 locator, ISIS NET) are computed from `LAST_OCTET` by the NM
-  dispatcher at boot. No hardcoded addresses in scripts or templates.
-- **FRR template selection**: `generate-config.sh` checks whether
-  `LAST_OCTET == RR_NODE_IDX`. Workers always get the client template
-  since their last octet is never 2.
-- **EVPN RR client template**: the client template points at
-  `RR_LOOPBACK` (derived from `LOOPBACK_V6_FMT` and `RR_NODE_IDX`),
-  so it works for any node without modification.
-
-### NIC naming differences
-
-VF kernel names depend on the PF driver. The only thing that varies
-per-node in agent-config.yaml is the interface naming:
-
-| NIC family        | PF names              | VF0 names               | VF1 (host) |
-|-------------------|-----------------------|-------------------------|------------|
-| ConnectX-6 (mlx5) | ens1f0np0 / ens1f1np1 | ens1f0v0 / ens1f1v0     | ens1f0v1   |
-| E810 (ice)        | eno12399 / eno12409   | eno12399v0 / eno12409v0 | eno12399v1 |
-
-The dispatcher and bind scripts work with any naming — they look up VF
-index via sysfs, not by parsing interface names.
+- Interface: `enp2s0` on cluster nodes, dedicated interface on TOR
+- All nodes form L1 adjacencies on the shared broadcast segment
