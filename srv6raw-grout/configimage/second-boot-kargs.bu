@@ -13,3 +13,4 @@ openshift:
     - default_hugepagesz=1G 
     - hugepagesz=1G
     - hugepages=8
+    - net.ipv6.conf.default.accept_ra=0

@@ -128,13 +128,12 @@ storage:
       overwrite: true
       contents:
         local: grout.container
-    - path: /etc/NetworkManager/conf.d/99-no-slaac.conf
+    - path: /etc/sysctl.d/99-no-slaac.conf
       mode: 0644
       overwrite: true
       contents:
         inline: |
-          [connection]
-          ipv6.method=disabled
+          net.ipv6.conf.default.accept_ra = 0
 systemd:
   units:
     # --- Quadlet services ---
