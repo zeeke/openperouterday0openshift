@@ -7,10 +7,11 @@ ready from first boot — no post-install operators needed.
 
 ## Deployments
 
-| Directory | Underlay | Overlay | Config method | Route distribution |
-|-----------|----------|---------|---------------|--------------------|
-| [`srv6raw/`](srv6raw/) | ISIS | SRv6 + VXLAN | Rawconfig (shell templates) | EVPN route reflector (master-0) |
-| [`evpnfullconfig/`](evpnfullconfig/) | eBGP | VXLAN only | Controller (`openpe_config.yaml`) | TOR distributes all routes |
+| Directory | Underlay | Overlay | Config method | Route distribution | Dataplane |
+|-----------|----------|---------|---------------|--------------------|-----------|
+| [`srv6raw/`](srv6raw/) | ISIS | SRv6 + VXLAN | Rawconfig (shell templates) | EVPN route reflector (master-0) | Kernel |
+| [`srv6raw-grout/`](srv6raw-grout/) | ISIS | SRv6 + VXLAN | Rawconfig (shell templates) | EVPN route reflector (master-0) | Grout |
+| [`evpnfullconfig/`](evpnfullconfig/) | eBGP | VXLAN only | Controller (`openpe_config.yaml`) | TOR distributes all routes | Kernel |
 
 Each directory contains its own [TOPOLOGY.md](srv6raw/TOPOLOGY.md) with full addressing and peering details.
 
