@@ -1,0 +1,13 @@
+[Unit]
+Description=Patch Assisted Service installer config for openperouter
+Before=assisted-service-pod.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/patch-installer-config.sh
+Restart=on-failure
+RestartSec=2
+RemainAfterExit=yes
+
+[Install]
+WantedBy=assisted-service-pod.service

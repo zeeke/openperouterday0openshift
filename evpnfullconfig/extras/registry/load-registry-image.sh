@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+
+# Source registry environment variables
+source /etc/assisted/registry.env
+
+# Load registry image from dir format
+# Use -q so podman prints only the image ID; capture it to avoid race with concurrent pulls
+PULLED_IMAGE_REF="dir:/mnt/agentdata/images/registry"
+IMAGE_ID_FROM_PULL=$(podman pull -q "$PULLED_IMAGE_REF" | tr -d '[:space:]')
+
+# Tag the pulled image with the reference from REGISTRY_IMAGE
+# The dir: transport doesn't automatically create tags, so we must tag explicitly
+if [[ "$REGISTRY_IMAGE" == *"@sha256:"* ]]; then
+    # When using OCP docker-registry image from the release payload, REGISTRY_IMAGE contains
+    # a digest reference (e.g., registry.ci.openshift.org/ocp/4.21-2025-12-15-160423@sha256:abc123...)
+    # We need to tag it with :latest so that podman run can reference the original digest.
+    # This is because:
+    # 1. The dir: transport preserves the digest but podman pull doesn't create a :latest tag automatically
+    # 2. podman run with containers-storage: requires a tag reference to resolve the digest
+    # 3. By tagging as <base-image>:latest, podman can resolve the original @sha256:... reference
+    # 4. The digest ensures we're tagging the exact image that was pulled from the release
+
+    # Extract base image name (everything before @sha256:)
+    BASE_IMAGE="${REGISTRY_IMAGE%@sha256:*}"
+    # Extract the digest (everything after @)
+    DIGEST="${REGISTRY_IMAGE#*@}"
+    # Get the image ID that matches this digest
+    IMAGE_ID=$(podman images --digests --filter "digest=${DIGEST}" --format '{{ .ID }}')
+
+    if [[ -n "$IMAGE_ID" ]]; then
+        # Tag the pulled image with :latest using the image ID
+        podman tag "$IMAGE_ID" "${BASE_IMAGE}:latest"
+        echo "Tagged registry image $IMAGE_ID (digest: $DIGEST) as ${BASE_IMAGE}:latest"
+    else
+        echo "Warning: Could not find image with digest $DIGEST"
+    fi
+else
+    # REGISTRY_IMAGE without digest (e.g., localhost/registry:latest for internally built registry)
+    # Use image ID from podman pull -q output (no race)
+    IMAGE_ID="$IMAGE_ID_FROM_PULL"
+    if [[ -n "$IMAGE_ID" ]]; then
+        podman tag "$IMAGE_ID" "$REGISTRY_IMAGE"
+        echo "Tagged registry image $IMAGE_ID as $REGISTRY_IMAGE"
+    else
+        echo "Warning: Could not get image ID from pull (pull failed or no output)"
+    fi
+fi

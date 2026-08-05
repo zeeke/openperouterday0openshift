@@ -1,0 +1,84 @@
+#!/usr/bin/env bash
+
+ISO_DIR=/run/media/iso
+REGISTRY_DATA_DIR=/var/lib/iri-registry
+
+# The name must NOT start with "agent"
+DEV_NAME=ocp-registry-data
+MNT_DIR=/mnt/agentdata
+DATA_FILES=$ISO_DIR/registry/data*
+
+create_data_device() {
+    # Create a loop device for each data file part
+    loop_sizes=()
+    for f in $DATA_FILES
+    do
+        device=$(losetup --find)
+        losetup $device $f
+        loop_sizes+=($device)
+    done
+
+    # Create a device map using the loop devices
+    (
+        start=0
+        for device in "${loop_sizes[@]}"
+        do
+            size=`blockdev --getsz $device`
+            echo "$start $size linear $device 0"
+            ((start+=$size))
+        done
+    ) | dmsetup create "${DEV_NAME}"
+}
+
+wait_for_iso_mount() {
+    while ! mountpoint -q $ISO_DIR; do
+        echo "Waiting for $ISO_DIR to be fully mounted..."
+        sleep 5
+    done
+}
+
+mount_registry_data_iso() {
+    # Mount the registry data directory if exists (>=4.21)
+    if [ -d "$REGISTRY_DATA_DIR" ]; then
+        # Create a symlink to the registry data directory if it doesn't exist
+        if [ ! -L "$MNT_DIR" ]; then
+            rm -rf $MNT_DIR
+            ln -s $REGISTRY_DATA_DIR $MNT_DIR
+        fi
+        return
+    fi
+
+    # If the registry data iso does not exist, create it
+    registry_data_iso=/home/core/registry_data.iso
+    if [ ! -f "$registry_data_iso" ]; then
+        # Wait for the mount to be ready
+        wait_for_iso_mount
+
+        # Copy the registry data iso to the disk
+        cat $DATA_FILES > $registry_data_iso
+    fi
+
+    # Mount the registry data iso
+    mount -o ro $registry_data_iso $MNT_DIR
+}
+
+mkdir -p $MNT_DIR
+
+if [ "true" = "true" ]; then
+    if [ "true" = "true" ]; then
+        # Wait for the mount to be ready
+        wait_for_iso_mount
+
+        # Create virtual device for the registry data
+        create_data_device
+
+        # Mount data device
+        mount -o ro "/dev/mapper/${DEV_NAME}" $MNT_DIR
+    else
+        # Mount the registry data iso (copy from media to disk if necessary)
+        mount_registry_data_iso
+    fi
+else # Disk image mode
+    # Mount agentdata partition
+    mount -o ro /dev/disk/by-partlabel/agentdata $MNT_DIR
+fi
