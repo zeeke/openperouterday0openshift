@@ -9,6 +9,12 @@ set -euo pipefail
 #
 # Usage: Executed by setup-network.service after setup-underlay.service
 
+
+########################################################
+###############   DEPRECATED   #########################
+########################################################
+
+
 die() { echo "error: $*" >&2; exit 1; }
 
 # Load variables

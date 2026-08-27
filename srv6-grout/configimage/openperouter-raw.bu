@@ -12,22 +12,13 @@ storage:
       overwrite: true
       contents:
         local: nmdispatcher.sh
-    # --- Scripts (mode 0755) ---
-    - path: /usr/local/bin/setup-underlay.sh
-      mode: 0755
+
+    - path: /var/lib/openperouter/configs/openpe_config.yaml
+      mode: 0644
       overwrite: true
       contents:
-        local: setup-underlay.sh
-    - path: /usr/local/bin/setup-network.sh
-      mode: 0755
-      overwrite: true
-      contents:
-        local: setup-network.sh
-    - path: /usr/local/bin/generate-config.sh
-      mode: 0755
-      overwrite: true
-      contents:
-        local: generate-config.sh
+        local: openpe_config.yaml
+
     - path: /usr/local/bin/bridge-refresher.sh
       mode: 0755
       overwrite: true
@@ -38,11 +29,6 @@ storage:
       overwrite: true
       contents:
         local: perouter-bind.sh
-    - path: /usr/local/bin/perouter-host-dispatch.sh
-      mode: 0755
-      overwrite: true
-      contents:
-        local: perouter-host-dispatch.sh
     - path: /usr/local/bin/can_start.sh
       mode: 0755
       overwrite: true
@@ -134,6 +120,11 @@ storage:
       contents:
         inline: |
           net.ipv6.conf.default.accept_ra = 0
+    - path: /usr/local/bin/openperouter-node-index.sh
+      mode: 0755
+      overwrite: true
+      contents:
+        local: openperouter-node-index.sh
 systemd:
   units:
     # --- Quadlet services ---
@@ -147,78 +138,7 @@ systemd:
         AllowedCPUs=0,1
         [Install]
         WantedBy=default.target
-    - name: setup-underlay.service
-      enabled: true
-      contents: |
-        [Unit]
-        Description=OpenPERouter Underlay Setup (create grout ports)
-        Documentation=https://github.com/openperouter/openperouter
-        After=grout.service
-        Requires=grout.service
 
-        [Service]
-        Type=oneshot
-        RemainAfterExit=yes
-        ExecStartPre=/usr/local/bin/can_start.sh
-        ExecStart=/usr/local/bin/setup-underlay.sh
-        StandardOutput=journal
-        StandardError=journal
-        SyslogIdentifier=setup-underlay
-        TimeoutStartSec=480
-        TimeoutStopSec=10
-
-        [Install]
-        WantedBy=multi-user.target
-    - name: setup-network.service
-      enabled: true
-      contents: |
-        [Unit]
-        Description=OpenPERouter Network Infrastructure Setup
-        Documentation=https://github.com/openperouter/openperouter
-        After=setup-underlay.service
-        Requires=setup-underlay.service
-
-        [Service]
-        Type=oneshot
-        RemainAfterExit=yes
-        User=root
-        Group=root
-        EnvironmentFile=-/etc/openperouter/openperouter.env
-        ExecStart=/usr/local/bin/setup-network.sh
-        StandardOutput=journal
-        StandardError=journal
-        SyslogIdentifier=setup-network
-        TimeoutStartSec=120
-        TimeoutStopSec=10
-
-        [Install]
-        WantedBy=multi-user.target
-    - name: generate-config.service
-      enabled: true
-      contents: |
-        [Unit]
-        Description=OpenPERouter Configuration Generator
-        Documentation=https://github.com/openperouter/openperouter
-        # Must run after setup-network to avoid kernel NULL deref in vrf_ifindex_lookup_by_table_id
-        # when zebra installs SRv6 End.DT routes before the VRF exists (kernel 5.14, RHCOS 9.6)
-        After=setup-network.service
-        Requires=setup-network.service
-
-        [Service]
-        Type=oneshot
-        RemainAfterExit=yes
-        User=root
-        Group=root
-        EnvironmentFile=-/etc/openperouter/openperouter.env
-        ExecStart=/usr/local/bin/generate-config.sh
-        StandardOutput=journal
-        StandardError=journal
-        SyslogIdentifier=generate-config
-        TimeoutStartSec=60
-        TimeoutStopSec=10
-
-        [Install]
-        WantedBy=multi-user.target
     # --- Bridge refresher (mimics OpenPERouter bridge refresher) ---
     - name: bridge-refresher.service
       enabled: true
@@ -260,7 +180,7 @@ systemd:
       contents: |
         [Unit]
         Description=Apply OpenPERouter DaemonSet manifests
-        After=kubelet.service setup-underlay.service
+        After=kubelet.service
 
         [Service]
         Type=oneshot
@@ -292,3 +212,19 @@ systemd:
 
         [Install]
         WantedBy=assisted-service-pod.service
+    - name: openperouter-node-index.service
+      enabled: true
+      contents: |
+        [Unit]
+        Description=Set OpenPERouter nodeIndex from bridge IP
+        After=network-online.target
+        Before=controllerpod.service routerpod.service
+        Wants=network-online.target
+
+        [Service]
+        Type=oneshot
+        ExecStart=/usr/local/bin/openperouter-node-index.sh
+        RemainAfterExit=yes
+
+        [Install]
+        WantedBy=multi-user.target

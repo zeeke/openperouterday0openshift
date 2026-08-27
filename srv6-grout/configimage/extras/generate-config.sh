@@ -12,6 +12,13 @@ set -euo pipefail
 
 die() { echo "error: $*" >&2; exit 1; }
 
+die "this file is no longer used"
+
+########################################################
+###############   DEPRECATED   #########################
+########################################################
+
+
 : ${TEMPLATE_DIR:=/etc/openperouter/templates}
 : ${CONFIG_OUTPUT:=/var/lib/openperouter/configs/openpe_evpn.yaml}
 
@@ -19,7 +26,6 @@ die() { echo "error: $*" >&2; exit 1; }
 set -a
 
 source /etc/openperouter/openperouter.env
-source /var/lib/openperouter/vpn-setup.vars
 
 set +a
 

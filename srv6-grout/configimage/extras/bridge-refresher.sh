@@ -27,6 +27,14 @@ INGRESS_VIP="${INGRESS_VIP:-${GATEWAY_SUBNET}.11}"
 # The VLAN bridge port must be added after zebra has learned the VNI,
 # otherwise MAC learning events are lost. Fixed in FRR 10.7.
 echo "Waiting for zebra to learn VNI ${L2_VNI}..."
+
+while true; do
+	echo "bridge-refresher disabled"
+	sleep 300
+done
+
+
+
 while ! podman exec frr vtysh -c "show evpn vni ${L2_VNI}" 2>/dev/null | grep -q "VNI: ${L2_VNI}"; do
 	sleep 1
 done

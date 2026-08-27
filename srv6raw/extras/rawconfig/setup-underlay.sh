@@ -17,6 +17,14 @@ set -euo pipefail
 #   1   - General error
 #   124 - Timeout waiting for FRR
 
+
+
+########################################################
+###############   DEPRECATED   #########################
+########################################################
+
+
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Source common utilities

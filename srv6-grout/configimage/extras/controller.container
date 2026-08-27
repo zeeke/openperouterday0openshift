@@ -11,7 +11,7 @@ Documentation=https://github.com/openperouter
 
 [Container]
 # Container image - update this line to change versions
-Image=quay.io/redhat-user-workloads/telco-5g-tenant/openperouter-operator-edge-5-0:39da1f3457ad8d8b50943947e7b363a9847483be
+Image=quay.io/redhat-user-workloads/telco-5g-tenant/openperouter-operator-edge-5-0:on-pr-a8b5430334924e9d4827226c59223dba0c4d3351 
 
 # Pod association - creates automatic dependency on controllerpod-pod.service
 Pod=controllerpod.pod
@@ -57,6 +57,8 @@ Volume=/run/dbus/system_bus_socket:/host/dbus/system_bus_socket:rw
 # To disable OVS mount: Add a '#' at the beginning of the line below.
 Volume=/var/run/openvswitch:/var/run/openvswitch:rshared
 
+Volume=/var/run/grout:/var/run/grout
+
 # Environment variables
 Environment=KUBECONFIG=/shared/kubeconfig
 
@@ -70,7 +72,7 @@ PodmanArgs=--pid=host
 PodmanArgs=--uts=host
 
 # Controller command-line arguments
-Exec=--frrconfig /etc/perouter/frr/frr.conf --pid-path /etc/perouter/frr/frr.pid --reloader-socket /etc/perouter/frr/frr.socket --mode host --namespace openperouter-system
+Exec=--frrconfig /etc/perouter/frr/frr.conf --pid-path /etc/perouter/frr/frr.pid --reloader-socket /etc/perouter/frr/frr.socket --mode host --namespace openperouter-system --datapath=grout --grout-socket=/var/run/grout/grout.sock
 
 # Health check - kill container if controller stops responding,
 # systemd Restart=on-failure handles restart

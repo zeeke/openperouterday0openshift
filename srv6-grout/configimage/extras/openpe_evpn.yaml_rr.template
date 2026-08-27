@@ -13,6 +13,14 @@
 #   ${EVPN_LISTEN_RANGE}     - IPv6 prefix for dynamic EVPN client peers
 #   ${SRV6_NODE_ID}   - non-zero node-ID for the uSID locator (0x0000 is End-of-Container)
 
+
+########################################################
+###############   DEPRECATED   #########################
+########################################################
+
+
+
+
 rawfrrconfigs:
   - priority: 100
     rawConfig: |

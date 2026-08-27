@@ -15,7 +15,6 @@ SENTINEL="/run/configure-ovs-boot-done"
 OVS_CONNECTION="ovs-if-phys0"
 
 source /etc/openperouter/openperouter.env
-source /var/lib/openperouter/vpn-setup.vars
 
 MAX_WAIT=300
 

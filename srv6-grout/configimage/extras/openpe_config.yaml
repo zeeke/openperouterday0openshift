@@ -1,0 +1,47 @@
+l3vnis:
+  - vrf: red
+    vni: 100
+    vxlanport: 4789
+l2vnis:
+  - vni: 210
+    routingDomain:
+      type: L3VNI
+      l3vni: { name: red }
+    vxlanport: 4789
+    gatewayIPs:
+      - "192.168.110.1/24"
+    sriovVFPair:
+      netlinkName: ens1f0v0
+      vlan: 42   # The same as in agent-config.yaml
+      acceleratedConfig: {}
+underlays:
+  - asn: 65500
+    routerIDCIDR: 10.0.0.0/24
+    interfaces:
+      - type: NetworkDevice
+        networkDevice:
+          interfaceName: ens1f0v0  # TODO: avoid referencing the VF netlink name here
+          acceleratedConfig:
+            portName: underlay0
+    neighbors:
+      - asn: 65500
+        address: "fc00:0:14::1"
+        addressFamilies:
+          - type: evpn
+    tunnelEndpoint:
+      cidrs:
+        - "10.0.0.0/24"
+        - "fc00:0:14::0/112" # TODO ????
+    isis:
+      baseNet: "49.0001.0000.0000.0002.00"
+      level: 1
+      features: ["advertisePassiveOnly"]
+      interfaces:
+        - name: underlay0
+          ipFamily: IPv6
+    srv6:
+      encapBehavior: "H.Encaps.Red"
+      locator:
+        basePrefix: "fd00:0::/48"
+        format: "usid-f3216"
+

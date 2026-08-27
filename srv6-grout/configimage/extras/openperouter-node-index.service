@@ -1,0 +1,13 @@
+[Unit]
+Description=Set OpenPERouter nodeIndex from bridge IP
+After=network-online.target
+Before=controllerpod.service routerpod.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/openperouter-node-index.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

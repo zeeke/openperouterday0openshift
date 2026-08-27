@@ -1,0 +1,318 @@
+Current configuration:       
+!                             
+frr version 10.6.1                                                                         
+frr defaults traditional
+hostname master-1.sno-lab.example.com
+log stdout          
+log timestamp precision 3
+service integrated-vtysh-config
+!                          
+route-map allowall permit 1
+exit
+!                         
+debug zebra dplane dpdk    
+!                  
+vrf main                   
+exit-vrf            
+!         
+vrf red        
+exit-vrf                                                                                   
+!                      
+interface underlay0         
+ ip address 10.0.0.3/32     
+ ip router isis PE          
+ ipv6 address fc00:0:3::1/128
+ ipv6 address fc00:100::3/128
+ ipv6 address fd00:3::1/128 
+ ipv6 router isis PE      
+ isis circuit-type level-1
+ isis network point-to-point
+exit               
+!
+router bgp 65500
+ bgp router-id 10.0.0.3
+ bgp log-neighbor-changes
+ no bgp ebgp-requires-policy
+ no bgp default ipv4-unicast
+ no bgp network import-check
+ neighbor EVPN-RR peer-group
+ neighbor EVPN-RR remote-as 65500
+ neighbor EVPN-RR update-source fc00:0:3::1
+ neighbor SRV6-GW peer-group
+ neighbor SRV6-GW remote-as 65500
+ neighbor SRV6-GW update-source fc00:0:3::1
+ neighbor fc00:0:2::1 peer-group EVPN-RR
+ neighbor fc00:0:14::1 peer-group SRV6-GW
+ !
+  segment-routing srv6
+  locator MAIN
+  encap-behavior H_Encaps_Red
+ exit
+ !
+ address-family ipv4 vpn
+  neighbor SRV6-GW activate
+ exit-address-family
+ !
+ address-family ipv6 vpn
+  neighbor SRV6-GW activate
+ exit-address-family
+ !
+ address-family l2vpn evpn
+  neighbor EVPN-RR activate
+  advertise-all-vni
+  advertise-svi-ip
+ exit-address-family
+exit
+!
+router bgp 65500 vrf red
+ bgp router-id 10.0.0.3
+ no bgp ebgp-requires-policy
+ no bgp default ipv4-unicast
+ no bgp network import-check
+ sid vpn per-vrf export auto
+ !
+ address-family ipv4 unicast
+  network 192.168.110.0/24
+  rd vpn export 10.0.0.3:2
+  rt vpn both 65500:2
+  export vpn
+  import vpn
+ exit-address-family
+ !
+ address-family ipv6 unicast
+  network fd00:110::/64
+  rd vpn export 10.0.0.3:2
+  rt vpn both 65500:2
+  export vpn
+  import vpn
+ exit-address-family
+ !
+  address-family l2vpn evpn
+  advertise ipv4 unicast
+  advertise ipv6 unicast
+ exit-address-family
+exit
+!
+router isis PE
+ is-type level-1
+ net 49.0001.0000.0000.0003.00
+ lsp-timers gen-interval 2 refresh-interval 900 max-lifetime 1200
+ topology ipv6-unicast
+ log-adjacency-changes
+ log-pdu-drops
+ segment-routing srv6
+  locator MAIN
+ exit
+exit
+!
+segment-routing
+ srv6
+  encapsulation
+   source-address fd00:3::1
+  exit
+  locators
+   locator MAIN
+    prefix fd00:3::/48 block-len 32 node-len 16
+    behavior usid
+   exit
+   !
+  exit
+  !
+ exit
+ !
+exit
+!
+end
+
+------------------------------------------
+
+Current configuration:                                                                                                                                                  10:49 [81/3899]
+!                                                                                                                                                                                      
+frr version 10.6.1                                                                                                                                                                     
+frr defaults traditional                                                                                                                                                               
+hostname dell-r450-nfv2023-01.lab.eng.brq2.redhat.com                                                                                                                                  
+log stdout                                                                                                                                                                             
+log timestamp precision 3                                                                                                                                                              
+service integrated-vtysh-config                                                                                                                                                        
+!                                                                                                                                                                                      
+route-map allowall permit 1                                                                                                                                                            
+exit                                                                                                                                                                                   
+!                                                                                                                                                                                      
+debug zebra dplane dpdk                                                                                                                                                                
+!                                                                                                                                                                                      
+vrf main                                                                                                                                                                               
+exit-vrf                                                                                                                                                                               
+!                                                                                                                                                                                      
+vrf red                                                                                                                                                                                
+exit-vrf                                                                                                                                                                               
+!                                                                                                                                                                                      
+interface underlay0                                                                                                                                                                    
+ ip address 10.0.0.2/32                                                                                                                                                                
+ ip router isis PE                                                                                                                                                                     
+ ipv6 address fc00:0:2::1/128                                                                                                                                                          
+ ipv6 address fc00:100::2/128                                                                                                                                                          
+ ipv6 address fd00:2::1/128                                                                                                                                                            
+ ipv6 router isis PE                                                                                                                                                                   
+ isis circuit-type level-1                                                                                                                                                             
+ isis network point-to-point                                                                                                                                                           
+exit                                                                                                                                                                                   
+!                                                                                                                                                                                      
+router bgp 65500                                                                                                                                                                       
+ bgp router-id 10.0.0.2
+ bgp log-neighbor-changes
+ no bgp ebgp-requires-policy
+ no bgp default ipv4-unicast
+ no bgp network import-check
+ neighbor EVPN-CLIENTS peer-group
+ neighbor EVPN-CLIENTS remote-as 65500
+ neighbor EVPN-CLIENTS update-source fc00:0:2::1
+ neighbor SRV6-GW peer-group
+ neighbor SRV6-GW remote-as 65500
+ neighbor SRV6-GW update-source fc00:0:2::1
+ neighbor fc00:0:14::1 peer-group SRV6-GW
+ bgp listen range fc00::/16 peer-group EVPN-CLIENTS
+ !                                                                                                                                                                                     
+ segment-routing srv6                                                                                                                                                                  
+  locator MAIN                                                                                                                                                                         
+  encap-behavior H_Encaps_Red                                                                                                                                                          
+ exit                                                                                                                                                                                  
+ !                                                                                                                                                                                     
+ address-family ipv4 vpn                                                                                                                                                               
+  neighbor SRV6-GW activate                                                                                                                                                            
+ exit-address-family                                                                                                                                                                   
+ !                                                                                                                                                                                     
+ address-family ipv6 vpn                                                                                                                                                               
+  neighbor SRV6-GW activate                                                                                                                                                            
+ exit-address-family                                                                                                                                                                   
+ !
+ address-family l2vpn evpn
+  neighbor EVPN-CLIENTS activate
+  neighbor EVPN-CLIENTS route-reflector-client
+  advertise-all-vni
+  advertise-svi-ip
+ exit-address-family
+exit
+!
+router bgp 65500 vrf red
+ bgp router-id 10.0.0.2
+ no bgp ebgp-requires-policy
+ no bgp default ipv4-unicast
+ no bgp network import-check
+ sid vpn per-vrf export auto
+ !
+ address-family ipv4 unicast
+  network 192.168.110.0/24
+  rd vpn export 10.0.0.2:2
+  rt vpn both 65500:2
+  export vpn
+  import vpn
+ exit-address-family
+ !
+ address-family ipv6 unicast
+  network fd00:110::/64
+  rd vpn export 10.0.0.2:2
+  rt vpn both 65500:2
+  export vpn
+  import vpn
+ exit-address-family
+ !
+ address-family l2vpn evpn
+  advertise ipv4 unicast
+  advertise ipv6 unicast
+ exit-address-family
+exit
+!
+router isis PE
+ is-type level-1
+ net 49.0001.0000.0000.0002.00
+ lsp-timers gen-interval 2 refresh-interval 900 max-lifetime 1200
+ topology ipv6-unicast
+ log-adjacency-changes
+ log-pdu-drops
+ segment-routing srv6
+  locator MAIN
+ exit
+exit
+!
+segment-routing
+ srv6
+  encapsulation
+   source-address fd00:2::1
+  exit
+  locators
+   locator MAIN
+    prefix fd00:2::/48 block-len 32 node-len 16
+    behavior usid
+   exit
+   !
+  exit
+  !
+ exit
+ !
+exit
+!
+end
+
+-------
+
+
+grout# interface show
+NAME          ID  FLAGS                        MODE    DOMAIN     TYPE    INFO
+main           1  up running                   VRF     main       vrf     ip4 routes=65536 tbl8=256 ip6 routes=65536 tbl8=262144
+underlay0      2  up running promisc allmulti  VRF     main       port    devargs=0000:18:00.2 mac=46:ca:8a:48:85:fc
+underlay1      3  down promisc allmulti        VRF     main       port    devargs=0000:18:08.2 mac=66:51:57:0a:15:b2
+red            4  up running                   VRF     red        vrf     ip4 routes=65536 tbl8=256 ip6 routes=65536 tbl8=262144
+br-pe-210      5  up running                   VRF     red        bridge  members=3 flood learn
+vni210         6  up running                   bridge  br-pe-210  vxlan   vni=210 local=10.0.0.2 encap_vrf=main
+underlay0.42   7  up running promisc           bridge  br-pe-210  vlan    parent=underlay0 vlan_id=42
+underlay1.42   8  up promisc                   bridge  br-pe-210  vlan    parent=underlay1 vlan_id=42
+
+grout# route show
+VRF   FAMILY  DESTINATION       ORIGIN  NEXT_HOP
+main  ipv4    10.0.0.1/32       isis    type=L3 id=20 iface=underlay0 vrf=main origin=zebra family=ipv4 addr=10.0.0.1 state=reachable mac=2c:4c:15:07:98:70
+main  ipv4    10.0.0.2/32       link    type=L3 iface=underlay0 vrf=main origin=INTERNAL family=ipv4 addr=10.0.0.2/32 mac=46:ca:8a:48:85:fc flags=static local link
+main  ipv4    10.0.0.3/32       isis    type=L3 id=20 iface=underlay0 vrf=main origin=zebra family=ipv4 addr=10.0.0.1 state=reachable mac=2c:4c:15:07:98:70
+main  ipv4    10.0.0.4/32       isis    type=L3 id=20 iface=underlay0 vrf=main origin=zebra family=ipv4 addr=10.0.0.1 state=reachable mac=2c:4c:15:07:98:70
+main  ipv4    10.0.0.20/32      isis    type=L3 id=20 iface=underlay0 vrf=main origin=zebra family=ipv4 addr=10.0.0.1 state=reachable mac=2c:4c:15:07:98:70
+red   ipv4    10.10.20.1/32     bgp     type=SRv6 id=28 iface=underlay0 vrf=main origin=zebra encap=h.encaps.red seglist=fd00:14:0:1::
+red   ipv4    10.100.0.1/32     bgp     type=SRv6 id=28 iface=underlay0 vrf=main origin=zebra encap=h.encaps.red seglist=fd00:14:0:1::
+red   ipv4    10.200.0.0/30     bgp     type=SRv6 id=28 iface=underlay0 vrf=main origin=zebra encap=h.encaps.red seglist=fd00:14:0:1::
+red   ipv4    192.168.110.0/24  link    type=L3 iface=br-pe-210 vrf=red origin=INTERNAL family=ipv4 addr=192.168.110.1/24 mac=d2:4b:f1:11:8c:c7 flags=static local link
+red   ipv4    0.0.0.0/0         bgp     type=SRv6 id=28 iface=underlay0 vrf=main origin=zebra encap=h.encaps.red seglist=fd00:14:0:1::
+main  ipv6    fc00:0:1::1/128   isis    type=L3 id=21 iface=underlay0 vrf=main origin=zebra family=ipv6 addr=fe80::2e4c:15ff:fe07:9870 state=reachable mac=2c:4c:15:07:
+main  ipv6    fc00:0:2::1/128   link    type=L3 iface=underlay0 vrf=main origin=INTERNAL family=ipv6 addr=fc00:0:2::1/128 mac=46:ca:8a:48:85:fc flags=static local link
+main  ipv6    fc00:0:3::1/128   isis    type=L3 id=21 iface=underlay0 vrf=main origin=zebra family=ipv6 addr=fe80::2e4c:15ff:fe07:9870 state=reachable mac=2c:4c:15:07:
+main  ipv6    fc00:0:4::1/128   isis    type=L3 id=21 iface=underlay0 vrf=main origin=zebra family=ipv6 addr=fe80::2e4c:15ff:fe07:9870 state=reachable mac=2c:4c:15:07:
+main  ipv6    fc00:0:14::1/128  isis    type=L3 id=21 iface=underlay0 vrf=main origin=zebra family=ipv6 addr=fe80::2e4c:15ff:fe07:9870 state=reachable mac=2c:4c:15:07:
+main  ipv6    fc00:0:20::1/128  isis    type=L3 id=21 iface=underlay0 vrf=main origin=zebra family=ipv6 addr=fe80::2e4c:15ff:fe07:9870 state=reachable mac=2c:4c:15:07:
+main  ipv6    fc00:100::2/128   link    type=L3 iface=underlay0 vrf=main origin=INTERNAL family=ipv6 addr=fc00:100::2/128 mac=46:ca:8a:48:85:fc flags=static local link
+main  ipv6    fc00:100::3/128   isis    type=L3 id=21 iface=underlay0 vrf=main origin=zebra family=ipv6 addr=fe80::2e4c:15ff:fe07:9870 state=reachable mac=2c:4c:15:07:
+main  ipv6    fc00:100::4/128   isis    type=L3 id=21 iface=underlay0 vrf=main origin=zebra family=ipv6 addr=fe80::2e4c:15ff:fe07:9870 state=reachable mac=2c:4c:15:07:
+main  ipv6    fc00:100::14/128  isis    type=L3 id=21 iface=underlay0 vrf=main origin=zebra family=ipv6 addr=fe80::2e4c:15ff:fe07:9870 state=reachable mac=2c:4c:15:07:
+main  ipv6    fc00:100::20/128  isis    type=L3 id=21 iface=underlay0 vrf=main origin=zebra family=ipv6 addr=fe80::2e4c:15ff:fe07:9870 state=reachable mac=2c:4c:15:07:
+main  ipv6    fd00:2::1/128     link    type=L3 iface=underlay0 vrf=main origin=INTERNAL family=ipv6 addr=fd00:2::1/128 mac=46:ca:8a:48:85:fc flags=static local link
+main  ipv6    fd00:2:0:1::/128  bgp     type=SRv6-local id=14 iface=red vrf=red origin=zebra behavior=end.dt46 flavor=next-csid block_bits=32 csid_bits=16 out_vrf=4
+main  ipv6    fd00:3::1/128     isis    type=L3 id=21 iface=underlay0 vrf=main origin=zebra family=ipv6 addr=fe80::2e4c:15ff:fe07:9870 state=reachable mac=2c:4c:15:07:
+main  ipv6    fd00:3::/48       isis    type=L3 id=21 iface=underlay0 vrf=main origin=zebra family=ipv6 addr=fe80::2e4c:15ff:fe07:9870 state=reachable mac=2c:4c:15:07:
+main  ipv6    fd00:4::1/128     isis    type=L3 id=21 iface=underlay0 vrf=main origin=zebra family=ipv6 addr=fe80::2e4c:15ff:fe07:9870 state=reachable mac=2c:4c:15:07:
+main  ipv6    fd00:4::/48       isis    type=L3 id=21 iface=underlay0 vrf=main origin=zebra family=ipv6 addr=fe80::2e4c:15ff:fe07:9870 state=reachable mac=2c:4c:15:07:
+main  ipv6    fd00:14::1/128    isis    type=L3 id=21 iface=underlay0 vrf=main origin=zebra family=ipv6 addr=fe80::2e4c:15ff:fe07:9870 state=reachable mac=2c:4c:15:07:
+main  ipv6    fd00:14::/48      isis    type=L3 id=21 iface=underlay0 vrf=main origin=zebra family=ipv6 addr=fe80::2e4c:15ff:fe07:9870 state=reachable mac=2c:4c:15:07:
+main  ipv6    fd00:20::1/128    isis    type=L3 id=21 iface=underlay0 vrf=main origin=zebra family=ipv6 addr=fe80::2e4c:15ff:fe07:9870 state=reachable mac=2c:4c:15:07:
+main  ipv6    fe80:2::/64       link    type=L3 iface=underlay0 vrf=main origin=INTERNAL family=ipv6 addr=fe80::44ca:8aff:fe48:85fc/64 mac=46:ca:8a:48:85:fc flags=stat
+main  ipv6    fe80:3::/64       link    type=L3 iface=underlay1 vrf=main origin=INTERNAL family=ipv6 addr=fe80::6451:57ff:fe0a:15b2/64 mac=66:51:57:0a:15:b2 flags=stat
+red   ipv6    fd00:110::/64     link    type=L3 iface=br-pe-210 vrf=red origin=INTERNAL family=ipv6 addr=fd00:110::1/64 mac=d2:4b:f1:11:8c:c7 flags=static local link
+red   ipv6    fe80:5::/64       link    type=L3 iface=br-pe-210 vrf=red origin=INTERNAL family=ipv6 addr=fe80::d04b:f1ff:fe11:8cc7/64 mac=d2:4b:f1:11:8c:c7 flags=stati
+
+
+grout# address show
+IFACE      FAMILY  ADDRESS
+underlay0  ipv4    10.0.0.2/32
+br-pe-210  ipv4    192.168.110.1/24
+underlay0  ipv6    fe80::44ca:8aff:fe48:85fc/64
+underlay0  ipv6    fc00:100::2/128
+underlay0  ipv6    fc00:0:2::1/128
+underlay0  ipv6    fd00:2::1/128
+underlay1  ipv6    fe80::6451:57ff:fe0a:15b2/64
+br-pe-210  ipv6    fe80::d04b:f1ff:fe11:8cc7/64
+br-pe-210  ipv6    fd00:110::1/64
