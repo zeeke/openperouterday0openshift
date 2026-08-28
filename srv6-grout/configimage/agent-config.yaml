@@ -58,6 +58,10 @@ hosts:
             vlan-id: 0
             spoof-check: false
             trust: true
+          - id: 1 # trunk
+            vlan-id: 0
+            spoof-check: false
+            trust: true
           - id: 1 # host
             vlan-id: 42
             spoof-check: false
@@ -84,7 +88,7 @@ hosts:
     - name: ens1f1v0 # underlay1 (grout)
       type: ethernet
       state: up
-    - name: ens1f0v1 # host
+    - name: ens1f0v2 # host
       type: ethernet
       state: up
       ipv4:
@@ -111,10 +115,10 @@ hosts:
       config:
       - destination: 0.0.0.0/0
         next-hop-address: 192.168.110.1
-        next-hop-interface: ens1f0v1
+        next-hop-interface: ens1f0v2
       - destination: ::/0
         next-hop-address: fd00:110::1
-        next-hop-interface: ens1f0v1
+        next-hop-interface: ens1f0v2
 - hostname: master-1.sno-lab.example.com
   rootDeviceHints:
     deviceName: /dev/sda
@@ -151,6 +155,10 @@ hosts:
             vlan-id: 0
             spoof-check: false
             trust: true
+          - id: 1 # trunk
+            vlan-id: 0
+            spoof-check: false
+            trust: true
           - id: 1 # host
             vlan-id: 42
             spoof-check: false
@@ -177,7 +185,7 @@ hosts:
     - name: ens1f1v0 # underlay1 (grout)
       type: ethernet
       state: up
-    - name: ens1f0v1 # host
+    - name: ens1f0v2 # host
       type: ethernet
       state: up
       ipv4:
@@ -204,10 +212,10 @@ hosts:
       config:
       - destination: 0.0.0.0/0
         next-hop-address: 192.168.110.1
-        next-hop-interface: ens1f0v1
+        next-hop-interface: ens1f0v2
       - destination: ::/0
         next-hop-address: fd00:110::1
-        next-hop-interface: ens1f0v1
+        next-hop-interface: ens1f0v2
 - hostname: master-2.sno-lab.example.com
   rootDeviceHints:
     deviceName: /dev/sda
@@ -244,7 +252,11 @@ hosts:
             vlan-id: 0
             spoof-check: false
             trust: true
-          - id: 1 # host
+          - id: 1 # trunk
+            vlan-id: 0
+            spoof-check: false
+            trust: true
+          - id: 2 # host
             vlan-id: 42
             spoof-check: false
             trust: true
@@ -270,7 +282,7 @@ hosts:
     - name: eno12409v0 # underlay1 (grout)
       type: ethernet
       state: up
-    - name: eno12399v1 # host
+    - name: eno12399v2 # host
       type: ethernet
       state: up
       ipv4:
@@ -297,7 +309,7 @@ hosts:
       config:
       - destination: 0.0.0.0/0
         next-hop-address: 192.168.110.1
-        next-hop-interface: eno12399v1
+        next-hop-interface: eno12399v2
       - destination: ::/0
         next-hop-address: fd00:110::1
-        next-hop-interface: eno12399v1
+        next-hop-interface: eno12399v2

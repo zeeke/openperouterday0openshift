@@ -14,7 +14,7 @@ l2vnis:
     gatewayIPs:
       - "192.168.110.1/24"
     sriovVFPair:
-      pfName: ens1f0np0
+      pfName: eno12399
       vfIndex: 1
       vlan: 42   # The same as in agent-config.yaml
       acceleratedConfig: {}
@@ -25,7 +25,7 @@ underlays:
     interfaces:
       - type: NetworkDevice
         networkDevice:
-          interfaceName: ens1f0v0  # TODO: avoid referencing the VF netlink name here
+          interfaceName: eno12399v0  # TODO: avoid referencing the VF netlink name here
           acceleratedConfig:
             portName: underlay0
     neighbors:

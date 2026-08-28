@@ -32,3 +32,7 @@ nodeIndex:
 logLevel: info
 EOF
 
+# Override the default config with a node-specific config if it exists
+if [ -f "/var/lib/openperouter/configs/${NODE_NAME}.yaml" ]; then
+  cp "/var/lib/openperouter/configs/${NODE_NAME}.yaml" "/var/lib/openperouter/configs/openpe_config.yaml"
+fi

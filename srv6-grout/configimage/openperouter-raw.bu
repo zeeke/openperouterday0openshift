@@ -19,6 +19,12 @@ storage:
       contents:
         local: openpe_config.yaml
 
+    - path: /var/lib/openperouter/configs/master-2.sno-lab.example.com.yaml
+      mode: 0644
+      overwrite: true
+      contents:
+        local: openpe_master-2.sno-lab.example.com.yaml
+
     - path: /usr/local/bin/bridge-refresher.sh
       mode: 0755
       overwrite: true

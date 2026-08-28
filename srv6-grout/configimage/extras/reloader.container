@@ -10,7 +10,7 @@ Documentation=https://github.com/openperouter
 
 [Container]
 # Container image - same as FRR container
-Image=quay.io/redhat-user-workloads/telco-5g-tenant/openperouter-operator-edge-5-0:on-pr-a8b5430334924e9d4827226c59223dba0c4d3351 
+Image=quay.io/redhat-user-workloads/telco-5g-tenant/openperouter-operator-edge-5-0:on-pr-adc63493a609c110a31d0b836f22bacaf197af67 
 
 # Pod association - runs in same pod as FRR container
 Pod=routerpod.pod
