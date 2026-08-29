@@ -5,8 +5,6 @@ rawfrrconfigs:
         ipv6 router isis ISIS
         isis network point-to-point
 
-      router isis ISIS
-        topology ipv6-unicast
 
 l3vpns:
   - name: red
@@ -16,6 +14,7 @@ l3vpns:
       - "65500:2"
     exportRTs:
       - "65500:2"
+
 
 l2vnis:
   - vni: 210
@@ -27,7 +26,7 @@ l2vnis:
       - "192.168.110.1/24"
       - "fd00:110::1/64"
     sriovVFPair:
-      pfName: ens1f0np0
+      pfName: eno12399
       vfIndex: 1
       vlan: 42   # The same as in agent-config.yaml
       acceleratedConfig: {}
@@ -38,15 +37,14 @@ underlays:
     interfaces:
       - type: NetworkDevice
         networkDevice:
-          interfaceName: ens1f0v0  # TODO: avoid referencing the VF netlink name here
+          interfaceName: eno12399v0  # TODO: avoid referencing the VF netlink name here
           acceleratedConfig:
             portName: underlay0
     neighbors:
-      - asn: 65500 
+      - asn: 65500
         address: "fc00:0:14::1"
         addressFamilies:
-          - type: evpn     # try type: Internal
-
+          - type: evpn
     tunnelEndpoint:
       cidrs:
         - "10.0.0.0/24"
@@ -61,6 +59,6 @@ underlays:
     srv6:
       encapBehavior: "H.Encaps.Red"
       locator:
-        basePrefix: "fd00:2::/48"
+        basePrefix: "fd00:3::/48"
         format: "usid-f3216"
 

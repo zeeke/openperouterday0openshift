@@ -29,10 +29,13 @@ mkdir -p "$(dirname "${CONFIG_PATH}")"
 cat > "${CONFIG_PATH}" <<EOF
 nodeIndex:
   index: $NODE_INDEX
-logLevel: info
+logLevel: debug
 EOF
 
 # Override the default config with a node-specific config if it exists
 if [ -f "/var/lib/openperouter/configs/${NODE_NAME}.yaml" ]; then
   cp "/var/lib/openperouter/configs/${NODE_NAME}.yaml" "/var/lib/openperouter/configs/openpe_config.yaml"
 fi
+
+# TODO: find a better place for this
+modprobe vfio-pci

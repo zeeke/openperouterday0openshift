@@ -28,6 +28,9 @@ Volume=/run/frr:/run/frr
 PodmanArgs=--share=+pid
 
 [Service]
+# TODO: this is a hack to run after the hostname is different from dell-r450-nfv2023-01.lab.eng.brq2.redhat.com
+ExecStartPre=/bin/bash -c 'until [ -f /var/lib/openperouter/node-config.yaml ]; do sleep 1; done'
+
 # Make sure all host folders exist and have proper selinux context to allow sharing
 ExecStartPre=/usr/bin/mkdir -p -m 775 /run/grout /run/frr
 ExecStartPre=/usr/bin/chcon -t container_file_t /run/grout /run/frr

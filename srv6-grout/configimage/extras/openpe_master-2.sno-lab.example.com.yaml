@@ -1,9 +1,22 @@
+rawfrrconfigs:
+  - priority: 100
+    rawConfig: |
+      interface underlay0
+        ipv6 router isis ISIS
+        isis network point-to-point
+
+      router isis ISIS
+        topology ipv6-unicast
+
 l3vpns:
   - name: red
     vrf: red
     rdAssignedNumber: 2
     importRTs:
       - "65500:2"
+    exportRTs:
+      - "65500:2"
+
 
 l2vnis:
   - vni: 210
@@ -13,6 +26,7 @@ l2vnis:
     vxlanport: 4789
     gatewayIPs:
       - "192.168.110.1/24"
+      - "fd00:110::1/64"
     sriovVFPair:
       pfName: eno12399
       vfIndex: 1
@@ -29,10 +43,9 @@ underlays:
           acceleratedConfig:
             portName: underlay0
     neighbors:
-      - asn: 65500
-        address: "fc00:0:14::1"
-        addressFamilies:
-          - type: evpn
+      - type: Internal
+        address: "fc00:100::2"  # master-0 (RR)
+
     tunnelEndpoint:
       cidrs:
         - "10.0.0.0/24"
@@ -47,6 +60,6 @@ underlays:
     srv6:
       encapBehavior: "H.Encaps.Red"
       locator:
-        basePrefix: "fd00:0::/48"
-        #format: "usid-f3216"
+        basePrefix: "fd00:4::/48"
+        format: "usid-f3216"
 

@@ -8,6 +8,7 @@
 
 [ "$2" = "up" ] || exit 0
 
+exit 0
 
 die "this file is no longer used"
 

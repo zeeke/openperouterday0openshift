@@ -5,8 +5,6 @@ rawfrrconfigs:
         ipv6 router isis ISIS
         isis network point-to-point
 
-      router isis ISIS
-        topology ipv6-unicast
 
 l3vpns:
   - name: red
@@ -42,11 +40,17 @@ underlays:
           acceleratedConfig:
             portName: underlay0
     neighbors:
-      - asn: 65500 
+      - type: Internal
         address: "fc00:0:14::1"
+      - type: Internal
+        listenRange: fc00::/16
         addressFamilies:
-          - type: evpn     # try type: Internal
-
+          - type: ipv4unicast
+            properties:
+              - type: routeReflectorClient
+          - type: evpn
+            properties:
+              - type: routeReflectorClient
     tunnelEndpoint:
       cidrs:
         - "10.0.0.0/24"
