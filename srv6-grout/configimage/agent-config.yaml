@@ -62,7 +62,7 @@ hosts:
             vlan-id: 0
             spoof-check: false
             trust: true
-          - id: 1 # host
+          - id: 2 # host
             vlan-id: 42
             spoof-check: false
             trust: true
@@ -159,7 +159,7 @@ hosts:
             vlan-id: 0
             spoof-check: false
             trust: true
-          - id: 1 # host
+          - id: 2 # host
             vlan-id: 42
             spoof-check: false
             trust: true
