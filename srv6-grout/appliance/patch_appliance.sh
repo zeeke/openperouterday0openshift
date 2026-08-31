@@ -218,10 +218,15 @@ if [[ -x "${SCRIPTDIR}/hackagent.sh" ]]; then
 fi
 
 echo "==> Add kernel args for serial console, hugepages, IOMMU into appliance ISO"
-sudo coreos-installer iso kargs modify \
-    -a console=tty0 -a console=ttyS0,115200n8 \
-    -a default_hugepagesz=1G -a hugepagesz=1G -a hugepages=8 \
-    -a iommu=pt -a intel_iommu=on \
-    "${appliance_iso}"
+existing_kargs=$(sudo coreos-installer iso kargs show "${appliance_iso}" 2>/dev/null || true)
+if [[ "${existing_kargs}" != *"iommu=pt"* ]]; then
+    sudo coreos-installer iso kargs modify \
+        -a console=tty0 -a console=ttyS0,115200n8 \
+        -a default_hugepagesz=1G -a hugepagesz=1G -a hugepages=8 \
+        -a iommu=pt -a intel_iommu=on \
+        "${appliance_iso}"
+else
+    echo "    Kernel args already contain iommu=pt, skipping"
+fi
 
 echo "==> Done! Appliance ISO patched: ${appliance_iso}"
