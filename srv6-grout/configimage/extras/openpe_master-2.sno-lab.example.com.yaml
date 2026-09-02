@@ -24,8 +24,8 @@ l2vnis:
       l3vpn: { name: red }
     vxlanport: 4789
     gatewayIPs:
-      - "192.168.110.1/24"
-      - "fd00:110::1/64"
+      - "192.168.110.1/32"
+      - "fd00:110::1/128"
     sriovVFPair:
       pfName: eno12399
       vfIndex: 1
@@ -50,15 +50,14 @@ underlays:
         #- "10.0.0.0/24"
         - "fc00:100::0/112"
     isis:
-      baseNet: "49.0001.0000.0000.0000.00"
+      baseNet: "49.0001.0000.0000.0001.00"
       level: 1
-      features: ["advertisePassiveOnly"]
       interfaces:
         - name: underlay0
           ipFamily: IPv6
     srv6:
       encapBehavior: "H.Encaps.Red"
       locator:
-        basePrefix: "fd00:4::/48"
+        basePrefix: "fd00:0:0::/48"
         format: "usid-f3216"
 

@@ -85,6 +85,7 @@ hosts:
     - name: ens1f0v0 # underlay0 (grout)
       type: ethernet
       state: up
+      mtu: 1800
     - name: ens1f1v0 # underlay1 (grout)
       type: ethernet
       state: up
@@ -182,6 +183,7 @@ hosts:
     - name: ens1f0v0 # underlay0 (grout)
       type: ethernet
       state: up
+      mtu: 1800
     - name: ens1f1v0 # underlay1 (grout)
       type: ethernet
       state: up
@@ -279,6 +281,7 @@ hosts:
     - name: eno12399v0 # underlay0 (grout)
       type: ethernet
       state: up
+      mtu: 1800
     - name: eno12409v0 # underlay1 (grout)
       type: ethernet
       state: up

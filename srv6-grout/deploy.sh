@@ -88,9 +88,9 @@ rm -rf "${config_image_dir}/.openshift_install_state.json" \
 echo "==> Generating config-image ISO..."
 
 if [[ -n "${ssh_key}" ]]; then
-	"${SCRIPTDIR}/configimage/generate_config_image.sh" "${pull_secret}" "${config_image_dir}" "${ssh_key}"
+	"${SCRIPTDIR}/configimage/generate_config_image.sh" "${pull_secret}" "${ssh_key}"
 else
-	"${SCRIPTDIR}/configimage/generate_config_image.sh" "${pull_secret}" "${config_image_dir}"
+	"${SCRIPTDIR}/configimage/generate_config_image.sh" "${pull_secret}"
 fi
 
 config_iso="${config_image_dir}/agentconfig.noarch.iso"

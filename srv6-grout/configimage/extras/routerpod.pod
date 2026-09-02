@@ -8,11 +8,12 @@
 [Unit]
 Description=OpenPERouter FRR Router Pod
 Documentation=https://github.com/openperouter
+After=openperouter-node-index.service
+Requires=openperouter-node-index.service
 
 [Pod]
 # Pod name - will create Podman pod named "systemd-routerpod"
 PodName=routerpod
-HostName=%H
 
 # Use named netns created previously
 Network=ns:/run/netns/perouter
@@ -26,6 +27,7 @@ Volume=/run/frr:/run/frr
 # Note: Using PodmanArgs because quadlet has no native PodShare= directive
 # The + prefix adds PID to default shared namespaces (net, ipc, uts)
 PodmanArgs=--share=+pid
+PodmanArgs=--uts=host
 
 [Service]
 # TODO: this is a hack to run after the hostname is different from dell-r450-nfv2023-01.lab.eng.brq2.redhat.com

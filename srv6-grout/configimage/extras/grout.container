@@ -6,7 +6,7 @@ Wants=nmstate.service
 ConditionPathExists=/dev/hugepages
 
 [Container]
-Image=quay.io/redhat-user-workloads/telco-5g-tenant/openperouter-operator-edge-5-0:on-pr-adc63493a609c110a31d0b836f22bacaf197af67 
+Image=quay.io/redhat-user-workloads/telco-5g-tenant/openperouter-operator-edge-5-0:on-pr-e7ab88703f36a14150d2cb0d3235be875f6c5363 
 ContainerName=grout
 Pod=routerpod.pod
 Notify=true
@@ -15,7 +15,7 @@ Environment=GROUT_OVERRIDE_DEFAULT_ROUTE=true
 PodmanArgs=--privileged
 PodmanArgs=--env-file=/etc/openperouter/openperouter.env
 Entrypoint=/usr/bin/grout
-Exec=-o root:frr -M unix:/run/grout/metrics.sock --verbose --trace-packets -- --socket-limit $GROUT_SOCKET_LIMIT
+Exec=-o root:frr -M unix:/run/grout/metrics.sock --verbose -- --socket-limit $GROUT_SOCKET_LIMIT
 Volume=/dev/hugepages:/dev/hugepages
 Volume=/dev/vfio:/dev/vfio
 Volume=/sys/bus/pci:/sys/bus/pci
