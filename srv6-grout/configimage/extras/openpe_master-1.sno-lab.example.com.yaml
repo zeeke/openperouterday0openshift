@@ -47,7 +47,7 @@ underlays:
           - type: evpn
     tunnelEndpoint:
       cidrs:
-        - "10.0.0.0/24"
+        #- "10.0.0.0/24"
         - "fc00:100::0/112"
     isis:
       baseNet: "49.0001.0000.0000.0000.00"
