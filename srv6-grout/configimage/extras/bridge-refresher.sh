@@ -10,7 +10,6 @@ set -euo pipefail
 # remote PEs. This script fills that gap for rawconfig deployments.
 
 source /etc/openperouter/openperouter.env
-source /var/lib/openperouter/vpn-setup.vars
 
 : ${REFRESH_INTERVAL:=10}
 : ${BRIDGE_NAME:="br-pe-${L2_VNI}"}
@@ -28,37 +27,24 @@ INGRESS_VIP="${INGRESS_VIP:-${GATEWAY_SUBNET}.11}"
 # otherwise MAC learning events are lost. Fixed in FRR 10.7.
 echo "Waiting for zebra to learn VNI ${L2_VNI}..."
 
-while true; do
-	echo "bridge-refresher disabled"
-	sleep 300
-done
-
-
 
 while ! podman exec frr vtysh -c "show evpn vni ${L2_VNI}" 2>/dev/null | grep -q "VNI: ${L2_VNI}"; do
-	sleep 1
+	sleep 5
 done
-echo "VNI ${L2_VNI} discovered, adding VLAN bridge port (VLAN $HOST_VLAN)"
+echo "VNI ${L2_VNI} discovered"
 
 grcli() {
 	echo "+ grcli $*" >&2
 	podman exec grout grcli "$@"
 }
 
-n=0
-for state in /run/perouter-bind/*; do
-	[ -f "$state" ] || continue
-	port="underlay$n"
-	grcli interface add vlan $port.$HOST_VLAN parent $port vlan_id $HOST_VLAN domain $BRIDGE_NAME
-	n=$((n + 1))
-done
-
 echo "Bridge refresher started (interval=${REFRESH_INTERVAL}s, bridge=${BRIDGE_NAME})"
 echo "  VIPs: $API_VIP, $INGRESS_VIP"
 
 while true; do
 	for vip in "$API_VIP" "$INGRESS_VIP"; do
-		podman exec grout grcli ping "$vip" vrf red count 1 >/dev/null 2>&1 || true
+		#podman exec grout grcli ping "$vip" vrf red count 1 >/dev/null 2>&1 || true
+		ping -c 1 "$vip" >/dev/null || true
 	done
 	sleep "$REFRESH_INTERVAL"
 done

@@ -1,0 +1,57 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: workload-test
+  labels:
+    app: openperouter
+    component: workload-test
+  annotations:
+    cpu-quota.crio.io: "disable"
+    cpu-load-balancing.crio.io: "disable"
+    irq-load-balancing.crio.io: "disable"
+spec:
+  priorityClassName: system-node-critical
+  runtimeClassName: performance-grout-performance
+  terminationGracePeriodSeconds: 10
+  containers:
+  - name: workload
+    image: quay.io/redhat-user-workloads/telco-5g-tenant/openperouter-operator-edge-5-0:on-pr-dc586eefd56ceea02f246c8c41098737f88176cb
+    command: ["/bin/bash", "-c"]
+    args:
+    - |
+      echo "=== Environment Variables ==="
+      env | sort
+      echo ""
+      echo "=== Available CPUs (cpuset) ==="
+      CGROUP=$(cat /proc/self/cgroup | grep -oP '(?<=::).*')
+      echo "cgroup: $CGROUP"
+      cat /sys/fs/cgroup"$CGROUP"/cpuset.cpus.effective 2>/dev/null \
+        || cat /sys/fs/cgroup/cpuset.cpus.effective 2>/dev/null \
+        || echo "cpuset info not available via cgroup"
+      echo ""
+      echo "=== /proc/self/status (CPU affinity) ==="
+      grep -i cpu /proc/self/status
+      echo ""
+      echo "=== Hugepages from /proc/meminfo ==="
+      grep -i huge /proc/meminfo
+      echo ""
+      echo "Workload pod ready — sleeping forever"
+      exec sleep infinity
+    securityContext:
+      privileged: true
+    resources:
+      requests:
+        cpu: "4"
+        memory: "2Gi"
+        hugepages-1Gi: "2Gi"
+      limits:
+        cpu: "4"
+        memory: "2Gi"
+        hugepages-1Gi: "2Gi"
+    volumeMounts:
+    - name: hugepages
+      mountPath: /dev/hugepages
+  volumes:
+  - name: hugepages
+    emptyDir:
+      medium: HugePages-1Gi

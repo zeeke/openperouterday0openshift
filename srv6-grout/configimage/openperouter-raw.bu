@@ -13,12 +13,6 @@ storage:
       contents:
         local: nmdispatcher.sh
 
-    - path: /var/lib/openperouter/configs/openpe_config.yaml
-      mode: 0644
-      overwrite: true
-      contents:
-        local: openpe_config.yaml
-
     - path: /var/lib/openperouter/configs/master-0.sno-lab.example.com.yaml
       mode: 0644
       overwrite: true
@@ -91,6 +85,11 @@ storage:
       overwrite: true
       contents:
         local: grout-daemonset.yaml
+    - path: /etc/kubernetes/manifests/workload-pod.yaml
+      mode: 0644
+      overwrite: true
+      contents:
+        local: workload-pod.yaml
     - path: /usr/local/bin/apply-manifests.sh
       mode: 0755
       overwrite: true
@@ -148,7 +147,7 @@ systemd:
       enabled: true
       contents: |
         [Slice]
-        AllowedCPUs=0-6
+        AllowedCPUs=0,1,20,21
         [Install]
         WantedBy=default.target
 

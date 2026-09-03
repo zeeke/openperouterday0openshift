@@ -120,6 +120,8 @@ hosts:
       - destination: ::/0
         next-hop-address: fd00:110::1
         next-hop-interface: ens1f0v2
+        # Must be lower than 150, otherwise the RA routes will be preferred
+        metric: 100
 - hostname: master-1.sno-lab.example.com
   rootDeviceHints:
     deviceName: /dev/sda
@@ -218,6 +220,7 @@ hosts:
       - destination: ::/0
         next-hop-address: fd00:110::1
         next-hop-interface: ens1f0v2
+        metric: 100
 - hostname: master-2.sno-lab.example.com
   rootDeviceHints:
     deviceName: /dev/sda
@@ -316,3 +319,4 @@ hosts:
       - destination: ::/0
         next-hop-address: fd00:110::1
         next-hop-interface: eno12399v2
+        metric: 100
