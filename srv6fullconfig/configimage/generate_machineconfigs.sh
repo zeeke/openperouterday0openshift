@@ -59,6 +59,26 @@ if [[ -f "${SCRIPTDIR}/if-mtu-worker.bu" ]]; then
         -o "${output_dir}/99-worker-if-mtu.yaml"
 fi
 
+# TODO-GROUT: if GROUT_DATAPATH_HW_ACCELERATION
+if [[ -f "${SCRIPTDIR}/grout-kargs-master.bu" ]]; then
+    echo "  grout-kargs-master.bu -> 98-master-grout-kargs.yaml"
+    butane --files-dir="${EXTRASDIR}" "${SCRIPTDIR}/grout-kargs-master.bu" \
+        -o "${output_dir}/98-master-grout-kargs.yaml"
+fi
+
+# TODO-GROUT: if GROUT_DATAPATH_HW_ACCELERATION
+if [[ -f "${SCRIPTDIR}/grout-kargs-worker.bu" ]]; then
+    echo "  grout-kargs-worker.bu -> 98-worker-grout-kargs.yaml"
+    butane --files-dir="${EXTRASDIR}" "${SCRIPTDIR}/grout-kargs-worker.bu" \
+        -o "${output_dir}/98-worker-grout-kargs.yaml"
+fi
+
+# TODO-GROUT: if GROUT_DATAPATH_HW_ACCELERATION
+if [[ -f "${SCRIPTDIR}/performance-profile.yaml" ]]; then
+    echo "  performance-profile.yaml"
+    cp "${SCRIPTDIR}/performance-profile.yaml" "${output_dir}/"
+fi
+
 echo "  set-cluster-mtu.yaml"
 cp "${EXTRASDIR}/config/set-cluster-mtu.yaml" "${output_dir}/set-cluster-mtu.yaml"
 

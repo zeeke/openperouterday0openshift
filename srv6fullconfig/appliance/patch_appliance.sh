@@ -224,4 +224,15 @@ if [[ -x "${SCRIPTDIR}/hackagent.sh" ]]; then
     "${SCRIPTDIR}/hackagent.sh" "${appliance_iso}"
 fi
 
+# TODO: if GROUT_DATAPATH_HW_ACCELERATION
+echo "==> Adding hugepage and IOMMU kernel arguments to appliance ISO..."
+existing_kargs=$(sudo coreos-installer iso kargs show "${appliance_iso}" 2>/dev/null || true)
+if [[ "${existing_kargs}" != *"iommu=pt"* ]]; then
+    sudo coreos-installer iso kargs modify \
+        -a console=tty0 -a console=ttyS0,115200n8 \
+        -a default_hugepagesz=1G -a hugepagesz=1G -a hugepages=8 \
+        -a iommu=pt -a intel_iommu=on \
+        "${appliance_iso}"
+fi
+
 echo "==> Done! Appliance ISO patched: ${appliance_iso}"

@@ -13,11 +13,16 @@ underlays:
     interfaces:
     - type: NetworkDevice
       networkDevice:
-        interfaceName: enp2s0
+        interfaceName: trunkvf
+        acceleratedConfig:
+          portName: underlay0
     routerIDCIDR: 10.0.0.0/24
     isis:
       baseNet: "49.0001.0000.0000.0000.00"
       level: 1
+      interfaces:
+      - name: underlay0
+        ipFamily: DualStack
     srv6:
       encapBehavior: "H.Encaps.Red"
       locator:
@@ -60,11 +65,12 @@ l2vnis:
     gatewayIPs:
       - "192.168.110.1/24"
       - "fd00:110::1/64"
-    hostMaster:
-      type: LinuxBridge
-      linuxBridge:
-        lifecycle: External
-        name: br0
+    # Experimental API
+    sriovVFPair:
+      netlinkName: trunkvf
+      vlan: 42   # The same as in agent-config.yaml
+      acceleratedConfig: {}
+
 l3vpns:
   - name: red
     vrf: red
@@ -73,3 +79,15 @@ l3vpns:
     - "65500:2"
     importRTs:
     - "65500:2"
+
+rawfrrconfigs:
+  - priority: 100
+    rawConfig: |
+      interface underlay0
+        ipv6 router isis ISIS
+        isis network point-to-point
+      exit
+
+      router isis ISIS
+        topology ipv6-unicast
+      exit

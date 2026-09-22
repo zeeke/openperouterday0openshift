@@ -16,6 +16,9 @@ PodName=routerpod
 
 Network=ns:/var/run/netns/perouter
 
+# Grout socket shared with FRR and the controller
+Volume=/run/grout:/run/grout
+
 # PID namespace sharing - required for FRR process management
 # The reloader needs to see FRR processes to signal configuration reloads
 # Note: Using PodmanArgs because quadlet has no native PodShare= directive

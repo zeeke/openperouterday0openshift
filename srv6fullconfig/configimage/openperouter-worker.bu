@@ -83,6 +83,11 @@ storage:
       overwrite: true
       contents:
         local: quadlets/reloader.container
+    - path: /etc/containers/systemd/grout.container
+      mode: 0644
+      overwrite: true
+      contents:
+        local: quadlets/grout.container
     - path: /etc/containers/systemd/frr-sockets.volume
       mode: 0644
       overwrite: true
@@ -101,8 +106,42 @@ systemd:
       enabled: true
     - name: reloader.service
       enabled: true
+    - name: grout.service
+      enabled: true
     - name: frr-sockets.service
       enabled: true
+    - name: grout.slice
+      enabled: true
+      contents: |
+        [Slice]
+        AllowedCPUs=0-6
+
+        [Install]
+        WantedBy=default.target
+    - name: perouter-restart-pods.service
+      enabled: false
+      contents: |
+        [Unit]
+        Description=Restart all OpenPERouter pods
+
+        [Service]
+        Type=oneshot
+        ExecStart=/usr/bin/systemctl restart controllerpod-pod.service routerpod-pod.service
+    - name: load-vfio-pci.service
+      enabled: true
+      contents: |
+        [Unit]
+        Description=Load vfio-pci kernel module
+        After=local-fs-pre.target
+        Wants=local-fs-pre.target
+
+        [Service]
+        Type=oneshot
+        ExecStart=modprobe vfio-pci
+        RemainAfterExit=true
+
+        [Install]
+        WantedBy=multi-user.target
     # --- Rawconfig systemd services ---
     - name: generate-config.service
       enabled: true

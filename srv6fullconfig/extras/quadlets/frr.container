@@ -11,7 +11,7 @@ Documentation=https://github.com/openperouter
 [Container]
 # Container image - update this line to change versions
 # Can be updated via deployment script: sed -i 's|^Image=.*|Image=NEW_IMAGE|' frr.container
-Image=quay.io/redhat-user-workloads/telco-5g-tenant/openperouter-operator-edge-5-0:latest
+Image=quay.io/redhat-user-workloads/telco-5g-tenant/openperouter-operator-edge-5-0:on-pr-0e81b6c4ce9fea975946e2c6ad6e3f6f8dbf96d4
 
 # Pod association - creates automatic dependency on routerpod-pod.service
 Pod=routerpod.pod
@@ -33,6 +33,10 @@ Environment=TINI_SUBREAPER=true
 # Named volume for FRR sockets - shared with reloader container
 # :Z = Private SELinux label (unique to this container/pod)
 Volume=frr-sockets.volume:/var/run/frr:Z
+
+# TODO-GROUT: if GROUT_DATAPATH
+# Enable the grout dataplane provider in zebra
+Volume=/etc/perouter/daemons:/etc/frr/daemons:Z
 
 # Additional Podman arguments not yet supported by native quadlet directives
 # --pidfile - Create PID file for controller integration

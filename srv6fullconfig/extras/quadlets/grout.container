@@ -1,0 +1,39 @@
+[Unit]
+Description=Grout DPDK Dataplane
+After=dev-hugepages.mount nmstate.service
+Requires=dev-hugepages.mount
+Wants=nmstate.service
+ConditionPathExists=/dev/hugepages
+OnFailure=perouter-restart-pods.service
+
+[Container]
+Image=quay.io/redhat-user-workloads/telco-5g-tenant/openperouter-operator-edge-5-0:on-pr-0e81b6c4ce9fea975946e2c6ad6e3f6f8dbf96d4
+ContainerName=grout
+Pod=routerpod.pod
+Notify=true
+Environment=NOTIFY_SOCKET
+Environment=GROUT_OVERRIDE_DEFAULT_ROUTE=true
+PodmanArgs=--privileged
+Entrypoint=/usr/bin/grout
+Exec=-o root:frr -M unix:/run/grout/metrics.sock --verbose -- --socket-limit 8192
+Volume=/dev/hugepages:/dev/hugepages
+Volume=/dev/vfio:/dev/vfio
+Volume=/sys/bus/pci:/sys/bus/pci
+AddDevice=/dev/net/tun
+HealthCmd=grcli -e </dev/null
+HealthInterval=30s
+HealthTimeout=5s
+HealthRetries=3
+HealthOnFailure=none
+
+[Service]
+Slice=grout.slice
+Restart=no
+
+ExecStartPre=/usr/bin/mkdir -p -m 775 /run/grout
+ExecStartPre=/usr/bin/chcon -t container_file_t /run/grout
+ExecStartPre=/usr/sbin/ip netns exec perouter sysctl -qw net.ipv4.conf.all.rp_filter=0
+ExecStartPre=/usr/sbin/ip netns exec perouter sysctl -qw net.ipv4.conf.default.rp_filter=0
+
+[Install]
+WantedBy=default.target

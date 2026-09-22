@@ -11,7 +11,7 @@ Documentation=https://github.com/openperouter
 
 [Container]
 # Container image - update this line to change versions
-Image=quay.io/redhat-user-workloads/telco-5g-tenant/openperouter-operator-edge-5-0:latest
+Image=quay.io/redhat-user-workloads/telco-5g-tenant/openperouter-operator-edge-5-0:on-pr-0e81b6c4ce9fea975946e2c6ad6e3f6f8dbf96d4
 
 # Pod association - creates automatic dependency on controllerpod-pod.service
 Pod=controllerpod.pod
@@ -56,6 +56,9 @@ Volume=/run/dbus/system_bus_socket:/host/dbus/system_bus_socket:rw
 # The directory is pre-created by ExecStartPre if it doesn't exist.
 Volume=/var/run/openvswitch:/var/run/openvswitch:rshared
 
+# Grout API socket
+Volume=/run/grout:/run/grout
+
 # CNI result cache - persistent across container restarts
 Volume=/var/lib/openperouter/cni/cache:/var/lib/openperouter/cni/cache:rw
 
@@ -71,8 +74,9 @@ PodmanArgs=--privileged
 PodmanArgs=--pid=host
 PodmanArgs=--uts=host
 
+# TODO-GROUT: if GROUT_DATAPATH
 # Controller command-line arguments
-Exec=--frrconfig /etc/perouter/frr/frr.conf --pid-path /etc/perouter/frr/frr.pid --reloader-socket /etc/perouter/frr/frr.socket --mode host --namespace openperouter-system --cni-plugin-dirs=/opt/openperouter/cni/bin/ --cni-cache-dir=/var/lib/openperouter/cni/cache
+Exec=--frrconfig /etc/perouter/frr/frr.conf --pid-path /etc/perouter/frr/frr.pid --reloader-socket /etc/perouter/frr/frr.socket --mode host --namespace openperouter-system --cni-plugin-dirs=/opt/openperouter/cni/bin/ --cni-cache-dir=/var/lib/openperouter/cni/cache --datapath=grout --grout-socket=/run/grout/grout.sock
 
 # Health check - kill container if controller stops responding,
 # systemd Restart=on-failure handles restart

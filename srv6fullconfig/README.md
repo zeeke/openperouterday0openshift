@@ -53,6 +53,19 @@ FRR config files live in `extras/config/`:
 `generate-config.sh` selects master or worker configs based on the hostname
 and copies the matching YAML files.
 
+## Grout DPDK Datapath
+
+Grout replaces the kernel forwarding datapath. FRR loads `dplane_grout`, the
+controller uses `--datapath=grout`, and the router pod shares the grout socket
+between grout, FRR, and the controller. The underlay resources use
+`acceleratedConfig` and expose the datapath port as `underlay0`.
+
+The deployment enables IOMMU/VFIO and 1 GiB hugepages on masters and workers.
+`configimage/performance-profile.yaml` additionally isolates CPUs and reserves
+hugepages on masters; adjust its CPU and NUMA values to the target hardware.
+The master-only static workload pins grout's control and datapath threads to
+the CPUs assigned by the performance profile.
+
 ## Building
 
 - **Appliance ISO**: [`appliance/generate_appliance.sh`](appliance/generate_appliance.sh) `<pull_secret_file>`
