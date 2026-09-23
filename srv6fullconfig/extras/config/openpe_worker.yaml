@@ -5,6 +5,8 @@
 #   - TOR (direct):     ipv4 vpn + ipv6 vpn  (SRv6 routes only)
 #   - EVPN-CLIENTS:     l2vpn evpn only (reflected)
 
+# TODO: align with master info.
+
 underlays:
   - asn: 65500
     tunnelEndpoint:
@@ -26,14 +28,11 @@ underlays:
     srv6:
       encapBehavior: "H.Encaps.Red"
       locator:
-        basePrefix: "fd00:2::/48"
+        basePrefix: "fd00:0:0::/48"
         format: "usid-f3216"
     neighbors:
       - type: Internal
-        address: fc00:0:20::1
-        addressFamilies:
-          - type: ipv4vpn
-          - type: ipv6vpn
+        address: "fc00:0:14::1"
       - type: Internal
         address: fd2e:6f44:5dd8:c956::50
         addressFamilies:

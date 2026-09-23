@@ -7,7 +7,7 @@ ConditionPathExists=/dev/hugepages
 OnFailure=perouter-restart-pods.service
 
 [Container]
-Image=quay.io/redhat-user-workloads/telco-5g-tenant/openperouter-operator-edge-5-0:on-pr-0e81b6c4ce9fea975946e2c6ad6e3f6f8dbf96d4
+Image=quay.io/redhat-user-workloads/telco-5g-tenant/openperouter-operator-edge-5-0:on-pr-0270670ef661b1c0d24c59036e06b4e6faacd6ff
 ContainerName=grout
 Pod=routerpod.pod
 Notify=true
