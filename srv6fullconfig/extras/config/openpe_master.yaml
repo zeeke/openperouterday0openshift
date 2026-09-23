@@ -13,7 +13,7 @@ underlays:
     interfaces:
     - type: NetworkDevice
       networkDevice:
-        interfaceName: trunkvf
+        interfaceName: underlayvf
         acceleratedConfig:
           portName: underlay0
     routerIDCIDR: 10.0.0.0/24
