@@ -30,8 +30,6 @@ HealthOnFailure=none
 Slice=grout.slice
 Restart=no
 
-ExecStartPre=/usr/bin/mkdir -p -m 775 /run/grout
-ExecStartPre=/usr/bin/chcon -t container_file_t /run/grout
 ExecStartPre=/usr/sbin/ip netns exec perouter sysctl -qw net.ipv4.conf.all.rp_filter=0
 ExecStartPre=/usr/sbin/ip netns exec perouter sysctl -qw net.ipv4.conf.default.rp_filter=0
 

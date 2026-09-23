@@ -36,6 +36,9 @@ TimeoutStopSec=70
 ExecStartPre=-/usr/sbin/ip netns add perouter
 ExecStartPre=/usr/sbin/ip netns exec perouter ip link set lo up
 
+ExecStartPre=/usr/bin/mkdir -p -m 775 /run/grout
+ExecStartPre=/usr/bin/chcon -t container_file_t /run/grout
+
 [Install]
 # Automatically enable this pod at boot
 # The systemd-generator will create the necessary symlinks
