@@ -51,7 +51,7 @@ storage:
       contents:
         inline: |
           [Match]
-          Property=ID_NET_NAME_SLOT=eno12399v0
+          Property=ID_NET_NAME_ONBOARD=eno12399v0
 
           [Link]
           NamePolicy=keep kernel database onboard slot path
@@ -73,7 +73,7 @@ storage:
       contents:
         inline: |
           [Match]
-          Property=ID_NET_NAME_SLOT=eno12399v1
+          Property=ID_NET_NAME_ONBOARD=eno12399v1
 
           [Link]
           NamePolicy=keep kernel database onboard slot path
