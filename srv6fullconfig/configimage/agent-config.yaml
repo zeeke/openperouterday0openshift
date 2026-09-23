@@ -31,6 +31,18 @@ hosts:
     macAddress: b8:3f:d2:fa:53:86
   networkConfig:
     interfaces:
+    - name: nodeidx
+      type: dummy
+      state: up
+      ipv4:
+        enabled: true
+        auto-dns: false
+        address:
+        - ip: 192.0.2.2
+          prefix-length: 24
+        dhcp: false
+      ipv6:
+        enabled: false
     - name: eno8303
       type: ethernet
       state: up
@@ -144,6 +156,18 @@ hosts:
         dhcp: false
       ipv6:
         enabled: false
+    - name: nodeidx
+      type: dummy
+      state: up
+      ipv4:
+        enabled: true
+        auto-dns: false
+        address:
+        - ip: 192.0.2.3
+          prefix-length: 24
+        dhcp: false
+      ipv6:
+        enabled: false
     - name: ens1f0np0
       type: ethernet
       state: up
@@ -241,6 +265,18 @@ hosts:
         address:
         - ip: 10.37.146.44
           prefix-length: 23
+        dhcp: false
+      ipv6:
+        enabled: false
+    - name: nodeidx
+      type: dummy
+      state: up
+      ipv4:
+        enabled: true
+        auto-dns: false
+        address:
+        - ip: 192.0.2.4
+          prefix-length: 24
         dhcp: false
       ipv6:
         enabled: false
