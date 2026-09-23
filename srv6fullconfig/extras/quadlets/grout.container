@@ -13,6 +13,7 @@ Pod=routerpod.pod
 Notify=true
 Environment=NOTIFY_SOCKET
 Environment=GROUT_OVERRIDE_DEFAULT_ROUTE=true
+Environment=GROUT_SOCK_PATH=/run/grout/grout.sock
 PodmanArgs=--privileged
 Entrypoint=/usr/bin/grout
 Exec=-o root:frr -M unix:/run/grout/metrics.sock --verbose -- --socket-limit 8192
@@ -20,6 +21,7 @@ Volume=/dev/hugepages:/dev/hugepages
 Volume=/dev/vfio:/dev/vfio
 Volume=/sys/bus/pci:/sys/bus/pci
 AddDevice=/dev/net/tun
+AddDevice=/dev/infiniband
 HealthCmd=grcli -e </dev/null
 HealthInterval=30s
 HealthTimeout=5s
