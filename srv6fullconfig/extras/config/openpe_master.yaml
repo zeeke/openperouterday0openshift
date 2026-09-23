@@ -9,7 +9,7 @@ underlays:
   - asn: 65500
     tunnelEndpoint:
       cidrs:
-        - fd00::/64
+        - fc00::/64
     interfaces:
     - type: NetworkDevice
       networkDevice:
@@ -34,21 +34,21 @@ underlays:
       - type: Internal
         address: "fc00:0:14::1"
       - type: Internal
-        listenRange: fd00::/64
+        listenRange: fc00::/64
         addressFamilies:
           - type: evpn
             properties:
               - type: routeReflectorClient
       - type: Internal
-        address: fd00::2
+        address: fc00::2
         addressFamilies:
           - type: evpn
       - type: Internal
-        address: fd00::3
+        address: fc00::3
         addressFamilies:
           - type: evpn
       - type: Internal
-        address: fd00::4
+        address: fc00::4
         addressFamilies:
           - type: evpn
 
