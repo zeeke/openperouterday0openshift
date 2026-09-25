@@ -55,11 +55,13 @@ and copies the matching YAML files.
 
 ## Grout DPDK Datapath
 
-
-Set `GROUT_DATAPATH` for both ISO builds. Leave it unset for the kernel
-datapath. Set it to `tap` to run grout with TAP ports connected to the
-original `enp2s0`/`br0` network layout, or `hw` to use the SR-IOV VF layout
-in `agent-config-hw.yaml` (CTODO: fix this paragraph).
+Use the same `GROUT_DATAPATH` value for both ISO builds. Leave it unset for the
+kernel datapath, set it to `tap` for Grout TAP ports with the default
+[`configimage/agent-config.yaml`](configimage/agent-config.yaml) (`enp2s0` and
+`br0`), or set it to `hw` for SR-IOV VFs. For `hw`, adapt
+[`configimage/agent-config-grout-hw.sample.yaml`](configimage/agent-config-grout-hw.sample.yaml)
+to your NICs and copy it to `configimage/agent-config.yaml` before building the
+config-image ISO.
 
 Both grout modes load FRR's `dplane_grout`, pass `--datapath=grout` to the
 controller, reserve eight 1 GiB hugepages, enable IOMMU, and apply the master
