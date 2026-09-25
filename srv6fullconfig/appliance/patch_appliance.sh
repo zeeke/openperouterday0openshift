@@ -18,8 +18,8 @@ set -euo pipefail
 SCRIPTDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 EXTRASDIR="$(cd "${SCRIPTDIR}/../extras" && pwd)"
 RAWCONFIG_BU="${SCRIPTDIR}/../configimage/openperouter-master.bu"
-RAWCONFIG_BU_GROUT="${SCRIPTDIR}/../configimage/grout-master.bu"
-RAWCONFIG_BU_GROUT_HW="${SCRIPTDIR}/../configimage/grout-hw-master.bu"
+RAWCONFIG_BU_GROUT="${SCRIPTDIR}/../configimage/openperouter-master-grout.bu"
+RAWCONFIG_BU_GROUT_HW="${SCRIPTDIR}/../configimage/openperouter-master-grout-hw.bu"
 
 appliance_iso="$1"
 ocp_dir="$2"
