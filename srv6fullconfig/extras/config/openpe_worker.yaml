@@ -5,8 +5,6 @@
 #   - TOR (direct):     ipv4 vpn + ipv6 vpn  (SRv6 routes only)
 #   - EVPN-CLIENTS:     l2vpn evpn only (reflected)
 
-# TODO: align with master info.
-
 underlays:
   - asn: 65500
     tunnelEndpoint:
@@ -15,24 +13,22 @@ underlays:
     interfaces:
     - type: NetworkDevice
       networkDevice:
-        interfaceName: underlayvf
-        acceleratedConfig:
-          portName: underlay0
+        interfaceName: enp2s0
     routerIDCIDR: 10.0.0.0/24
     isis:
       baseNet: "49.0001.0000.0000.0000.00"
       level: 1
-      interfaces:
-      - name: underlay0
-        ipFamily: DualStack
     srv6:
       encapBehavior: "H.Encaps.Red"
       locator:
-        basePrefix: "fd00:0:0::/48"
+        basePrefix: "fd00:2::/48"
         format: "usid-f3216"
     neighbors:
       - type: Internal
-        address: "fc00:0:14::1"
+        address: fc00:0:20::1
+        addressFamilies:
+          - type: ipv4vpn
+          - type: ipv6vpn
       - type: Internal
         address: fd2e:6f44:5dd8:c956::50
         addressFamilies:
@@ -55,12 +51,11 @@ l2vnis:
     gatewayIPs:
       - "192.168.110.1/24"
       - "fd00:110::1/64"
-    # Experimental API
-    sriovVFPair:
-      netlinkName: trunkvf
-      vlan: 42   # The same as in agent-config.yaml
-      acceleratedConfig: {}
-
+    hostMaster:
+      type: LinuxBridge
+      linuxBridge:
+        lifecycle: External
+        name: br0
 l3vpns:
   - name: red
     vrf: red

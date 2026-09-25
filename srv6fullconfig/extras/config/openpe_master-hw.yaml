@@ -9,44 +9,46 @@ underlays:
   - asn: 65500
     tunnelEndpoint:
       cidrs:
-        - fd00::/64
+        - fc00::/64
     interfaces:
     - type: NetworkDevice
       networkDevice:
-        interfaceName: enp2s0
+        interfaceName: underlayvf
+        acceleratedConfig:
+          portName: underlay0
     routerIDCIDR: 10.0.0.0/24
     isis:
       baseNet: "49.0001.0000.0000.0000.00"
       level: 1
+      interfaces:
+      - name: underlay0
+        ipFamily: DualStack
     srv6:
       encapBehavior: "H.Encaps.Red"
       locator:
-        basePrefix: "fd00:2::/48"
+        basePrefix: "fd00:0:0::/48"
         format: "usid-f3216"
     routeReflector:
       clusterID: 10.255.255.255
     neighbors:
       - type: Internal
-        address: fc00:0:20::1
-        addressFamilies:
-          - type: ipv4vpn
-          - type: ipv6vpn
+        address: "fc00:0:14::1"
       - type: Internal
-        listenRange: fd2e:6f44:5dd8:c956::/120
+        listenRange: fc00::/64
         addressFamilies:
           - type: evpn
             properties:
               - type: routeReflectorClient
       - type: Internal
-        address: fd2e:6f44:5dd8:c956::50
+        address: fc00::2
         addressFamilies:
           - type: evpn
       - type: Internal
-        address: fd2e:6f44:5dd8:c956::51
+        address: fc00::3
         addressFamilies:
           - type: evpn
       - type: Internal
-        address: fd2e:6f44:5dd8:c956::52
+        address: fc00::4
         addressFamilies:
           - type: evpn
 
@@ -60,11 +62,12 @@ l2vnis:
     gatewayIPs:
       - "192.168.110.1/24"
       - "fd00:110::1/64"
-    hostMaster:
-      type: LinuxBridge
-      linuxBridge:
-        lifecycle: External
-        name: br0
+    # Experimental API
+    sriovVFPair:
+      netlinkName: trunkvf
+      vlan: 42   # The same as in agent-config.yaml
+      acceleratedConfig: {}
+
 l3vpns:
   - name: red
     vrf: red
@@ -73,3 +76,15 @@ l3vpns:
     - "65500:2"
     importRTs:
     - "65500:2"
+
+rawfrrconfigs:
+  - priority: 100
+    rawConfig: |
+      interface underlay0
+        ipv6 router isis ISIS
+        isis network point-to-point
+      exit
+
+      router isis ISIS
+        topology ipv6-unicast
+      exit

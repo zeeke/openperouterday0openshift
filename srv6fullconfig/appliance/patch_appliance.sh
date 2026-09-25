@@ -3,8 +3,7 @@
 # OpenPERouter rawconfig quadlets, configs, registry mirrors, DNS overrides,
 # and the ignition hack agent into it.
 #
-# This compiles openperouter-master.bu (the single source of truth for file
-# lists and systemd units) and merges the resulting ignition with
+# This compiles the selected master Butane configs and merges their ignition with
 # appliance-specific extras (registry mirrors, DNS, SSH key).
 #
 # Usage: patch_appliance.sh <appliance_iso> <ocp_dir>
@@ -19,6 +18,8 @@ set -euo pipefail
 SCRIPTDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 EXTRASDIR="$(cd "${SCRIPTDIR}/../extras" && pwd)"
 RAWCONFIG_BU="${SCRIPTDIR}/../configimage/openperouter-master.bu"
+RAWCONFIG_BU_GROUT="${SCRIPTDIR}/../configimage/grout-master.bu"
+RAWCONFIG_BU_GROUT_HW="${SCRIPTDIR}/../configimage/grout-hw-master.bu"
 
 appliance_iso="$1"
 ocp_dir="$2"
@@ -36,7 +37,7 @@ fi
 # ============================================================
 # Step 1: Compile openperouter-master.bu → ignition
 # ============================================================
-echo "==> Compiling openperouter-master.bu..."
+echo "==> Compiling master OpenPERouter configs..."
 
 tmpdir=$(mktemp -d)
 trap 'rm -rf "${tmpdir}"' EXIT
@@ -44,6 +45,32 @@ trap 'rm -rf "${tmpdir}"' EXIT
 # butane --raw on an openshift-variant .bu outputs ignition JSON directly
 # (without --raw it would produce a MachineConfig YAML wrapper)
 butane --raw --strict --files-dir="${EXTRASDIR}" "${RAWCONFIG_BU}" \
+    > "${tmpdir}/openperouter-master.ign"
+
+butane --raw --strict --files-dir="${EXTRASDIR}" "${RAWCONFIG_BU_GROUT}" \
+    > "${tmpdir}/grout.ign"
+
+butane --raw --strict --files-dir="${EXTRASDIR}" "${RAWCONFIG_BU_GROUT_HW}" \
+    > "${tmpdir}/grout-hw.ign"
+
+
+cat > "${tmpdir}/merge.bu" <<IGN
+variant: fcos
+version: 1.6.0
+ignition:
+  config:
+    merge:
+    - local: openperouter-master.ign
+IGN
+
+if [[ -n "${GROUT_DATAPATH:-}" ]]; then
+    echo "    - local: grout.ign" >> "${tmpdir}/merge.bu"
+fi
+if [[ "${GROUT_DATAPATH:-}" == hw ]]; then
+    echo "    - local: grout-hw.ign" >> "${tmpdir}/merge.bu"
+fi
+
+butane --raw --strict --files-dir="${tmpdir}" "${tmpdir}/merge.bu" \
     > "${tmpdir}/openperouter.ign"
 
 
@@ -224,15 +251,18 @@ if [[ -x "${SCRIPTDIR}/hackagent.sh" ]]; then
     "${SCRIPTDIR}/hackagent.sh" "${appliance_iso}"
 fi
 
-# TODO: if GROUT_DATAPATH_HW_ACCELERATION
-echo "==> Adding hugepage and IOMMU kernel arguments to appliance ISO..."
-existing_kargs=$(sudo coreos-installer iso kargs show "${appliance_iso}" 2>/dev/null || true)
-if [[ "${existing_kargs}" != *"iommu=pt"* ]]; then
-    sudo coreos-installer iso kargs modify \
-        -a console=tty0 -a console=ttyS0,115200n8 \
-        -a default_hugepagesz=1G -a hugepagesz=1G -a hugepages=8 \
-        -a iommu=pt -a intel_iommu=on \
-        "${appliance_iso}"
+if [[ -n "${GROUT_DATAPATH:-}" ]]; then
+    kargs=(default_hugepagesz=1G hugepagesz=1G hugepages=8
+        console=tty0 'console=ttyS0,115200n8' iommu=pt intel_iommu=on)
+    echo "==> Adding hugepage and IOMMU kernel arguments to appliance ISO, needed for the first boot..."
+    existing_kargs=$(sudo coreos-installer iso kargs show "${appliance_iso}" 2>/dev/null || true)
+    missing_kargs=()
+    for arg in "${kargs[@]}"; do
+        [[ " ${existing_kargs} " == *" ${arg} "* ]] || missing_kargs+=(-a "$arg")
+    done
+    if (( ${#missing_kargs[@]} )); then
+        sudo coreos-installer iso kargs modify "${missing_kargs[@]}" "${appliance_iso}"
+    fi
 fi
 
 echo "==> Done! Appliance ISO patched: ${appliance_iso}"

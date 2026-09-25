@@ -17,7 +17,7 @@ spec:
   hostPID: true
   containers:
   - name: control-shape
-    image: quay.io/redhat-user-workloads/telco-5g-tenant/openperouter-operator-edge-5-0:on-pr-0270670ef661b1c0d24c59036e06b4e6faacd6ff
+    image: __OPENPEROUTER_IMAGE__
     env:
     - name: GROUT_SOCK_PATH
       value: /run/grout/grout.sock
@@ -66,7 +66,7 @@ spec:
     - name: shared-data
       mountPath: /shared
   - name: datapath-shape
-    image: quay.io/redhat-user-workloads/telco-5g-tenant/openperouter-operator-edge-5-0:on-pr-0270670ef661b1c0d24c59036e06b4e6faacd6ff
+    image: __OPENPEROUTER_IMAGE__
     command: ["/bin/bash", "-xc"]
     args:
     - |

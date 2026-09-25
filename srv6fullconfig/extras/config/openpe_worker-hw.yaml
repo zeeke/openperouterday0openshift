@@ -1,9 +1,11 @@
-# OpenPERouter FRR Configuration Template — EVPN Route Reflector (ISIS + SRv6)
+# OpenPERouter FRR Configuration Template — EVPN Client (ISIS + SRv6)
 # Copied by generate-config.sh
 #
 # Peering model:
 #   - TOR (direct):     ipv4 vpn + ipv6 vpn  (SRv6 routes only)
 #   - EVPN-CLIENTS:     l2vpn evpn only (reflected)
+
+# TODO: align with master info.
 
 underlays:
   - asn: 65500
@@ -13,30 +15,24 @@ underlays:
     interfaces:
     - type: NetworkDevice
       networkDevice:
-        interfaceName: enp2s0
+        interfaceName: underlayvf
+        acceleratedConfig:
+          portName: underlay0
     routerIDCIDR: 10.0.0.0/24
     isis:
       baseNet: "49.0001.0000.0000.0000.00"
       level: 1
+      interfaces:
+      - name: underlay0
+        ipFamily: DualStack
     srv6:
       encapBehavior: "H.Encaps.Red"
       locator:
-        basePrefix: "fd00:2::/48"
+        basePrefix: "fd00:0:0::/48"
         format: "usid-f3216"
-    routeReflector:
-      clusterID: 10.255.255.255
     neighbors:
       - type: Internal
-        address: fc00:0:20::1
-        addressFamilies:
-          - type: ipv4vpn
-          - type: ipv6vpn
-      - type: Internal
-        listenRange: fd2e:6f44:5dd8:c956::/120
-        addressFamilies:
-          - type: evpn
-            properties:
-              - type: routeReflectorClient
+        address: "fc00:0:14::1"
       - type: Internal
         address: fd2e:6f44:5dd8:c956::50
         addressFamilies:
@@ -49,7 +45,6 @@ underlays:
         address: fd2e:6f44:5dd8:c956::52
         addressFamilies:
           - type: evpn
-
 l2vnis:
   - vni: 210
     routingDomain:
@@ -60,11 +55,12 @@ l2vnis:
     gatewayIPs:
       - "192.168.110.1/24"
       - "fd00:110::1/64"
-    hostMaster:
-      type: LinuxBridge
-      linuxBridge:
-        lifecycle: External
-        name: br0
+    # Experimental API
+    sriovVFPair:
+      netlinkName: trunkvf
+      vlan: 42   # The same as in agent-config.yaml
+      acceleratedConfig: {}
+
 l3vpns:
   - name: red
     vrf: red

@@ -1,0 +1,69 @@
+variant: openshift
+version: 4.20.0
+metadata:
+  name: 97-master-grout-hw
+  labels:
+    machineconfiguration.openshift.io/role: master
+storage:
+  files:
+    - path: /etc/systemd/network/10-underlayvf-intel.link
+      mode: 0644
+      overwrite: true
+      contents:
+        inline: |
+          [Match]
+          Property=ID_NET_NAME_ONBOARD=eno12399v0
+
+          [Link]
+          NamePolicy=keep kernel database onboard slot path
+          AlternativeName=underlayvf
+    - path: /etc/systemd/network/10-underlayvf-mellanox.link
+      mode: 0644
+      overwrite: true
+      contents:
+        inline: |
+          [Match]
+          Property=ID_NET_NAME_SLOT=ens1f0v0
+
+          [Link]
+          NamePolicy=keep kernel database onboard slot path
+          AlternativeName=underlayvf
+    - path: /etc/systemd/network/10-trunkvf-intel.link
+      mode: 0644
+      overwrite: true
+      contents:
+        inline: |
+          [Match]
+          Property=ID_NET_NAME_ONBOARD=eno12399v1
+
+          [Link]
+          NamePolicy=keep kernel database onboard slot path
+          AlternativeName=trunkvf
+    - path: /etc/systemd/network/10-trunkvf-mellanox.link
+      mode: 0644
+      overwrite: true
+      contents:
+        inline: |
+          [Match]
+          Property=ID_NET_NAME_SLOT=ens1f0v1
+
+          [Link]
+          NamePolicy=keep kernel database onboard slot path
+          AlternativeName=trunkvf
+systemd:
+  units:
+    - name: load-vfio-pci.service
+      enabled: true
+      contents: |
+        [Unit]
+        Description=Load vfio-pci kernel module
+        After=local-fs-pre.target
+        Wants=local-fs-pre.target
+
+        [Service]
+        Type=oneshot
+        ExecStart=modprobe vfio-pci
+        RemainAfterExit=true
+
+        [Install]
+        WantedBy=multi-user.target

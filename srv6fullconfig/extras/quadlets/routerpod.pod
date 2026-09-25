@@ -16,7 +16,7 @@ PodName=routerpod
 
 Network=ns:/var/run/netns/perouter
 
-# Grout socket shared with FRR and the controller
+# Shared grout socket (unused by the kernel datapath)
 Volume=/run/grout:/run/grout
 
 # PID namespace sharing - required for FRR process management

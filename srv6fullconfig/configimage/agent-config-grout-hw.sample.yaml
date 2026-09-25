@@ -1,0 +1,353 @@
+# agent-config.yaml - Per-node hardware configuration
+#
+# This agent-config.yaml is an example for the Grout hardware datapath.
+# Adjust it to fit the cluster NIC configuration and copy it to agent-config.yaml.
+# Each node needs an SR-IOV with at least 3 VFs: one for the underlay connectivity, 
+# one set to trunk that will be moved to the perouter net namespace, and one for the host
+# connectivity, which must be administratively set on an arbitrary VLAN (e.g. 42).
+
+apiVersion: v1alpha1
+metadata:
+  name: sno-lab
+  namespace: cluster0
+additionalNTPSources:
+- 10.100.0.1
+rendezvousIP: 192.168.110.2
+hosts:
+- hostname: master-0
+  rootDeviceHints:
+    deviceName: /dev/sda
+  interfaces:
+  - name: ens1f0np0
+    macAddress: b8:3f:d2:fa:53:86
+  networkConfig:
+    interfaces:
+    - name: nodeidx
+      type: dummy
+      state: up
+      ipv4:
+        enabled: true
+        auto-dns: false
+        address:
+        - ip: 192.0.2.2
+          prefix-length: 24
+        dhcp: false
+      ipv6:
+        enabled: false
+    - name: eno8303
+      type: ethernet
+      state: up
+      ipv4:
+        enabled: true
+        auto-dns: false
+        address:
+        - ip: 10.37.146.40
+          prefix-length: 23
+        dhcp: false
+      ipv6:
+        enabled: false
+    - name: ens1f0np0
+      type: ethernet
+      state: up
+      mtu: 1800
+      ipv4:
+        enabled: false
+      ipv6:
+        enabled: false
+      ethernet:
+        sr-iov:
+          total-vfs: 16
+          vfs:
+          - id: 0 # underlay0
+            vlan-id: 0
+            spoof-check: false
+            trust: true
+          - id: 1 # trunk
+            vlan-id: 0
+            spoof-check: false
+            trust: true
+          - id: 2 # host
+            vlan-id: 42
+            spoof-check: false
+            trust: true
+    - name: ens1f1np1
+      type: ethernet
+      state: up
+      mtu: 1800
+      ipv4:
+        enabled: false
+      ipv6:
+        enabled: false
+      ethernet:
+        sr-iov:
+          total-vfs: 16
+          vfs:
+          - id: 0 # underlay1
+            vlan-id: 0
+            spoof-check: false
+            trust: true
+    - name: ens1f0v0 # underlay0 (grout)
+      type: ethernet
+      state: up
+      mtu: 1800
+    - name: ens1f0v1
+      type: ethernet
+      state: up
+    - name: ens1f0v2 # host
+      type: ethernet
+      state: up
+      mtu: 1430
+      ipv4:
+        enabled: true
+        auto-dns: false
+        address:
+        - ip: 192.168.110.2
+          prefix-length: 24
+        dhcp: false
+      ipv6:
+        enabled: true
+        auto-dns: false
+        autoconf: false
+        address:
+        - ip: fd00:110::2
+          prefix-length: 64
+        dhcp: false
+    dns-resolver:
+      config:
+        server:
+        - 10.100.0.1
+        - fd00:100::1
+    routes:
+      config:
+      - destination: 0.0.0.0/0
+        next-hop-address: 192.168.110.1
+        next-hop-interface: ens1f0v2
+      - destination: ::/0
+        next-hop-address: fd00:110::1
+        next-hop-interface: ens1f0v2
+        # Must be lower than 150, otherwise the RA routes will be preferred
+        metric: 100
+- hostname: master-1
+  rootDeviceHints:
+    deviceName: /dev/sda
+  interfaces:
+  - name: ens1f0np0
+    macAddress: b8:3f:d2:fa:53:7a
+  networkConfig:
+    interfaces:
+    - name: eno8303
+      type: ethernet
+      state: up
+      ipv4:
+        enabled: true
+        auto-dns: false
+        address:
+        - ip: 10.37.146.42
+          prefix-length: 23
+        dhcp: false
+      ipv6:
+        enabled: false
+    - name: nodeidx
+      type: dummy
+      state: up
+      ipv4:
+        enabled: true
+        auto-dns: false
+        address:
+        - ip: 192.0.2.3
+          prefix-length: 24
+        dhcp: false
+      ipv6:
+        enabled: false
+    - name: ens1f0np0
+      type: ethernet
+      state: up
+      mtu: 1800
+      ipv4:
+        enabled: false
+      ipv6:
+        enabled: false
+      ethernet:
+        sr-iov:
+          total-vfs: 16
+          vfs:
+          - id: 0 # underlay0
+            vlan-id: 0
+            spoof-check: false
+            trust: true
+          - id: 1 # trunk
+            vlan-id: 0
+            spoof-check: false
+            trust: true
+          - id: 2 # host
+            vlan-id: 42
+            spoof-check: false
+            trust: true
+    - name: ens1f1np1
+      type: ethernet
+      state: up
+      mtu: 1800
+      ipv4:
+        enabled: false
+      ipv6:
+        enabled: false
+      ethernet:
+        sr-iov:
+          total-vfs: 16
+          vfs:
+          - id: 0 # underlay1
+            vlan-id: 0
+            spoof-check: false
+            trust: true
+    - name: ens1f0v0 # underlay0 (grout)
+      type: ethernet
+      state: up
+      mtu: 1800
+    - name: ens1f0v1
+      type: ethernet
+      state: up
+    - name: ens1f0v2 # host
+      type: ethernet
+      state: up
+      mtu: 1430
+      ipv4:
+        enabled: true
+        auto-dns: false
+        address:
+        - ip: 192.168.110.3
+          prefix-length: 24
+        dhcp: false
+      ipv6:
+        enabled: true
+        auto-dns: false
+        autoconf: false
+        address:
+        - ip: fd00:110::3
+          prefix-length: 64
+        dhcp: false
+    dns-resolver:
+      config:
+        server:
+        - 10.100.0.1
+        - fd00:100::1
+    routes:
+      config:
+      - destination: 0.0.0.0/0
+        next-hop-address: 192.168.110.1
+        next-hop-interface: ens1f0v2
+      - destination: ::/0
+        next-hop-address: fd00:110::1
+        next-hop-interface: ens1f0v2
+        metric: 100
+- hostname: master-2
+  rootDeviceHints:
+    deviceName: /dev/sda
+  interfaces:
+  - name: eno12399
+    macAddress: 30:3e:a7:0b:e8:6c
+  networkConfig:
+    interfaces:
+    - name: eno8303
+      type: ethernet
+      state: up
+      ipv4:
+        enabled: true
+        auto-dns: false
+        address:
+        - ip: 10.37.146.44
+          prefix-length: 23
+        dhcp: false
+      ipv6:
+        enabled: false
+    - name: nodeidx
+      type: dummy
+      state: up
+      ipv4:
+        enabled: true
+        auto-dns: false
+        address:
+        - ip: 192.0.2.4
+          prefix-length: 24
+        dhcp: false
+      ipv6:
+        enabled: false
+    - name: eno12399
+      type: ethernet
+      state: up
+      mtu: 1800
+      ipv4:
+        enabled: false
+      ipv6:
+        enabled: false
+      ethernet:
+        sr-iov:
+          total-vfs: 16
+          vfs:
+          - id: 0 # underlay0
+            vlan-id: 0
+            spoof-check: false
+            trust: true
+          - id: 1 # trunk
+            vlan-id: 0
+            spoof-check: false
+            trust: true
+          - id: 2 # host
+            vlan-id: 42
+            spoof-check: false
+            trust: true
+    - name: eno12409
+      type: ethernet
+      state: up
+      mtu: 1800
+      ipv4:
+        enabled: false
+      ipv6:
+        enabled: false
+      ethernet:
+        sr-iov:
+          total-vfs: 16
+          vfs:
+          - id: 0 # underlay1
+            vlan-id: 0
+            spoof-check: false
+            trust: true
+    - name: eno12399v0 # underlay0 (grout)
+      type: ethernet
+      state: up
+      mtu: 1800
+    - name: eno12399v1
+      type: ethernet
+      state: up
+    - name: eno12399v2 # host
+      type: ethernet
+      state: up
+      mtu: 1430
+      ipv4:
+        enabled: true
+        auto-dns: false
+        address:
+        - ip: 192.168.110.4
+          prefix-length: 24
+        dhcp: false
+      ipv6:
+        enabled: true
+        auto-dns: false
+        autoconf: false
+        address:
+        - ip: fd00:110::4
+          prefix-length: 64
+        dhcp: false
+    dns-resolver:
+      config:
+        server:
+        - 10.100.0.1
+        - fd00:100::1
+    routes:
+      config:
+      - destination: 0.0.0.0/0
+        next-hop-address: 192.168.110.1
+        next-hop-interface: eno12399v2
+      - destination: ::/0
+        next-hop-address: fd00:110::1
+        next-hop-interface: eno12399v2
+        metric: 100

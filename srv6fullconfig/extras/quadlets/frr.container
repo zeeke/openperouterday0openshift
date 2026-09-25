@@ -11,7 +11,7 @@ Documentation=https://github.com/openperouter
 [Container]
 # Container image - update this line to change versions
 # Can be updated via deployment script: sed -i 's|^Image=.*|Image=NEW_IMAGE|' frr.container
-Image=quay.io/redhat-user-workloads/telco-5g-tenant/openperouter-operator-edge-5-0:on-pr-0270670ef661b1c0d24c59036e06b4e6faacd6ff
+Image=__OPENPEROUTER_IMAGE__
 
 # Pod association - creates automatic dependency on routerpod-pod.service
 Pod=routerpod.pod
@@ -35,8 +35,7 @@ Environment=GROUT_SOCK_PATH=/run/grout/grout.sock
 # :Z = Private SELinux label (unique to this container/pod)
 Volume=frr-sockets.volume:/var/run/frr:Z
 
-# TODO-GROUT: if GROUT_DATAPATH
-# Enable the grout dataplane provider in zebra
+# The selected daemons file enables dplane_grout only in grout modes.
 Volume=/etc/perouter/daemons:/etc/frr/daemons:Z
 
 # Additional Podman arguments not yet supported by native quadlet directives

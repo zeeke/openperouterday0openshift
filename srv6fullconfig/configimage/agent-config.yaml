@@ -1,20 +1,3 @@
-# agent-config.yaml - Per-node hardware configuration
-#
-# TODO: check this commented section
-# Each node needs:
-#   - Two PFs with total-vfs: 16 and mtu: 1800 (for VXLAN/SRv6 overhead)
-#   - PF0 VF0: grout underlay port (auto-detected by 99-perouter dispatcher)
-#   - PF1 VF0: grout underlay port (auto-detected by 99-perouter dispatcher)
-#   - PF0 VF1: host VF, VLAN 42, cluster IP
-#   - VF2+: available for pod workloads
-#
-# VF binding and address derivation are handled automatically by the
-# NM dispatcher script 99-perouter (shipped via butane):
-#   - VF index 0 on any PF: calls perouter-bind.sh
-#   - VF with a default route: calls perouter-host-dispatch.sh
-#
-# Tune: MAC addresses, host IPs, rendezvousIP, DNS/NTP servers.
-# The addressing scheme is defined in openperouter.env, not here.
 apiVersion: v1alpha1
 metadata:
   name: sno-lab
@@ -24,86 +7,15 @@ additionalNTPSources:
 rendezvousIP: 192.168.110.2
 hosts:
 - hostname: master-0
-  rootDeviceHints:
-    deviceName: /dev/sda
   interfaces:
-  - name: ens1f0np0
-    macAddress: b8:3f:d2:fa:53:86
+  - name: enp2s0
+    macAddress: 00:fb:7c:be:b9:43
+  - name: eth1
+    macAddress: 00:fb:7c:be:b9:44
   networkConfig:
     interfaces:
-    - name: nodeidx
-      type: dummy
-      state: up
-      ipv4:
-        enabled: true
-        auto-dns: false
-        address:
-        - ip: 192.0.2.2
-          prefix-length: 24
-        dhcp: false
-      ipv6:
-        enabled: false
-    - name: eno8303
-      type: ethernet
-      state: up
-      ipv4:
-        enabled: true
-        auto-dns: false
-        address:
-        - ip: 10.37.146.40
-          prefix-length: 23
-        dhcp: false
-      ipv6:
-        enabled: false
-    - name: ens1f0np0
-      type: ethernet
-      state: up
-      mtu: 1800
-      ipv4:
-        enabled: false
-      ipv6:
-        enabled: false
-      ethernet:
-        sr-iov:
-          total-vfs: 16
-          vfs:
-          - id: 0 # underlay0
-            vlan-id: 0
-            spoof-check: false
-            trust: true
-          - id: 1 # trunk
-            vlan-id: 0
-            spoof-check: false
-            trust: true
-          - id: 2 # host
-            vlan-id: 42
-            spoof-check: false
-            trust: true
-    - name: ens1f1np1
-      type: ethernet
-      state: up
-      mtu: 1800
-      ipv4:
-        enabled: false
-      ipv6:
-        enabled: false
-      ethernet:
-        sr-iov:
-          total-vfs: 16
-          vfs:
-          - id: 0 # underlay1
-            vlan-id: 0
-            spoof-check: false
-            trust: true
-    - name: ens1f0v0 # underlay0 (grout)
-      type: ethernet
-      state: up
-      mtu: 1800
-    - name: ens1f0v1
-      type: ethernet
-      state: up
-    - name: ens1f0v2 # host
-      type: ethernet
+    - name: br0
+      type: linux-bridge
       state: up
       mtu: 1430
       ipv4:
@@ -116,44 +28,115 @@ hosts:
       ipv6:
         enabled: true
         auto-dns: false
-        autoconf: false
         address:
         - ip: fd00:110::2
           prefix-length: 64
         dhcp: false
-    dns-resolver:
-      config:
-        server:
-        - 10.100.0.1
-        - fd00:100::1
-    routes:
-      config:
-      - destination: 0.0.0.0/0
-        next-hop-address: 192.168.110.1
-        next-hop-interface: ens1f0v2
-      - destination: ::/0
-        next-hop-address: fd00:110::1
-        next-hop-interface: ens1f0v2
-        # Must be lower than 150, otherwise the RA routes will be preferred
-        metric: 100
-- hostname: master-1
-  rootDeviceHints:
-    deviceName: /dev/sda
-  interfaces:
-  - name: ens1f0np0
-    macAddress: b8:3f:d2:fa:53:7a
-  networkConfig:
-    interfaces:
-    - name: eno8303
-      type: ethernet
+      bridge:
+        port:
+        - name: dummy0
+    - name: dummy0
+      type: dummy
+      state: up
+      ipv4:
+        enabled: false
+      ipv6:
+        enabled: false
+    - name: nodeidx
+      type: dummy
       state: up
       ipv4:
         enabled: true
         auto-dns: false
         address:
-        - ip: 10.37.146.42
-          prefix-length: 23
+        - ip: 192.0.2.2
+          prefix-length: 24
         dhcp: false
+      ipv6:
+        enabled: false
+    - name: enp2s0
+      type: ethernet
+      state: up
+      mac-address: 00:fb:7c:be:b9:43
+      ipv4:
+        enabled: true
+        address:
+        - ip: 192.168.111.80
+          prefix-length: 24
+        dhcp: false
+      ipv6:
+        enabled: true
+        address:
+        - ip: fd2e:6f44:5dd8:c956::50
+          prefix-length: 120
+        dhcp: false
+    - name: enp1s0
+      type: ethernet
+      state: up
+      ipv4:
+        enabled: false
+      ipv6:
+        enabled: false
+    - name: enp3s0
+      type: ethernet
+      state: up
+      ipv4:
+        enabled: true
+        address:
+        - ip: 192.168.150.20
+          prefix-length: 24
+        dhcp: false
+      ipv6:
+        enabled: false
+    dns-resolver:
+      config:
+        server:
+        - 192.168.110.1
+        - fd00:110::1
+    routes:
+      config:
+      - destination: 0.0.0.0/0
+        next-hop-address: 192.168.110.1
+        next-hop-interface: br0
+        table-id: 254
+      - destination: ::/0
+        next-hop-address: fd00:110::1
+        next-hop-interface: br0
+        table-id: 254
+- hostname: master-1
+  interfaces:
+  - name: enp2s0
+    macAddress: 00:fb:7c:be:b9:46
+  - name: eth1
+    macAddress: 00:fb:7c:be:b9:47
+  networkConfig:
+    interfaces:
+    - name: br0
+      type: linux-bridge
+      state: up
+      mtu: 1430
+      ipv4:
+        enabled: true
+        auto-dns: false
+        address:
+        - ip: 192.168.110.3
+          prefix-length: 24
+        dhcp: false
+      ipv6:
+        enabled: true
+        auto-dns: false
+        address:
+        - ip: fd00:110::3
+          prefix-length: 64
+        dhcp: false
+      bridge:
+        port:
+        - name: dummy0
+    - name: dummy0
+      type: dummy
+      state: up
+      ipv4:
+        enabled: false
       ipv6:
         enabled: false
     - name: nodeidx
@@ -168,104 +151,89 @@ hosts:
         dhcp: false
       ipv6:
         enabled: false
-    - name: ens1f0np0
+    - name: enp2s0
       type: ethernet
       state: up
-      mtu: 1800
+      mac-address: 00:fb:7c:be:b9:46
+      ipv4:
+        enabled: true
+        address:
+        - ip: 192.168.111.81
+          prefix-length: 24
+        dhcp: false
+      ipv6:
+        enabled: true
+        address:
+        - ip: fd2e:6f44:5dd8:c956::51
+          prefix-length: 120
+        dhcp: false
+    - name: enp1s0
+      type: ethernet
+      state: up
       ipv4:
         enabled: false
       ipv6:
         enabled: false
-      ethernet:
-        sr-iov:
-          total-vfs: 16
-          vfs:
-          - id: 0 # underlay0
-            vlan-id: 0
-            spoof-check: false
-            trust: true
-          - id: 1 # trunk
-            vlan-id: 0
-            spoof-check: false
-            trust: true
-          - id: 2 # host
-            vlan-id: 42
-            spoof-check: false
-            trust: true
-    - name: ens1f1np1
+    - name: enp3s0
       type: ethernet
       state: up
-      mtu: 1800
       ipv4:
-        enabled: false
+        enabled: true
+        address:
+        - ip: 192.168.150.21
+          prefix-length: 24
+        dhcp: false
       ipv6:
         enabled: false
-      ethernet:
-        sr-iov:
-          total-vfs: 16
-          vfs:
-          - id: 0 # underlay1
-            vlan-id: 0
-            spoof-check: false
-            trust: true
-    - name: ens1f0v0 # underlay0 (grout)
-      type: ethernet
-      state: up
-      mtu: 1800
-    - name: ens1f0v1
-      type: ethernet
-      state: up
-    - name: ens1f0v2 # host
-      type: ethernet
+    dns-resolver:
+      config:
+        server:
+        - 192.168.110.1
+        - fd00:110::1
+    routes:
+      config:
+      - destination: 0.0.0.0/0
+        next-hop-address: 192.168.110.1
+        next-hop-interface: br0
+        table-id: 254
+      - destination: ::/0
+        next-hop-address: fd00:110::1
+        next-hop-interface: br0
+        table-id: 254
+- hostname: master-2
+  interfaces:
+  - name: enp2s0
+    macAddress: 00:fb:7c:be:b9:49
+  - name: eth1
+    macAddress: 00:fb:7c:be:b9:4a
+  networkConfig:
+    interfaces:
+    - name: br0
+      type: linux-bridge
       state: up
       mtu: 1430
       ipv4:
         enabled: true
         auto-dns: false
         address:
-        - ip: 192.168.110.3
+        - ip: 192.168.110.4
           prefix-length: 24
         dhcp: false
       ipv6:
         enabled: true
         auto-dns: false
-        autoconf: false
         address:
-        - ip: fd00:110::3
+        - ip: fd00:110::4
           prefix-length: 64
         dhcp: false
-    dns-resolver:
-      config:
-        server:
-        - 10.100.0.1
-        - fd00:100::1
-    routes:
-      config:
-      - destination: 0.0.0.0/0
-        next-hop-address: 192.168.110.1
-        next-hop-interface: ens1f0v2
-      - destination: ::/0
-        next-hop-address: fd00:110::1
-        next-hop-interface: ens1f0v2
-        metric: 100
-- hostname: master-2
-  rootDeviceHints:
-    deviceName: /dev/sda
-  interfaces:
-  - name: eno12399
-    macAddress: 30:3e:a7:0b:e8:6c
-  networkConfig:
-    interfaces:
-    - name: eno8303
-      type: ethernet
+      bridge:
+        port:
+        - name: dummy0
+    - name: dummy0
+      type: dummy
       state: up
       ipv4:
-        enabled: true
-        auto-dns: false
-        address:
-        - ip: 10.37.146.44
-          prefix-length: 23
-        dhcp: false
+        enabled: false
       ipv6:
         enabled: false
     - name: nodeidx
@@ -280,83 +248,246 @@ hosts:
         dhcp: false
       ipv6:
         enabled: false
-    - name: eno12399
+    - name: enp2s0
       type: ethernet
       state: up
-      mtu: 1800
+      mac-address: 00:fb:7c:be:b9:49
+      ipv4:
+        enabled: true
+        address:
+        - ip: 192.168.111.82
+          prefix-length: 24
+        dhcp: false
+      ipv6:
+        enabled: true
+        address:
+        - ip: fd2e:6f44:5dd8:c956::52
+          prefix-length: 120
+        dhcp: false
+    - name: enp1s0
+      type: ethernet
+      state: up
       ipv4:
         enabled: false
       ipv6:
         enabled: false
-      ethernet:
-        sr-iov:
-          total-vfs: 16
-          vfs:
-          - id: 0 # underlay0
-            vlan-id: 0
-            spoof-check: false
-            trust: true
-          - id: 1 # trunk
-            vlan-id: 0
-            spoof-check: false
-            trust: true
-          - id: 2 # host
-            vlan-id: 42
-            spoof-check: false
-            trust: true
-    - name: eno12409
+    - name: enp3s0
       type: ethernet
       state: up
-      mtu: 1800
       ipv4:
-        enabled: false
+        enabled: true
+        address:
+        - ip: 192.168.150.22
+          prefix-length: 24
+        dhcp: false
       ipv6:
         enabled: false
-      ethernet:
-        sr-iov:
-          total-vfs: 16
-          vfs:
-          - id: 0 # underlay1
-            vlan-id: 0
-            spoof-check: false
-            trust: true
-    - name: eno12399v0 # underlay0 (grout)
-      type: ethernet
-      state: up
-      mtu: 1800
-    - name: eno12399v1
-      type: ethernet
-      state: up
-    - name: eno12399v2 # host
-      type: ethernet
+    dns-resolver:
+      config:
+        server:
+        - 192.168.110.1
+        - fd00:110::1
+    routes:
+      config:
+      - destination: 0.0.0.0/0
+        next-hop-address: 192.168.110.1
+        next-hop-interface: br0
+        table-id: 254
+      - destination: ::/0
+        next-hop-address: fd00:110::1
+        next-hop-interface: br0
+        table-id: 254
+- hostname: worker-0
+  interfaces:
+  - name: enp2s0
+    macAddress: 00:fb:7c:be:b9:4c
+  - name: eth1
+    macAddress: 00:fb:7c:be:b9:4d
+  networkConfig:
+    interfaces:
+    - name: br0
+      type: linux-bridge
       state: up
       mtu: 1430
       ipv4:
         enabled: true
         auto-dns: false
         address:
-        - ip: 192.168.110.4
+        - ip: 192.168.110.5
           prefix-length: 24
         dhcp: false
       ipv6:
         enabled: true
         auto-dns: false
-        autoconf: false
         address:
-        - ip: fd00:110::4
+        - ip: fd00:110::5
           prefix-length: 64
         dhcp: false
+      bridge:
+        port:
+        - name: dummy0
+    - name: dummy0
+      type: dummy
+      state: up
+      ipv4:
+        enabled: false
+      ipv6:
+        enabled: false
+    - name: nodeidx
+      type: dummy
+      state: up
+      ipv4:
+        enabled: true
+        auto-dns: false
+        address:
+        - ip: 192.0.2.5
+          prefix-length: 24
+        dhcp: false
+      ipv6:
+        enabled: false
+    - name: enp2s0
+      type: ethernet
+      state: up
+      mac-address: 00:fb:7c:be:b9:4c
+      ipv4:
+        enabled: true
+        address:
+        - ip: 192.168.111.83
+          prefix-length: 24
+        dhcp: false
+      ipv6:
+        enabled: true
+        address:
+        - ip: fd2e:6f44:5dd8:c956::53
+          prefix-length: 120
+        dhcp: false
+    - name: enp1s0
+      type: ethernet
+      state: up
+      ipv4:
+        enabled: false
+      ipv6:
+        enabled: false
+    - name: enp3s0
+      type: ethernet
+      state: up
+      ipv4:
+        enabled: true
+        address:
+        - ip: 192.168.150.23
+          prefix-length: 24
+        dhcp: false
+      ipv6:
+        enabled: false
     dns-resolver:
       config:
         server:
-        - 10.100.0.1
-        - fd00:100::1
+        - 192.168.110.1
+        - fd00:110::1
     routes:
       config:
       - destination: 0.0.0.0/0
         next-hop-address: 192.168.110.1
-        next-hop-interface: eno12399v2
+        next-hop-interface: br0
+        table-id: 254
       - destination: ::/0
         next-hop-address: fd00:110::1
-        next-hop-interface: eno12399v2
-        metric: 100
+        next-hop-interface: br0
+        table-id: 254
+- hostname: worker-1
+  interfaces:
+  - name: enp2s0
+    macAddress: 00:fb:7c:be:b9:4f
+  - name: eth1
+    macAddress: 00:fb:7c:be:b9:50
+  networkConfig:
+    interfaces:
+    - name: br0
+      type: linux-bridge
+      state: up
+      mtu: 1430
+      ipv4:
+        enabled: true
+        auto-dns: false
+        address:
+        - ip: 192.168.110.6
+          prefix-length: 24
+        dhcp: false
+      ipv6:
+        enabled: true
+        auto-dns: false
+        address:
+        - ip: fd00:110::6
+          prefix-length: 64
+        dhcp: false
+      bridge:
+        port:
+        - name: dummy0
+    - name: dummy0
+      type: dummy
+      state: up
+      ipv4:
+        enabled: false
+      ipv6:
+        enabled: false
+    - name: nodeidx
+      type: dummy
+      state: up
+      ipv4:
+        enabled: true
+        auto-dns: false
+        address:
+        - ip: 192.0.2.6
+          prefix-length: 24
+        dhcp: false
+      ipv6:
+        enabled: false
+    - name: enp2s0
+      type: ethernet
+      state: up
+      mac-address: 00:fb:7c:be:b9:4f
+      ipv4:
+        enabled: true
+        address:
+        - ip: 192.168.111.84
+          prefix-length: 24
+        dhcp: false
+      ipv6:
+        enabled: true
+        address:
+        - ip: fd2e:6f44:5dd8:c956::54
+          prefix-length: 120
+        dhcp: false
+    - name: enp1s0
+      type: ethernet
+      state: up
+      ipv4:
+        enabled: false
+      ipv6:
+        enabled: false
+    - name: enp3s0
+      type: ethernet
+      state: up
+      ipv4:
+        enabled: true
+        address:
+        - ip: 192.168.150.24
+          prefix-length: 24
+        dhcp: false
+      ipv6:
+        enabled: false
+    dns-resolver:
+      config:
+        server:
+        - 192.168.110.1
+        - fd00:110::1
+    routes:
+      config:
+      - destination: 0.0.0.0/0
+        next-hop-address: 192.168.110.1
+        next-hop-interface: br0
+        table-id: 254
+      - destination: ::/0
+        next-hop-address: fd00:110::1
+        next-hop-interface: br0
+        table-id: 254

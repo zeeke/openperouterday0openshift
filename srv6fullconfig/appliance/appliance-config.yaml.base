@@ -7,8 +7,8 @@ diskSizeGB: 200
 userCorePass: core
 stopLocalRegistry: false
 additionalImages:
+  # First image in this list will be used for the kernel datapath deployment, the second one for the grout datapath
+  - name: quay.io/redhat-user-workloads/telco-5g-tenant/openperouter-operator-edge-5-0:latest
   - name: quay.io/redhat-user-workloads/telco-5g-tenant/openperouter-operator-edge-5-0:on-pr-0270670ef661b1c0d24c59036e06b4e6faacd6ff
   - name: quay.io/mavazque/ign-converter:latest
   - name: registry.redhat.io/rhel9/support-tools:latest
-  - name: docker.io/alpine/socat:latest
-

@@ -22,6 +22,13 @@ if ! echo '{}' | yq -y '.' > /dev/null 2>&1; then
     exit 1
 fi
 
+if [[ -v GROUT_DATAPATH ]]; then
+    case "${GROUT_DATAPATH}" in
+        hw|tap) ;;
+        *) echo "ERROR: GROUT_DATAPATH must be hw or tap" >&2; exit 1 ;;
+    esac
+fi
+
 SCRIPTDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 APPLIANCE_IMAGE="${APPLIANCE_IMAGE:-quay.io/edge-infrastructure/openshift-appliance:latest}"

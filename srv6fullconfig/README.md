@@ -55,21 +55,29 @@ and copies the matching YAML files.
 
 ## Grout DPDK Datapath
 
-Grout replaces the kernel forwarding datapath. FRR loads `dplane_grout`, the
-controller uses `--datapath=grout`, and the router pod shares the grout socket
-between grout, FRR, and the controller. The underlay resources use
-`acceleratedConfig` and expose the datapath port as `underlay0`.
 
-The deployment enables IOMMU/VFIO and 1 GiB hugepages on masters and workers.
-`configimage/performance-profile.yaml` additionally isolates CPUs and reserves
-hugepages on masters; adjust its CPU and NUMA values to the target hardware.
-The master-only static workload pins grout's control and datapath threads to
-the CPUs assigned by the performance profile.
+Set `GROUT_DATAPATH` for both ISO builds. Leave it unset for the kernel
+datapath. Set it to `tap` to run grout with TAP ports connected to the
+original `enp2s0`/`br0` network layout, or `hw` to use the SR-IOV VF layout
+in `agent-config-hw.yaml` (CTODO: fix this paragraph).
+
+Both grout modes load FRR's `dplane_grout`, pass `--datapath=grout` to the
+controller, reserve eight 1 GiB hugepages, enable IOMMU, and apply the master
+performance profile. `tap` leaves `acceleratedConfig` unset, so the controller
+attaches grout ports through TAP devices. `hw` uses `acceleratedConfig`, enables
+VFIO, and applies the CPU pinning workload. Adjust the profile's CPU and NUMA
+values to the target hardware. Edit `openpe_master-hw.yaml` and
+`openpe_worker-hw.yaml` for the hardware mode; the unsuffixed templates serve
+the kernel and TAP modes. Both container images are listed in
+`appliance/appliance-config.yaml.base`; `GROUT_DATAPATH` selects the image
+for every generated quadlet.
 
 ## Building
 
 - **Appliance ISO**: [`appliance/generate_appliance.sh`](appliance/generate_appliance.sh) `<pull_secret_file>`
 - **Config-image ISO**: [`configimage/generate_config_image.sh`](configimage/generate_config_image.sh) `<pull_secret_file>`
+
+For example, prefix both commands with `GROUT_DATAPATH=tap` (or `hw`).
 
 ## Configuration
 

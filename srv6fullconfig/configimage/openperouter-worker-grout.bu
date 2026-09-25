@@ -1,0 +1,39 @@
+variant: openshift
+version: 4.20.0
+metadata:
+  name: 98-worker-grout
+  labels:
+    machineconfiguration.openshift.io/role: worker
+storage:
+  files:
+    - path: /etc/containers/systemd/grout.container
+      mode: 0644
+      overwrite: true
+      contents:
+        local: quadlets/grout.container
+    - path: /etc/kubernetes/manifests/workload-pod.yaml
+      mode: 0644
+      overwrite: true
+      contents:
+        local: config/workload-pod.yaml
+systemd:
+  units:
+    - name: grout.service
+      enabled: true
+    - name: perouter-restart-pods.service
+      enabled: false
+      contents: |
+        [Unit]
+        Description=Restart all OpenPERouter pods
+
+        [Service]
+        Type=oneshot
+        ExecStart=/usr/bin/systemctl restart controllerpod-pod.service routerpod-pod.service
+    - name: grout.slice
+      enabled: true
+      contents: |
+        [Slice]
+        AllowedCPUs=0-6
+
+        [Install]
+        WantedBy=default.target
