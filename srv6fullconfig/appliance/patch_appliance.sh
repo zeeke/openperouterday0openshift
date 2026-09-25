@@ -44,34 +44,36 @@ trap 'rm -rf "${tmpdir}"' EXIT
 
 # butane --raw on an openshift-variant .bu outputs ignition JSON directly
 # (without --raw it would produce a MachineConfig YAML wrapper)
-butane --raw --strict --files-dir="${EXTRASDIR}" "${RAWCONFIG_BU}" \
-    > "${tmpdir}/openperouter-master.ign"
+butane --raw --strict --files-dir="${EXTRASDIR}" "${RAWCONFIG_BU}" > "${tmpdir}/openperouter-master.ign"
+openperouter_ign=("${tmpdir}/openperouter-master.ign")
 
-butane --raw --strict --files-dir="${EXTRASDIR}" "${RAWCONFIG_BU_GROUT}" \
-    > "${tmpdir}/grout.ign"
-
-butane --raw --strict --files-dir="${EXTRASDIR}" "${RAWCONFIG_BU_GROUT_HW}" \
-    > "${tmpdir}/grout-hw.ign"
-
-
-cat > "${tmpdir}/merge.bu" <<IGN
-variant: fcos
-version: 1.6.0
-ignition:
-  config:
-    merge:
-    - local: openperouter-master.ign
-IGN
 
 if [[ -n "${GROUT_DATAPATH:-}" ]]; then
-    echo "    - local: grout.ign" >> "${tmpdir}/merge.bu"
+    butane --raw --strict --files-dir="${EXTRASDIR}" "${RAWCONFIG_BU_GROUT}" > "${tmpdir}/grout.ign"
+    openperouter_ign+=("${tmpdir}/grout.ign")
 fi
 if [[ "${GROUT_DATAPATH:-}" == hw ]]; then
-    echo "    - local: grout-hw.ign" >> "${tmpdir}/merge.bu"
+    butane --raw --strict --files-dir="${EXTRASDIR}" "${RAWCONFIG_BU_GROUT_HW}" > "${tmpdir}/grout-hw.ign"
+    openperouter_ign+=("${tmpdir}/grout-hw.ign")
 fi
 
-butane --raw --strict --files-dir="${tmpdir}" "${tmpdir}/merge.bu" \
-    > "${tmpdir}/openperouter.ign"
+jq -s '
+  reduce .[] as $item (
+    {};
+    . as $acc |
+    ($acc * $item) |
+    (
+      if ($acc.storage.files? != null or $item.storage.files? != null) then
+        .storage.files = (($acc.storage.files? // []) + ($item.storage.files? // []))
+      else . end
+    ) |
+    (
+      if ($acc.systemd.units? != null or $item.systemd.units? != null) then
+        .systemd.units = (($acc.systemd.units? // []) + ($item.systemd.units? // []))
+      else . end
+    )
+  )
+' "${openperouter_ign[@]}" > "${tmpdir}/openperouter.ign"
 
 
 # ============================================================
