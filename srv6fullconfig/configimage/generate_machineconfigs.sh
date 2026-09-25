@@ -26,16 +26,12 @@ tmpdir=$(mktemp -d)
 trap 'rm -rf "${tmpdir}"' EXIT
 cp -a "${EXTRASDIR}/." "${tmpdir}/"
 
-# The first two appliance images are for the kernel and grout datapaths.
-image_index=0
 if [[ -n "${GROUT_DATAPATH:-}" ]]; then
-    image_index=1
     sed -i '/^Exec=/ s|$| --datapath=grout --grout-socket=/run/grout/grout.sock|' \
         "${tmpdir}/quadlets/controller.container"
 fi
 
-image=$(yq -er ".additionalImages[${image_index}].name" \
-    "${SCRIPTDIR}/../appliance/appliance-config.yaml.base")
+image="${OPENPEROUTER_IMAGE:-quay.io/redhat-user-workloads/telco-5g-tenant/openperouter-operator-edge-5-0:latest}"
 sed -i "s|__OPENPEROUTER_IMAGE__|${image}|g" \
     "${tmpdir}"/quadlets/*.container "${tmpdir}/config/workload-pod.yaml"
 

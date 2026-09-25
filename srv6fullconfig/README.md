@@ -70,9 +70,9 @@ attaches grout ports through TAP devices. `hw` uses `acceleratedConfig`, enables
 VFIO, and applies the CPU pinning workload. Adjust the profile's CPU and NUMA
 values to the target hardware. Edit `openpe_master-hw.yaml` and
 `openpe_worker-hw.yaml` for the hardware mode; the unsuffixed templates serve
-the kernel and TAP modes. Both container images are listed in
-`appliance/appliance-config.yaml.base`; `GROUT_DATAPATH` selects the image
-for every generated quadlet.
+the kernel and TAP modes. Set `OPENPEROUTER_IMAGE` for both ISO builds to use
+a different image in the appliance config, quadlets, and workload pod. It
+defaults to `quay.io/redhat-user-workloads/telco-5g-tenant/openperouter-operator-edge-5-0:latest`.
 
 ## Building
 

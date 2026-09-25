@@ -32,6 +32,7 @@ fi
 SCRIPTDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 APPLIANCE_IMAGE="${APPLIANCE_IMAGE:-quay.io/edge-infrastructure/openshift-appliance:latest}"
+image="${OPENPEROUTER_IMAGE:-quay.io/redhat-user-workloads/telco-5g-tenant/openperouter-operator-edge-5-0:latest}"
 
 pull_secret_file="${1:-}"
 ssh_key_file="${2:-}"
@@ -62,7 +63,9 @@ fi
 
 pull_secret="$(jq -c . "${pull_secret_file}")"
 
-yq -y ".pullSecret = $(echo "${pull_secret}" | jq -R .)" "${base_config}" > "${config}"
+yq -y --arg image "${image}" \
+    ".pullSecret = $(echo "${pull_secret}" | jq -R .) | .additionalImages += [{name: \$image}]" \
+    "${base_config}" > "${config}"
 
 if [[ -n "${ssh_key_file}" ]]; then
     ssh_key="$(cat "${ssh_key_file}")"

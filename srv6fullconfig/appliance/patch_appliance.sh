@@ -41,19 +41,23 @@ echo "==> Compiling master OpenPERouter configs..."
 
 tmpdir=$(mktemp -d)
 trap 'rm -rf "${tmpdir}"' EXIT
+cp -a "${EXTRASDIR}" "${tmpdir}/extras"
+image="${OPENPEROUTER_IMAGE:-quay.io/redhat-user-workloads/telco-5g-tenant/openperouter-operator-edge-5-0:latest}"
+sed -i "s|__OPENPEROUTER_IMAGE__|${image}|g" \
+    "${tmpdir}"/extras/quadlets/*.container "${tmpdir}/extras/config/workload-pod.yaml"
 
 # butane --raw on an openshift-variant .bu outputs ignition JSON directly
 # (without --raw it would produce a MachineConfig YAML wrapper)
-butane --raw --strict --files-dir="${EXTRASDIR}" "${RAWCONFIG_BU}" > "${tmpdir}/openperouter-master.ign"
+butane --raw --strict --files-dir="${tmpdir}/extras" "${RAWCONFIG_BU}" > "${tmpdir}/openperouter-master.ign"
 openperouter_ign=("${tmpdir}/openperouter-master.ign")
 
 
 if [[ -n "${GROUT_DATAPATH:-}" ]]; then
-    butane --raw --strict --files-dir="${EXTRASDIR}" "${RAWCONFIG_BU_GROUT}" > "${tmpdir}/grout.ign"
+    butane --raw --strict --files-dir="${tmpdir}/extras" "${RAWCONFIG_BU_GROUT}" > "${tmpdir}/grout.ign"
     openperouter_ign+=("${tmpdir}/grout.ign")
 fi
 if [[ "${GROUT_DATAPATH:-}" == hw ]]; then
-    butane --raw --strict --files-dir="${EXTRASDIR}" "${RAWCONFIG_BU_GROUT_HW}" > "${tmpdir}/grout-hw.ign"
+    butane --raw --strict --files-dir="${tmpdir}/extras" "${RAWCONFIG_BU_GROUT_HW}" > "${tmpdir}/grout-hw.ign"
     openperouter_ign+=("${tmpdir}/grout-hw.ign")
 fi
 
