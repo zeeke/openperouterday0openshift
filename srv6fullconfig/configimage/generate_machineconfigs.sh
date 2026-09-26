@@ -25,15 +25,7 @@ fi
 tmpdir=$(mktemp -d)
 trap 'rm -rf "${tmpdir}"' EXIT
 cp -a "${EXTRASDIR}/." "${tmpdir}/"
-
-if [[ -n "${GROUT_DATAPATH:-}" ]]; then
-    sed -i '/^Exec=/ s|$| --datapath=grout --grout-socket=/run/grout/grout.sock|' \
-        "${tmpdir}/quadlets/controller.container"
-fi
-
-image="${OPENPEROUTER_IMAGE:-quay.io/redhat-user-workloads/telco-5g-tenant/openperouter-operator-edge-5-0:latest}"
-sed -i "s|__OPENPEROUTER_IMAGE__|${image}|g" \
-    "${tmpdir}"/quadlets/*.container "${tmpdir}/config/workload-pod.yaml"
+"${EXTRASDIR}/common/prepare-extras.sh" "${tmpdir}"
 
 echo "==> Generating MachineConfig manifests into ${output_dir}..."
 mkdir -p "${output_dir}"
@@ -59,21 +51,11 @@ if [[ -n "${GROUT_DATAPATH:-}" ]]; then
     compile grout-kargs-worker.bu 96-worker-grout-kargs.yaml
     echo "  performance-profile.yaml"
     cp "${SCRIPTDIR}/performance-profile.yaml" "${output_dir}/"
-    
-    cat >> "${tmpdir}/quadlets/daemons" <<'EOF'
-
-frr_global_options="-A 127.0.0.1 --log stdout"
-zebra_options="-s 90000000 -M dplane_grout"
-EOF
-
 fi
 
 if [[ "${GROUT_DATAPATH:-}" == hw ]]; then
     compile openperouter-master-grout-hw.bu 97-master-openperouter-grout-hw.yaml
     compile openperouter-worker-grout-hw.bu 97-worker-openperouter-grout-hw.yaml
-
-    cp "${tmpdir}/config/openpe_master-hw.yaml" "${tmpdir}/config/openpe_master.yaml"
-    cp "${tmpdir}/config/openpe_worker-hw.yaml" "${tmpdir}/config/openpe_worker.yaml"
 fi
 
 echo "  set-cluster-mtu.yaml"

@@ -42,9 +42,7 @@ echo "==> Compiling master OpenPERouter configs..."
 tmpdir=$(mktemp -d)
 trap 'rm -rf "${tmpdir}"' EXIT
 cp -a "${EXTRASDIR}" "${tmpdir}/extras"
-image="${OPENPEROUTER_IMAGE:-quay.io/redhat-user-workloads/telco-5g-tenant/openperouter-operator-edge-5-0:latest}"
-sed -i "s|__OPENPEROUTER_IMAGE__|${image}|g" \
-    "${tmpdir}"/extras/quadlets/*.container "${tmpdir}/extras/config/workload-pod.yaml"
+"${EXTRASDIR}/common/prepare-extras.sh" "${tmpdir}/extras"
 
 # butane --raw on an openshift-variant .bu outputs ignition JSON directly
 # (without --raw it would produce a MachineConfig YAML wrapper)
