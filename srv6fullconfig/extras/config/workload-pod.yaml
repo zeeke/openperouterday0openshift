@@ -35,9 +35,9 @@ spec:
       DATAPATH_TARGET=$(cat /shared/datapath.txt)
 
       while true; do
-        sleep 2
-        CONTROL_CURRENT=$(grcli affinity cpus show | awk '$1 == "control" {print $2}')
-        DATAPATH_CURRENT=$(grcli affinity cpus show | awk '$1 == "datapath" {print $2}')
+        sleep 60
+        CONTROL_CURRENT=$(grcli affinity cpus show | awk '$1 == "control_cpus:" {print $2}')
+        DATAPATH_CURRENT=$(grcli affinity cpus show | awk '$1 == "datapath_cpus:" {print $2}')
         CONTROL_TARGET=$(grep -oP 'systemd\.cpu_affinity=\K\S+' /proc/cmdline)
         if [ -z "$CONTROL_TARGET" ]; then
           echo "No control target found in /proc/cmdline"
