@@ -31,9 +31,7 @@ Environment=TINI_SUBREAPER=true
 Environment=GROUT_SOCK_PATH=/run/grout/grout.sock
 
 # Volume mounts
-# Named volume for FRR sockets - shared with reloader container
-# :Z = Private SELinux label (unique to this container/pod)
-Volume=frr-sockets.volume:/var/run/frr:Z
+Volume=/run/frr:/var/run/frr:Z
 
 # The selected daemons file enables dplane_grout only in grout modes.
 Volume=/etc/perouter/daemons:/etc/frr/daemons:Z
@@ -47,7 +45,7 @@ Entrypoint=/bin/bash
 
 # Container startup command
 # Changes permissions on /var/run/frr for socket access, then starts FRR via tini.
-Exec=-c "chmod -R a+rw /var/run/frr && exec /sbin/tini -- /usr/lib/frr/docker-start"
+Exec=-c "chmod -R a+rw /var/frr && exec /sbin/tini -- /usr/lib/frr/docker-start"
 
 # Health check - kill container if FRR stops responding,
 # systemd Restart=on-failure handles restart

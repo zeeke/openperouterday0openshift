@@ -19,8 +19,7 @@ Pod=routerpod.pod
 ContainerName=reloader
 
 # Volume mounts
-# Named volume for FRR sockets - shared with FRR container
-Volume=frr-sockets.volume:/var/run/frr:Z
+Volume=/run/frr:/var/run/frr:Z
 
 # Host directory mount for FRR configuration
 # :Z = Private SELinux label
