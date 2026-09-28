@@ -62,7 +62,7 @@ l2vnis:
     gatewayIPs:
       - "192.168.110.1/24"
       - "fd00:110::1/64"
-    # Experimental API
+    # Experimental API - still to be discussed upstream
     sriovVFPair:
       netlinkName: trunkvf
       vlan: 42   # The same as in agent-config.yaml

@@ -45,7 +45,7 @@ Entrypoint=/bin/bash
 
 # Container startup command
 # Changes permissions on /var/run/frr for socket access, then starts FRR via tini.
-Exec=-c "chmod -R a+rw /var/frr && exec /sbin/tini -- /usr/lib/frr/docker-start"
+Exec=-c "chmod -R a+rw /run/frr && exec /sbin/tini -- /usr/lib/frr/docker-start"
 
 # Health check - kill container if FRR stops responding,
 # systemd Restart=on-failure handles restart
