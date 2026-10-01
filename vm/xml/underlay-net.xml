@@ -1,0 +1,4 @@
+<network>
+  <name>openpe-underlay</name>
+  <bridge name='opelabu' stp='off' delay='0'/>
+</network>
