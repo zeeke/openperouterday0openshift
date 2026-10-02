@@ -1,4 +1,6 @@
 <network>
   <name>openpe-underlay</name>
   <bridge name='opelabu' stp='off' delay='0'/>
+  <ip family='ipv6' address='fd2e:6f44:5dd8:c956::1' prefix='120' />
+  <ip address='192.168.111.1' prefix='24' />
 </network>

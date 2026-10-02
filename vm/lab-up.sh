@@ -107,8 +107,6 @@ for network in underlay management; do
     "${libvirt[@]}" net-start "openpe-$network"
 done
 
-ip addr add 192.168.111.1/24 dev opelabu
-ip -6 addr add fd2e:6f44:5dd8:c956::1/120 dev opelabu
 # The unmodified upstream script runs FRR, DNS, and NTP on the host network.
 ISIS_IFACE=opelabu "$work_dir/externalfrr/run_frr.sh"
 
