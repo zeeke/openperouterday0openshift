@@ -21,11 +21,6 @@ zebra_options="-s 90000000 -M dplane_grout"
 EOF
 fi
 
-if [[ "${GROUT_DATAPATH:-}" == hw ]]; then
-    cp "${extras_dir}/config/openpe_master-hw.yaml" "${extras_dir}/config/openpe_master.yaml"
-    cp "${extras_dir}/config/openpe_worker-hw.yaml" "${extras_dir}/config/openpe_worker.yaml"
-fi
-
 image="${OPENPEROUTER_IMAGE:-quay.io/redhat-user-workloads/telco-5g-tenant/openperouter-operator-edge-5-0:latest}"
 sed -i "s|__OPENPEROUTER_IMAGE__|${image}|g" \
     "${extras_dir}"/quadlets/*.container "${extras_dir}/config/workload-pod.yaml"
