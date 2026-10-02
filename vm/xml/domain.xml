@@ -29,21 +29,24 @@
       <readonly/>
     </disk>
     <controller type='pci' index='0' model='pcie-root'/>
+    <!-- Keep these ports first in PCI enumeration order. Splitting them across
+         slots lets libvirt add ports at unused functions of slot 1, shifting
+         the guest bus numbers and therefore the predictable NIC names. -->
     <controller type='pci' index='1' model='pcie-root-port'>
       <target chassis='1' port='0x10'/>
-      <address type='pci' domain='0x0000' bus='0x00' slot='0x01' function='0x0'/>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x01' function='0x0' multifunction='on'/>
     </controller>
     <controller type='pci' index='2' model='pcie-root-port'>
       <target chassis='2' port='0x11'/>
-      <address type='pci' domain='0x0000' bus='0x00' slot='0x02' function='0x0'/>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x01' function='0x1'/>
     </controller>
     <controller type='pci' index='3' model='pcie-root-port'>
       <target chassis='3' port='0x12'/>
-      <address type='pci' domain='0x0000' bus='0x00' slot='0x03' function='0x0'/>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x01' function='0x2'/>
     </controller>
     <controller type='pci' index='4' model='pcie-root-port'>
       <target chassis='4' port='0x13'/>
-      <address type='pci' domain='0x0000' bus='0x00' slot='0x04' function='0x0'/>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x01' function='0x3'/>
     </controller>
     <controller type='sata' index='0'/>
     <interface type='network'>
