@@ -116,11 +116,18 @@ for i in "${!names[@]}"; do
     name=${names[$i]}
     disk="$work_dir/$name.qcow2"
     qemu-img create -f qcow2 "$disk" "${vm_disk_gb}G"
+
     export VM_NAME="openpe-$name" VM_MEMORY_MIB="$vm_memory_mib" \
+        NODE_NAME="$name" \
         VM_VCPUS="$vm_vcpus" VM_DISK="$disk" WORK_DIR="$work_dir" \
         IDLE_MAC="${idle_macs[$i]}" \
         UNDERLAY_MAC="${underlay_macs[$i]}" \
         MANAGEMENT_MAC="${management_macs[$i]}"
+    
+    envsubst < "$script_dir/xml/pf-emulation-net.xml" > "$work_dir/$name-pf.xml"
+    "${libvirt[@]}" net-define "$work_dir/$name-pf.xml"
+    "${libvirt[@]}" net-start "pf-$name"
+    
     envsubst < "$script_dir/xml/domain.xml" > "$work_dir/$name.xml"
     "${libvirt[@]}" define "$work_dir/$name.xml"
     "${libvirt[@]}" start "openpe-$name"

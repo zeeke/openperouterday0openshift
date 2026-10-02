@@ -14,6 +14,11 @@ for name in master-0 master-1 master-2 worker-0 worker-1; do
         "${libvirt[@]}" destroy "$domain" >/dev/null 2>&1 || true
         "${libvirt[@]}" undefine "$domain"
     fi
+    pf_domain="pf-$name"
+    if "${libvirt[@]}" net-info "$pf_domain" >/dev/null 2>&1; then
+        "${libvirt[@]}" net-destroy "$pf_domain" >/dev/null 2>&1 || true
+        "${libvirt[@]}" net-undefine "$pf_domain"
+    fi
 done
 
 # The upstream cleanup script names lo-vtep, but run_frr.sh creates lo-und.
