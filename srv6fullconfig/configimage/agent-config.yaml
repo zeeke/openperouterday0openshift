@@ -14,8 +14,8 @@ hosts:
     macAddress: 00:fb:7c:be:b9:44
   networkConfig:
     interfaces:
-    - name: br0
-      type: linux-bridge
+    - name: enp8s0
+      type: ethernet
       state: up
       mtu: 1430
       ipv4:
@@ -32,16 +32,6 @@ hosts:
         - ip: fd00:110::2
           prefix-length: 64
         dhcp: false
-      bridge:
-        port:
-        - name: dummy0
-    - name: dummy0
-      type: dummy
-      state: up
-      ipv4:
-        enabled: false
-      ipv6:
-        enabled: false
     - name: nodeidx
       type: dummy
       state: up
@@ -97,11 +87,11 @@ hosts:
       config:
       - destination: 0.0.0.0/0
         next-hop-address: 192.168.110.1
-        next-hop-interface: br0
+        next-hop-interface: enp8s0
         table-id: 254
       - destination: ::/0
         next-hop-address: fd00:110::1
-        next-hop-interface: br0
+        next-hop-interface: enp8s0
         table-id: 254
 - hostname: master-1
   interfaces:
@@ -111,8 +101,8 @@ hosts:
     macAddress: 00:fb:7c:be:b9:47
   networkConfig:
     interfaces:
-    - name: br0
-      type: linux-bridge
+    - name: enp8s0
+      type: ethernet
       state: up
       mtu: 1430
       ipv4:
@@ -129,16 +119,6 @@ hosts:
         - ip: fd00:110::3
           prefix-length: 64
         dhcp: false
-      bridge:
-        port:
-        - name: dummy0
-    - name: dummy0
-      type: dummy
-      state: up
-      ipv4:
-        enabled: false
-      ipv6:
-        enabled: false
     - name: nodeidx
       type: dummy
       state: up
@@ -194,11 +174,11 @@ hosts:
       config:
       - destination: 0.0.0.0/0
         next-hop-address: 192.168.110.1
-        next-hop-interface: br0
+        next-hop-interface: enp8s0
         table-id: 254
       - destination: ::/0
         next-hop-address: fd00:110::1
-        next-hop-interface: br0
+        next-hop-interface: enp8s0
         table-id: 254
 - hostname: master-2
   interfaces:
@@ -208,8 +188,8 @@ hosts:
     macAddress: 00:fb:7c:be:b9:4a
   networkConfig:
     interfaces:
-    - name: br0
-      type: linux-bridge
+    - name: enp8s0
+      type: ethernet
       state: up
       mtu: 1430
       ipv4:
@@ -226,16 +206,6 @@ hosts:
         - ip: fd00:110::4
           prefix-length: 64
         dhcp: false
-      bridge:
-        port:
-        - name: dummy0
-    - name: dummy0
-      type: dummy
-      state: up
-      ipv4:
-        enabled: false
-      ipv6:
-        enabled: false
     - name: nodeidx
       type: dummy
       state: up
@@ -291,11 +261,11 @@ hosts:
       config:
       - destination: 0.0.0.0/0
         next-hop-address: 192.168.110.1
-        next-hop-interface: br0
+        next-hop-interface: enp8s0
         table-id: 254
       - destination: ::/0
         next-hop-address: fd00:110::1
-        next-hop-interface: br0
+        next-hop-interface: enp8s0
         table-id: 254
 - hostname: worker-0
   interfaces:
@@ -305,8 +275,8 @@ hosts:
     macAddress: 00:fb:7c:be:b9:4d
   networkConfig:
     interfaces:
-    - name: br0
-      type: linux-bridge
+    - name: enp8s0
+      type: ethernet
       state: up
       mtu: 1430
       ipv4:
@@ -323,16 +293,6 @@ hosts:
         - ip: fd00:110::5
           prefix-length: 64
         dhcp: false
-      bridge:
-        port:
-        - name: dummy0
-    - name: dummy0
-      type: dummy
-      state: up
-      ipv4:
-        enabled: false
-      ipv6:
-        enabled: false
     - name: nodeidx
       type: dummy
       state: up
@@ -388,11 +348,11 @@ hosts:
       config:
       - destination: 0.0.0.0/0
         next-hop-address: 192.168.110.1
-        next-hop-interface: br0
+        next-hop-interface: enp8s0
         table-id: 254
       - destination: ::/0
         next-hop-address: fd00:110::1
-        next-hop-interface: br0
+        next-hop-interface: enp8s0
         table-id: 254
 - hostname: worker-1
   interfaces:
@@ -402,8 +362,8 @@ hosts:
     macAddress: 00:fb:7c:be:b9:50
   networkConfig:
     interfaces:
-    - name: br0
-      type: linux-bridge
+    - name: enp8s0
+      type: ethernet
       state: up
       mtu: 1430
       ipv4:
@@ -420,16 +380,6 @@ hosts:
         - ip: fd00:110::6
           prefix-length: 64
         dhcp: false
-      bridge:
-        port:
-        - name: dummy0
-    - name: dummy0
-      type: dummy
-      state: up
-      ipv4:
-        enabled: false
-      ipv6:
-        enabled: false
     - name: nodeidx
       type: dummy
       state: up
@@ -485,9 +435,9 @@ hosts:
       config:
       - destination: 0.0.0.0/0
         next-hop-address: 192.168.110.1
-        next-hop-interface: br0
+        next-hop-interface: enp8s0
         table-id: 254
       - destination: ::/0
         next-hop-address: fd00:110::1
-        next-hop-interface: br0
+        next-hop-interface: enp8s0
         table-id: 254

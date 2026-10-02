@@ -4,12 +4,12 @@ metadata:
   name: grout-performance
 spec:
   cpu:
-    reserved: "0,1,20,21"
-    isolated: "2-19,22-39"
+    reserved: "0-4"
+    isolated: "5-8"
   hugepages:
     defaultHugepagesSize: 1G
     pages:
-    - count: 24
+    - count: 4
       size: 1G
       node: 0
   numa:

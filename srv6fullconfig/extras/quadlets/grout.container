@@ -21,7 +21,6 @@ Volume=/dev/hugepages:/dev/hugepages
 Volume=/dev/vfio:/dev/vfio
 Volume=/sys/bus/pci:/sys/bus/pci
 AddDevice=/dev/net/tun
-AddDevice=/dev/infiniband
 HealthCmd=grcli -e </dev/null
 HealthInterval=30s
 HealthTimeout=5s
