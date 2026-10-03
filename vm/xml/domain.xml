@@ -78,11 +78,18 @@
       <model type='virtio'/>
       <address type='pci' domain='0x0000' bus='0x03' slot='0x00' function='0x0'/>
     </interface>
+
+    <!-- PCI bus 0x06: VLAN 42 leaves this port tagged -->
     <interface type='bridge'>
       <source bridge='pf-$NODE_NAME'/>
+      <vlan trunk='yes'>
+        <tag id='42'/>
+      </vlan>
       <model type='igb'/>
       <address type='pci' domain='0x0000' bus='0x06' slot='0x00' function='0x0'/>
     </interface>
+
+    <!-- PCI bus 0x05: untagged traffic from the guest enters VLAN 42 -->
     <interface type='bridge'>
       <source bridge='pf-$NODE_NAME'/>
       <vlan>
@@ -91,6 +98,7 @@
       <model type='igb'/>
       <address type='pci' domain='0x0000' bus='0x05' slot='0x00' function='0x0'/>
     </interface>
+
     <serial type='pty'/>
     <console type='pty'/>
     <graphics type='vnc' autoport='yes' listen='127.0.0.1'/>

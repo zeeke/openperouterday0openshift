@@ -131,6 +131,8 @@ for i in "${!names[@]}"; do
     envsubst < "$script_dir/xml/domain.xml" > "$work_dir/$name.xml"
     "${libvirt[@]}" define "$work_dir/$name.xml"
     "${libvirt[@]}" start "openpe-$name"
+
+    ip link set "pf-$name" type bridge vlan_filtering 1
 done
 
 echo 'OpenPERouter lab started. Use virsh console, podman logs externalfrr, and the generated kubeconfig for manual checks.'
