@@ -14,6 +14,10 @@ Notify=true
 Environment=NOTIFY_SOCKET
 Environment=GROUT_OVERRIDE_DEFAULT_ROUTE=true
 Environment=GROUT_SOCK_PATH=/run/grout/grout.sock
+
+# TODO: add documentation
+Environment=GROUT_MAX_MTU=2048
+
 PodmanArgs=--privileged
 Entrypoint=/usr/bin/grout
 Exec=-o root:frr -M unix:/run/grout/metrics.sock --verbose -- --socket-limit 8192
