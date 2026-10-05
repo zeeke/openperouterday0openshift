@@ -43,7 +43,7 @@ management_macs=(
     00:fb:7c:be:b9:4e
     00:fb:7c:be:b9:51
 )
-vm_memory_mib=${VM_MEMORY_MIB:-16384}
+vm_memory_mib=${VM_MEMORY_MIB:-32768}
 vm_vcpus=${VM_VCPUS:-8}
 vm_disk_gb=${VM_DISK_GB:-220}
 
