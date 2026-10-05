@@ -44,7 +44,7 @@ management_macs=(
     00:fb:7c:be:b9:51
 )
 vm_memory_mib=${VM_MEMORY_MIB:-32768}
-vm_vcpus=${VM_VCPUS:-8}
+vm_vcpus=${VM_VCPUS:-12}
 vm_disk_gb=${VM_DISK_GB:-220}
 
 for value in "$vm_memory_mib" "$vm_vcpus" "$vm_disk_gb"; do
