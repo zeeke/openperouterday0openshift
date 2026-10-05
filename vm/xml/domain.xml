@@ -11,7 +11,7 @@
   <cpu mode='host-passthrough'/>
   <devices>
     <iommu model='intel'>
-      <driver intremap='on' caching_mode='on'/>
+      <driver intremap='on' caching_mode='on' aw_bits='48'/>
     </iommu>
     <disk type='file' device='disk'>
       <driver name='qemu' type='qcow2'/>
