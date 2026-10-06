@@ -86,6 +86,7 @@
       <vlan trunk='yes'>
         <tag id='42'/>
       </vlan>
+      <driver name='vhost' iommu='on' ats='on'/>
       <model type='virtio'/>
       <address type='pci' domain='0x0000' bus='0x06' slot='0x00' function='0x0'/>
     </interface>
@@ -97,7 +98,6 @@
         <tag id='42'/>
       </vlan>
       <model type='virtio'/>
-      <driver name='vhost' iommu='on' ats='on'/>
       <address type='pci' domain='0x0000' bus='0x05' slot='0x00' function='0x0'/>
     </interface>
 
