@@ -19,7 +19,6 @@ Network=ns:/var/run/netns/perouter
 # Shared grout socket (unused by the kernel datapath)
 Volume=/run/grout:/run/grout
 Volume=/run/frr:/run/frr
-Volume=/run/openperouter:/var/run/openperouter
 
 # PID namespace sharing - required for FRR process management
 # The reloader needs to see FRR processes to signal configuration reloads
@@ -38,7 +37,7 @@ TimeoutStopSec=70
 ExecStartPre=-/usr/sbin/ip netns add perouter
 ExecStartPre=/usr/sbin/ip netns exec perouter ip link set lo up
 
-ExecStartPre=/usr/bin/mkdir -p -m 775 /run/grout /run/frr /run/openperouter
+ExecStartPre=/usr/bin/mkdir -p -m 775 /run/grout /run/frr
 ExecStartPre=/usr/bin/chcon -t container_file_t /run/grout /run/frr
 
 [Install]

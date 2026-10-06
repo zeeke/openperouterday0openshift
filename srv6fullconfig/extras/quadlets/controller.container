@@ -62,6 +62,9 @@ Volume=/run/grout:/run/grout
 # CNI result cache - persistent across container restarts
 Volume=/var/lib/openperouter/cni/cache:/var/lib/openperouter/cni/cache:rw
 
+# Device state folder
+Volume=/var/run/openperouter:/var/run/openperouter
+
 # Environment variables
 Environment=KUBECONFIG=/shared/kubeconfig
 
@@ -98,6 +101,7 @@ ExecStartPre=/usr/bin/mkdir -p /etc/perouter/frr
 ExecStartPre=/usr/bin/mkdir -p /var/lib/hostbridge
 ExecStartPre=/usr/bin/mkdir -p /var/lib/openperouter
 ExecStartPre=/usr/bin/mkdir -p /var/run/openvswitch
+ExecStartPre=/usr/bin/mkdir -p /var/run/openperouter
 ExecStartPre=/usr/bin/mkdir -p /var/lib/openperouter/cni/cache
 
 # If a can_start.sh script is mounted, run it and wait for success.
