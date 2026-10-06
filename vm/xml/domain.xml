@@ -70,6 +70,7 @@
       <mac address='$UNDERLAY_MAC'/>
       <source network='openpe-underlay'/>
       <model type='virtio'/>
+      <driver name='vhost' iommu='on' ats='on'/>
       <address type='pci' domain='0x0000' bus='0x02' slot='0x00' function='0x0'/>
     </interface>
     <interface type='network'>
@@ -96,6 +97,7 @@
         <tag id='42'/>
       </vlan>
       <model type='virtio'/>
+      <driver name='vhost' iommu='on' ats='on'/>
       <address type='pci' domain='0x0000' bus='0x05' slot='0x00' function='0x0'/>
     </interface>
 
