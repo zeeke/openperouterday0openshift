@@ -49,8 +49,8 @@ if [[ -n "${GROUT_DATAPATH:-}" ]]; then
     compile openperouter-worker-grout.bu 98-worker-openperouter-grout.yaml
     compile grout-kargs-master.bu 96-master-grout-kargs.yaml
     compile grout-kargs-worker.bu 96-worker-grout-kargs.yaml
-    cp "${SCRIPTDIR}/performance-profile-master.yaml" "${output_dir}/"
-    cp "${SCRIPTDIR}/performance-profile-worker.yaml" "${output_dir}/"
+    echo "  performance-profile.yaml"
+    cp "${SCRIPTDIR}/performance-profile.yaml" "${output_dir}/"
 fi
 
 if [[ "${GROUT_DATAPATH:-}" == hw ]]; then
