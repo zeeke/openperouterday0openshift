@@ -7,6 +7,7 @@ additionalNTPSources:
 rendezvousIP: 192.168.110.2
 hosts:
 - hostname: master-0
+  role: master
   interfaces:
   - name: enp2s0
     macAddress: 00:fb:7c:be:b9:43
@@ -94,6 +95,7 @@ hosts:
         next-hop-interface: enp8s0
         table-id: 254
 - hostname: master-1
+  role: master
   interfaces:
   - name: enp2s0
     macAddress: 00:fb:7c:be:b9:46
@@ -181,6 +183,7 @@ hosts:
         next-hop-interface: enp8s0
         table-id: 254
 - hostname: master-2
+  role: master
   interfaces:
   - name: enp2s0
     macAddress: 00:fb:7c:be:b9:49
@@ -268,6 +271,7 @@ hosts:
         next-hop-interface: enp8s0
         table-id: 254
 - hostname: worker-0
+  role: worker
   interfaces:
   - name: enp2s0
     macAddress: 00:fb:7c:be:b9:4c
@@ -355,6 +359,7 @@ hosts:
         next-hop-interface: enp8s0
         table-id: 254
 - hostname: worker-1
+  role: worker
   interfaces:
   - name: enp2s0
     macAddress: 00:fb:7c:be:b9:4f
