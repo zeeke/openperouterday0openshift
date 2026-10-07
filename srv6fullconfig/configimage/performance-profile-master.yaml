@@ -1,7 +1,7 @@
 apiVersion: performance.openshift.io/v2
 kind: PerformanceProfile
 metadata:
-  name: grout-performance
+  name: grout-perf-master
 spec:
   cpu:
     reserved: "0-3"
