@@ -82,7 +82,7 @@ Exec=--frrconfig /etc/perouter/frr/frr.conf --pid-path /etc/perouter/frr/frr.pid
 
 # Health check - kill container if controller stops responding,
 # systemd Restart=on-failure handles restart
-HealthCmd=wget -qO- http://127.0.0.1:9081/healthz || exit 1
+HealthCmd=curl -fsL http://127.0.0.1:9081/healthz || exit 1
 HealthInterval=20s
 HealthTimeout=5s
 HealthRetries=3
