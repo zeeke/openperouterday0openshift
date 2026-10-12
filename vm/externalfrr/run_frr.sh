@@ -337,6 +337,10 @@ DNSEOF
         --no-hosts
 
     echo "DNS server running at ${DNS_LISTEN_IP} in VRF ${VRF_NAME}."
+
+    if ! grep -q "${API_VIP} api.${CLUSTER_DOMAIN}" /etc/hosts; then
+        echo "${API_VIP} api.${CLUSTER_DOMAIN}" | sudo tee -a /etc/hosts
+    fi
 else
     echo "Skipping DNS server (set API_VIP and INGRESS_VIP to enable)."
 fi
