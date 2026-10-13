@@ -21,4 +21,4 @@ if [[ -v GROUT_DATAPATH ]]; then
 fi
 image="${OPENPEROUTER_IMAGE:-${default_image}}"
 sed -i "s|__OPENPEROUTER_IMAGE__|${image}|g" \
-    "${extras_dir}"/quadlets/*.container
+    "${extras_dir}"/quadlets/*.container "${extras_dir}"/config/pod-grout-reservation-*.yaml

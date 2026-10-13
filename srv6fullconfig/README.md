@@ -53,13 +53,59 @@ FRR config files live in `extras/config/`:
 `generate-config.sh` selects master or worker configs based on the hostname
 and copies the matching YAML files.
 
+## Grout DPDK Datapath
+
+Set `GROUT_DATAPATH` for both ISO builds to enable the Grout DPDK
+datapath on SR-IOV VFs. Leave it unset for the kernel datapath.
+
+When set, FRR loads `dplane_grout`, the controller runs with
+`--datapath=grout`, 1 GiB hugepages are reserved, IOMMU and VFIO are
+enabled, and the performance profiles and the Grout CPU reservation pods
+are applied. For example, prefix both [build](#building) commands with
+`GROUT_DATAPATH=1`.
+
+### Requirements
+
+- **SR-IOV NIC**: on hardware, each node needs a NIC with at least 3 VFs,
+  configured in `agent-config.yaml`:
+  - an underlay VF, driven by Grout to communicate with the fabric.
+  - a trunk VF, with `spoof-check: false` and `trust: true`, moved to the
+    `perouter` namespace
+  - a host VF, administratively set on an arbitrary VLAN (e.g. 42), which
+    carries the node IP addresses
+- **Matching VLAN**: the host VF VLAN must equal `l2vnis[].sriovVFPair.vlan`
+  in the PERouter configuration file.
+
+### Differences from the kernel datapath
+
+The [Configuration](#configuration) section below describes the kernel
+datapath. With Grout:
+
+- **No `br0`**: `agent-config.yaml` has no `br0` and `dummy0`. The node IP
+  addresses go directly on the host VF (`ens1f0v2` on the `nfv` site example),
+  and the default routes use it as `next-hop-interface`.
+- **`sriovVFPair` instead of `hostMaster`**: the L2VNI connects to the host
+  through the trunk VF rather than through a veth to `br0`. `trunkVFName` is
+  the trunk VF (`trunkvf` alias on the `nfv` site) and `vlan` is the host VF
+  VLAN:
+
+  ```yaml
+  l2vnis:
+    - vni: 210
+      ...
+      sriovVFPair:
+        trunkVFName: trunkvf
+        vlan: 42   # The same as in agent-config.yaml
+  ```
+
 ## Building
 
 - **Appliance ISO**: [`appliance/generate_appliance.sh`](appliance/generate_appliance.sh) `<pull_secret_file>`
 - **Config-image ISO**: [`configimage/generate_config_image.sh`](configimage/generate_config_image.sh) `<pull_secret_file>`
 
 Set `OPENPEROUTER_IMAGE` for both ISO builds to use a different image in the
-appliance config and the quadlets. It defaults to
+appliance config, the quadlets and the Grout CPU reservation pods. It
+defaults to
 `quay.io/redhat-user-workloads/telco-5g-tenant/openperouter-operator-5-1:latest`.
 
 ## Configuration
