@@ -53,10 +53,27 @@ FRR config files live in `extras/config/`:
 `generate-config.sh` selects master or worker configs based on the hostname
 and copies the matching YAML files.
 
+## Grout DPDK Datapath
+
+Set `GROUT_DATAPATH` for both ISO builds to enable the Grout DPDK
+datapath on SR-IOV VFs. Leave it unset for the kernel datapath. Before
+building, copy the [`nfv` site](../site/README.md) over the repository and
+adapt it to your hardware.
+
+When set, FRR loads `dplane_grout`, the controller runs with
+`--datapath=grout`, 1 GiB hugepages are reserved, IOMMU and VFIO are
+enabled, and the master performance profile and CPU pinning workload are
+applied. Set `OPENPEROUTER_IMAGE` for
+both ISO builds to use a different image in the appliance config, quadlets, and
+workload pod. It defaults to
+`quay.io/redhat-user-workloads/telco-5g-tenant/openperouter-operator-5-1:latest`.
+
 ## Building
 
 - **Appliance ISO**: [`appliance/generate_appliance.sh`](appliance/generate_appliance.sh) `<pull_secret_file>`
 - **Config-image ISO**: [`configimage/generate_config_image.sh`](configimage/generate_config_image.sh) `<pull_secret_file>`
+
+For example, prefix both commands with `GROUT_DATAPATH=1`.
 
 ## Configuration
 

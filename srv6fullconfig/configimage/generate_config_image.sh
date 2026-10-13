@@ -34,6 +34,8 @@ if [[ -z "${pull_secret_file}" || ! -f "${pull_secret_file}" ]]; then
 fi
 
 config_image_dir="$(realpath "${2:-${SCRIPTDIR}/configimage}")"
+ssh_key_file="${3:-}"
+
 
 # Use openshift-install from the appliance cache
 openshift_install=$(find "${APPLIANCE_CACHE}" -name 'openshift-install' -type f 2>/dev/null | head -1)
@@ -52,6 +54,16 @@ mkdir -p "${config_image_dir}"
 pull_secret="$(jq -c . "${pull_secret_file}")"
 yq -y ".pullSecret = $(echo "${pull_secret}" | jq -R .)" \
     "${SCRIPTDIR}/install-config.yaml.base" > "${config_image_dir}/install-config.yaml"
+
+
+echo "SSH key file: ${ssh_key_file}"
+if [[ -n "${ssh_key_file}" && -f "${ssh_key_file}" ]]; then
+    ssh_key="$(cat "${ssh_key_file}")"
+    echo "SSH key: ${ssh_key}"
+    yq -y ".sshKey = \"${ssh_key}\"" "${config_image_dir}/install-config.yaml" \
+        > "${config_image_dir}/install-config.yaml.tmp" \
+        && mv "${config_image_dir}/install-config.yaml.tmp" "${config_image_dir}/install-config.yaml"
+fi
 
 cp "${SCRIPTDIR}/agent-config.yaml" "${config_image_dir}/"
 

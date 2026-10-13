@@ -1,0 +1,42 @@
+[Unit]
+Description=Grout DPDK Dataplane
+After=dev-hugepages.mount nmstate.service
+Requires=dev-hugepages.mount
+Wants=nmstate.service
+ConditionPathExists=/dev/hugepages
+OnFailure=perouter-restart-pods.service
+
+[Container]
+Image=__OPENPEROUTER_IMAGE__
+ContainerName=grout
+Pod=routerpod.pod
+Notify=true
+Environment=NOTIFY_SOCKET
+Environment=GROUT_OVERRIDE_DEFAULT_ROUTE=true
+Environment=GROUT_SOCK_PATH=/run/grout/grout.sock
+
+# TODO: add documentation
+Environment=GROUT_MAX_MTU=2048
+
+PodmanArgs=--privileged
+Entrypoint=/usr/bin/grout
+Exec=-o root:frr -M unix:/run/grout/metrics.sock --verbose -- --socket-limit 8192
+Volume=/dev/hugepages:/dev/hugepages
+Volume=/dev/vfio:/dev/vfio
+Volume=/sys/bus/pci:/sys/bus/pci
+AddDevice=/dev/net/tun
+HealthCmd=grcli -e </dev/null
+HealthInterval=30s
+HealthTimeout=5s
+HealthRetries=3
+HealthOnFailure=none
+
+[Service]
+Slice=grout.slice
+Restart=no
+
+ExecStartPre=/usr/sbin/ip netns exec perouter sysctl -qw net.ipv4.conf.all.rp_filter=0
+ExecStartPre=/usr/sbin/ip netns exec perouter sysctl -qw net.ipv4.conf.default.rp_filter=0
+
+[Install]
+WantedBy=default.target

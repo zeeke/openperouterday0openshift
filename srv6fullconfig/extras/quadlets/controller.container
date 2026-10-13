@@ -11,7 +11,7 @@ Documentation=https://github.com/openperouter
 
 [Container]
 # Container image - update this line to change versions
-Image=quay.io/redhat-user-workloads/telco-5g-tenant/openperouter-operator-edge-5-0:latest
+Image=__OPENPEROUTER_IMAGE__
 
 # Pod association - creates automatic dependency on controllerpod-pod.service
 Pod=controllerpod.pod
@@ -56,8 +56,14 @@ Volume=/run/dbus/system_bus_socket:/host/dbus/system_bus_socket:rw
 # The directory is pre-created by ExecStartPre if it doesn't exist.
 Volume=/var/run/openvswitch:/var/run/openvswitch:rshared
 
+# Shared grout socket (unused by the kernel datapath)
+Volume=/run/grout:/run/grout
+
 # CNI result cache - persistent across container restarts
 Volume=/var/lib/openperouter/cni/cache:/var/lib/openperouter/cni/cache:rw
+
+# Device state folder
+Volume=/var/run/openperouter:/var/run/openperouter
 
 # Environment variables
 Environment=KUBECONFIG=/shared/kubeconfig
@@ -76,7 +82,7 @@ Exec=--frrconfig /etc/perouter/frr/frr.conf --pid-path /etc/perouter/frr/frr.pid
 
 # Health check - kill container if controller stops responding,
 # systemd Restart=on-failure handles restart
-HealthCmd=wget -qO- http://127.0.0.1:9081/healthz || exit 1
+HealthCmd=curl -fsL http://127.0.0.1:9081/healthz || exit 1
 HealthInterval=20s
 HealthTimeout=5s
 HealthRetries=3
@@ -95,6 +101,7 @@ ExecStartPre=/usr/bin/mkdir -p /etc/perouter/frr
 ExecStartPre=/usr/bin/mkdir -p /var/lib/hostbridge
 ExecStartPre=/usr/bin/mkdir -p /var/lib/openperouter
 ExecStartPre=/usr/bin/mkdir -p /var/run/openvswitch
+ExecStartPre=/usr/bin/mkdir -p /var/run/openperouter
 ExecStartPre=/usr/bin/mkdir -p /var/lib/openperouter/cni/cache
 
 # If a can_start.sh script is mounted, run it and wait for success.
