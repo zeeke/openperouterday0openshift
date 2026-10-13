@@ -30,9 +30,7 @@ AddCapability=CAP_NET_BIND_SERVICE CAP_NET_ADMIN CAP_NET_RAW CAP_SYS_ADMIN
 Environment=TINI_SUBREAPER=true
 
 # Volume mounts
-# Named volume for FRR sockets - shared with reloader container
-# :Z = Private SELinux label (unique to this container/pod)
-Volume=frr-sockets.volume:/var/run/frr:Z
+Volume=/run/frr:/var/run/frr:Z
 
 # Additional Podman arguments not yet supported by native quadlet directives
 # --pidfile - Create PID file for controller integration
@@ -43,7 +41,7 @@ Entrypoint=/bin/bash
 
 # Container startup command
 # Changes permissions on /var/run/frr for socket access, then starts FRR via tini.
-Exec=-c "chmod -R a+rw /var/run/frr && exec /sbin/tini -- /usr/lib/frr/docker-start"
+Exec=-c "chmod -R a+rw /run/frr && exec /sbin/tini -- /usr/lib/frr/docker-start"
 
 # Health check - kill container if FRR stops responding,
 # systemd Restart=on-failure handles restart
