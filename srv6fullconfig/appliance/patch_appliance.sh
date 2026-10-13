@@ -17,9 +17,7 @@ set -euo pipefail
 
 SCRIPTDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 EXTRASDIR="$(cd "${SCRIPTDIR}/../extras" && pwd)"
-RAWCONFIG_BU="${SCRIPTDIR}/../configimage/openperouter-master.bu"
-RAWCONFIG_BU_GROUT="${SCRIPTDIR}/../configimage/openperouter-master-grout.bu"
-RAWCONFIG_BU_GROUT_HW="${SCRIPTDIR}/../configimage/openperouter-master-grout-hw.bu"
+CONFIGIMAGEDIR="$(cd "${SCRIPTDIR}/../configimage" && pwd)"
 
 appliance_iso="$1"
 ocp_dir="$2"
@@ -29,13 +27,8 @@ if [[ ! -f "${appliance_iso}" ]]; then
     exit 1
 fi
 
-if [[ ! -f "${RAWCONFIG_BU}" ]]; then
-    echo "ERROR: openperouter-master.bu not found: ${RAWCONFIG_BU}"
-    exit 1
-fi
-
 # ============================================================
-# Step 1: Compile openperouter-master.bu → ignition
+# Step 1: Compile openperouter-master*.bu → ignition
 # ============================================================
 echo "==> Compiling master OpenPERouter configs..."
 
@@ -44,18 +37,21 @@ trap 'rm -rf "${tmpdir}"' EXIT
 cp -a "${EXTRASDIR}" "${tmpdir}/extras"
 "${EXTRASDIR}/common/prepare-extras.sh" "${tmpdir}/extras"
 
+# The appliance only needs the OpenPERouter host stack, so it compiles the
+# openperouter-master*.bu files. Grout files (*grout*) are only compiled
+# when GROUT_DATAPATH is set.
 # butane --raw on an openshift-variant .bu outputs ignition JSON directly
 # (without --raw it would produce a MachineConfig YAML wrapper)
-butane --raw --strict --files-dir="${tmpdir}/extras" "${RAWCONFIG_BU}" > "${tmpdir}/openperouter-master.ign"
-openperouter_ign=("${tmpdir}/openperouter-master.ign")
-
-
-if [[ -v GROUT_DATAPATH ]]; then
-    butane --raw --strict --files-dir="${tmpdir}/extras" "${RAWCONFIG_BU_GROUT}" > "${tmpdir}/grout.ign"
-    openperouter_ign+=("${tmpdir}/grout.ign")
-    butane --raw --strict --files-dir="${tmpdir}/extras" "${RAWCONFIG_BU_GROUT_HW}" > "${tmpdir}/grout-hw.ign"
-    openperouter_ign+=("${tmpdir}/grout-hw.ign")
-fi
+openperouter_ign=()
+for bu in "${CONFIGIMAGEDIR}"/openperouter-master*.bu; do
+    name="$(basename "${bu}" .bu)"
+    if [[ "${name}" == *grout* && ! -v GROUT_DATAPATH ]]; then
+        continue
+    fi
+    echo "  ${name}.bu"
+    butane --raw --strict --files-dir="${tmpdir}/extras" "${bu}" > "${tmpdir}/${name}.ign"
+    openperouter_ign+=("${tmpdir}/${name}.ign")
+done
 
 jq -s '
   reduce .[] as $item (

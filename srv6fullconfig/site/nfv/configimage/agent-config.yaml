@@ -1,7 +1,7 @@
 # agent-config.yaml - Per-node hardware configuration
 #
 # This agent-config.yaml is an example for the Grout hardware datapath.
-# Adjust it to fit the cluster NIC configuration and copy it to agent-config.yaml.
+# Adjust it to fit the cluster NIC configuration, see site/README.md.
 # Each node needs an SR-IOV with at least 3 VFs: one for the underlay connectivity, 
 # one set to trunk that will be moved to the perouter net namespace, and one for the host
 # connectivity, which must be administratively set on an arbitrary VLAN (e.g. 42).

@@ -11,11 +11,11 @@ storage:
       overwrite: true
       contents:
         local: quadlets/grout.container
-    - path: /etc/kubernetes/manifests/workload-pod.yaml
+    - path: /etc/kubernetes/manifests/pod-grout-reservation-worker.yaml
       mode: 0644
       overwrite: true
       contents:
-        local: config/workload-pod.yaml
+        local: config/pod-grout-reservation-worker.yaml
 systemd:
   units:
     - name: grout.service
@@ -37,3 +37,19 @@ systemd:
 
         [Install]
         WantedBy=default.target
+    
+    - name: load-vfio-pci.service
+      enabled: true
+      contents: |
+        [Unit]
+        Description=Load vfio-pci kernel module
+        After=local-fs-pre.target
+        Wants=local-fs-pre.target
+
+        [Service]
+        Type=oneshot
+        ExecStart=modprobe vfio-pci
+        RemainAfterExit=true
+
+        [Install]
+        WantedBy=multi-user.target

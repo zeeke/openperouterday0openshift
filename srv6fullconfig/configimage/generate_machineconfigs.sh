@@ -1,6 +1,6 @@
 #!/bin/bash
 # generate_machineconfigs.sh - Compile MachineConfig manifests from
-# butane sources (openperouter-master/worker, dns, registry, grout).
+# all the butane sources in this directory.
 #
 # Usage: generate_machineconfigs.sh <output_dir>
 #
@@ -29,29 +29,21 @@ cp -a "${EXTRASDIR}/." "${tmpdir}/"
 
 echo "==> Generating MachineConfig manifests into ${output_dir}..."
 mkdir -p "${output_dir}"
-# Remove optional manifests left by a previous datapath selection.
-rm -f "${output_dir}"/9[78]-*-grout*.yaml "${output_dir}/performance-profile.yaml"
+# Remove manifests left by a previous datapath selection.
+rm -f "${output_dir}"/*.yaml
 
-compile() {
-    echo "  $1 -> $2"
-    butane --strict --files-dir="${tmpdir}" "${SCRIPTDIR}/$1" -o "${output_dir}/$2"
-}
-
-compile openperouter-master.bu 99-master-openperouter.yaml
-compile openperouter-worker.bu 99-worker-openperouter.yaml
-compile registry.bu 01-master-registry.yaml
-compile registry-worker.bu 01-worker-registry.yaml
-compile if-mtu.bu 99-master-if-mtu.yaml
-compile if-mtu-worker.bu 99-worker-if-mtu.yaml
+# Compile every butane file. Grout files (*grout*) are only compiled when
+# GROUT_DATAPATH is set.
+for bu in "${SCRIPTDIR}"/*.bu; do
+    name="$(basename "${bu}" .bu)"
+    if [[ "${name}" == *grout* && ! -v GROUT_DATAPATH ]]; then
+        continue
+    fi
+    echo "  ${name}.bu"
+    butane --strict --files-dir="${tmpdir}" "${bu}" -o "${output_dir}/${name}.yaml"
+done
 
 if [[ -v GROUT_DATAPATH ]]; then
-    compile openperouter-master-grout.bu 98-master-openperouter-grout.yaml
-    compile openperouter-worker-grout.bu 98-worker-openperouter-grout.yaml
-    compile grout-kargs-master.bu 96-master-grout-kargs.yaml
-    compile grout-kargs-worker.bu 96-worker-grout-kargs.yaml
-    compile openperouter-master-grout-hw.bu 97-master-openperouter-grout-hw.yaml
-    compile openperouter-worker-grout-hw.bu 97-worker-openperouter-grout-hw.yaml
-    
     cp "${SCRIPTDIR}/performance-profile-master.yaml" "${output_dir}/"
     cp "${SCRIPTDIR}/performance-profile-worker.yaml" "${output_dir}/"
 fi

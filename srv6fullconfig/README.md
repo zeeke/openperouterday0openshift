@@ -56,17 +56,14 @@ and copies the matching YAML files.
 ## Grout DPDK Datapath
 
 Set `GROUT_DATAPATH` for both ISO builds to enable the Grout DPDK
-datapath on SR-IOV VFs. Leave it unset for the kernel datapath. Adapt
-[`configimage/agent-config-grout-hw.sample.yaml`](configimage/agent-config-grout-hw.sample.yaml)
-to your NICs and copy it to `configimage/agent-config.yaml` before building the
-config-image ISO.
+datapath on SR-IOV VFs. Leave it unset for the kernel datapath. Before
+building, copy the [`grout-hw` site](site/README.md) over the repository and
+adapt it to your hardware.
 
 When set, FRR loads `dplane_grout`, the controller runs with
 `--datapath=grout`, 1 GiB hugepages are reserved, IOMMU and VFIO are
 enabled, and the master performance profile and CPU pinning workload are
-applied. Adjust the profile's CPU and NUMA values to the target hardware. Edit
-`openpe_master-hw.yaml` and `openpe_worker-hw.yaml` for the Grout datapath; the
-unsuffixed templates serve the kernel datapath. Set `OPENPEROUTER_IMAGE` for
+applied. Set `OPENPEROUTER_IMAGE` for
 both ISO builds to use a different image in the appliance config, quadlets, and
 workload pod. It defaults to
 `quay.io/redhat-user-workloads/telco-5g-tenant/openperouter-operator-edge-5-0:latest`.

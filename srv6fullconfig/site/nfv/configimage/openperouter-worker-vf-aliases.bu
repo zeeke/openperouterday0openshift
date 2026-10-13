@@ -50,28 +50,3 @@ storage:
           [Link]
           NamePolicy=keep kernel database onboard slot path
           AlternativeName=trunkvf
-systemd:
-  units:
-    - name: grout.slice
-      enabled: true
-      contents: |
-        [Slice]
-        AllowedCPUs=0-6
-
-        [Install]
-        WantedBy=default.target
-    - name: load-vfio-pci.service
-      enabled: true
-      contents: |
-        [Unit]
-        Description=Load vfio-pci kernel module
-        After=local-fs-pre.target
-        Wants=local-fs-pre.target
-
-        [Service]
-        Type=oneshot
-        ExecStart=modprobe vfio-pci
-        RemainAfterExit=true
-
-        [Install]
-        WantedBy=multi-user.target
