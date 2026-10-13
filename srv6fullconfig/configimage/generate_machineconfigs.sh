@@ -44,18 +44,15 @@ compile registry-worker.bu 01-worker-registry.yaml
 compile if-mtu.bu 99-master-if-mtu.yaml
 compile if-mtu-worker.bu 99-worker-if-mtu.yaml
 
-if [[ -n "${GROUT_DATAPATH:-}" ]]; then
+if [[ -v GROUT_DATAPATH ]]; then
     compile openperouter-master-grout.bu 98-master-openperouter-grout.yaml
     compile openperouter-worker-grout.bu 98-worker-openperouter-grout.yaml
     compile grout-kargs-master.bu 96-master-grout-kargs.yaml
     compile grout-kargs-worker.bu 96-worker-grout-kargs.yaml
-    echo "  performance-profile.yaml"
-    cp "${SCRIPTDIR}/performance-profile.yaml" "${output_dir}/"
-fi
-
-if [[ "${GROUT_DATAPATH:-}" == hw ]]; then
     compile openperouter-master-grout-hw.bu 97-master-openperouter-grout-hw.yaml
     compile openperouter-worker-grout-hw.bu 97-worker-openperouter-grout-hw.yaml
+    echo "  performance-profile.yaml"
+    cp "${SCRIPTDIR}/performance-profile.yaml" "${output_dir}/"
 fi
 
 echo "  set-cluster-mtu.yaml"

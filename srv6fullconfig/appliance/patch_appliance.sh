@@ -50,11 +50,9 @@ butane --raw --strict --files-dir="${tmpdir}/extras" "${RAWCONFIG_BU}" > "${tmpd
 openperouter_ign=("${tmpdir}/openperouter-master.ign")
 
 
-if [[ -n "${GROUT_DATAPATH:-}" ]]; then
+if [[ -v GROUT_DATAPATH ]]; then
     butane --raw --strict --files-dir="${tmpdir}/extras" "${RAWCONFIG_BU_GROUT}" > "${tmpdir}/grout.ign"
     openperouter_ign+=("${tmpdir}/grout.ign")
-fi
-if [[ "${GROUT_DATAPATH:-}" == hw ]]; then
     butane --raw --strict --files-dir="${tmpdir}/extras" "${RAWCONFIG_BU_GROUT_HW}" > "${tmpdir}/grout-hw.ign"
     openperouter_ign+=("${tmpdir}/grout-hw.ign")
 fi
@@ -255,7 +253,7 @@ if [[ -x "${SCRIPTDIR}/hackagent.sh" ]]; then
     "${SCRIPTDIR}/hackagent.sh" "${appliance_iso}"
 fi
 
-if [[ -n "${GROUT_DATAPATH:-}" ]]; then
+if [[ -v GROUT_DATAPATH ]]; then
     kargs=(default_hugepagesz=1G hugepagesz=1G hugepages=8
         console=tty0 'console=ttyS0,115200n8' iommu=pt intel_iommu=on)
     echo "==> Adding hugepage and IOMMU kernel arguments to appliance ISO, needed for the first boot..."

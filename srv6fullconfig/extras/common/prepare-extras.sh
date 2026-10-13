@@ -5,13 +5,6 @@ set -euo pipefail
 extras_dir="$1"
 
 if [[ -v GROUT_DATAPATH ]]; then
-    case "${GROUT_DATAPATH}" in
-        hw|tap) ;;
-        *) echo "ERROR: GROUT_DATAPATH must be hw or tap" >&2; exit 1 ;;
-    esac
-fi
-
-if [[ -n "${GROUT_DATAPATH:-}" ]]; then
     sed -i '/^Exec=/ s|$| --datapath=grout --grout-socket=/run/grout/grout.sock|' \
         "${extras_dir}/quadlets/controller.container"
     cat >> "${extras_dir}/quadlets/daemons" <<'EOF'
