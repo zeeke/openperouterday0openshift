@@ -3,8 +3,7 @@
 # OpenPERouter rawconfig quadlets, configs, registry mirrors, DNS overrides,
 # and the ignition hack agent into it.
 #
-# This compiles openperouter-master.bu (the single source of truth for file
-# lists and systemd units) and merges the resulting ignition with
+# This compiles the selected master Butane configs and merges their ignition with
 # appliance-specific extras (registry mirrors, DNS, SSH key).
 #
 # Usage: patch_appliance.sh <appliance_iso> <ocp_dir>
@@ -18,7 +17,7 @@ set -euo pipefail
 
 SCRIPTDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 EXTRASDIR="$(cd "${SCRIPTDIR}/../extras" && pwd)"
-RAWCONFIG_BU="${SCRIPTDIR}/../configimage/openperouter-master.bu"
+CONFIGIMAGEDIR="$(cd "${SCRIPTDIR}/../configimage" && pwd)"
 
 appliance_iso="$1"
 ocp_dir="$2"
@@ -28,23 +27,43 @@ if [[ ! -f "${appliance_iso}" ]]; then
     exit 1
 fi
 
-if [[ ! -f "${RAWCONFIG_BU}" ]]; then
-    echo "ERROR: openperouter-master.bu not found: ${RAWCONFIG_BU}"
-    exit 1
-fi
-
 # ============================================================
-# Step 1: Compile openperouter-master.bu → ignition
+# Step 1: Compile openperouter-master*.bu → ignition
 # ============================================================
-echo "==> Compiling openperouter-master.bu..."
+echo "==> Compiling master OpenPERouter configs..."
 
 tmpdir=$(mktemp -d)
 trap 'rm -rf "${tmpdir}"' EXIT
 
+# The appliance only needs the OpenPERouter host stack, so it compiles the
+# openperouter-master*.bu files.
 # butane --raw on an openshift-variant .bu outputs ignition JSON directly
 # (without --raw it would produce a MachineConfig YAML wrapper)
-butane --raw --strict --files-dir="${EXTRASDIR}" "${RAWCONFIG_BU}" \
-    > "${tmpdir}/openperouter.ign"
+openperouter_ign=()
+for bu in "${CONFIGIMAGEDIR}"/openperouter-master*.bu; do
+    name="$(basename "${bu}" .bu)"
+    echo "  ${name}.bu"
+    butane --raw --strict --files-dir="${EXTRASDIR}" "${bu}" > "${tmpdir}/${name}.ign"
+    openperouter_ign+=("${tmpdir}/${name}.ign")
+done
+
+jq -s '
+  reduce .[] as $item (
+    {};
+    . as $acc |
+    ($acc * $item) |
+    (
+      if ($acc.storage.files? != null or $item.storage.files? != null) then
+        .storage.files = (($acc.storage.files? // []) + ($item.storage.files? // []))
+      else . end
+    ) |
+    (
+      if ($acc.systemd.units? != null or $item.systemd.units? != null) then
+        .systemd.units = (($acc.systemd.units? // []) + ($item.systemd.units? // []))
+      else . end
+    )
+  )
+' "${openperouter_ign[@]}" > "${tmpdir}/openperouter.ign"
 
 
 # ============================================================

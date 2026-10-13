@@ -1,6 +1,6 @@
 #!/bin/bash
 # generate_machineconfigs.sh - Compile MachineConfig manifests from
-# butane sources (openperouter-master/worker, dns, registry).
+# all the butane sources in this directory.
 #
 # Usage: generate_machineconfigs.sh <output_dir>
 #
@@ -23,41 +23,12 @@ fi
 
 echo "==> Generating MachineConfig manifests into ${output_dir}..."
 
-if [[ -f "${SCRIPTDIR}/openperouter-master.bu" ]]; then
-    echo "  openperouter-master.bu -> 99-master-openperouter.yaml"
-    butane --files-dir="${EXTRASDIR}" "${SCRIPTDIR}/openperouter-master.bu" \
-        -o "${output_dir}/99-master-openperouter.yaml"
-fi
-
-if [[ -f "${SCRIPTDIR}/openperouter-worker.bu" ]]; then
-    echo "  openperouter-worker.bu -> 99-worker-openperouter.yaml"
-    butane --files-dir="${EXTRASDIR}" "${SCRIPTDIR}/openperouter-worker.bu" \
-        -o "${output_dir}/99-worker-openperouter.yaml"
-fi
-
-if [[ -f "${SCRIPTDIR}/registry.bu" ]]; then
-    echo "  registry.bu -> 01-master-registry.yaml"
-    butane --files-dir="${EXTRASDIR}" "${SCRIPTDIR}/registry.bu" \
-        -o "${output_dir}/01-master-registry.yaml"
-fi
-
-if [[ -f "${SCRIPTDIR}/registry-worker.bu" ]]; then
-    echo "  registry-worker.bu -> 01-worker-registry.yaml"
-    butane --files-dir="${EXTRASDIR}" "${SCRIPTDIR}/registry-worker.bu" \
-        -o "${output_dir}/01-worker-registry.yaml"
-fi
-
-if [[ -f "${SCRIPTDIR}/if-mtu.bu" ]]; then
-    echo "  if-mtu.bu -> 01-master-if-mtu.yaml"
-    butane --files-dir="${EXTRASDIR}" "${SCRIPTDIR}/if-mtu.bu" \
-        -o "${output_dir}/99-master-if-mtu.yaml"
-fi
-
-if [[ -f "${SCRIPTDIR}/if-mtu-worker.bu" ]]; then
-    echo "  if-mtu-worker.bu -> 01-worker-if-mtu.yaml"
-    butane --files-dir="${EXTRASDIR}" "${SCRIPTDIR}/if-mtu-worker.bu" \
-        -o "${output_dir}/99-worker-if-mtu.yaml"
-fi
+# Compile every butane file.
+for bu in "${SCRIPTDIR}"/*.bu; do
+    name="$(basename "${bu}" .bu)"
+    echo "  ${name}.bu"
+    butane --strict --files-dir="${EXTRASDIR}" "${bu}" -o "${output_dir}/${name}.yaml"
+done
 
 echo "  set-cluster-mtu.yaml"
 cp "${EXTRASDIR}/config/set-cluster-mtu.yaml" "${output_dir}/set-cluster-mtu.yaml"
