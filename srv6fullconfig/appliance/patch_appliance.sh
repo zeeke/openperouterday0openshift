@@ -34,6 +34,8 @@ echo "==> Compiling master OpenPERouter configs..."
 
 tmpdir=$(mktemp -d)
 trap 'rm -rf "${tmpdir}"' EXIT
+cp -a "${EXTRASDIR}" "${tmpdir}/extras"
+"${EXTRASDIR}/common/prepare-extras.sh" "${tmpdir}/extras"
 
 # The appliance only needs the OpenPERouter host stack, so it compiles the
 # openperouter-master*.bu files.
@@ -43,7 +45,7 @@ openperouter_ign=()
 for bu in "${CONFIGIMAGEDIR}"/openperouter-master*.bu; do
     name="$(basename "${bu}" .bu)"
     echo "  ${name}.bu"
-    butane --raw --strict --files-dir="${EXTRASDIR}" "${bu}" > "${tmpdir}/${name}.ign"
+    butane --raw --strict --files-dir="${tmpdir}/extras" "${bu}" > "${tmpdir}/${name}.ign"
     openperouter_ign+=("${tmpdir}/${name}.ign")
 done
 

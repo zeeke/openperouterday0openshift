@@ -58,6 +58,10 @@ and copies the matching YAML files.
 - **Appliance ISO**: [`appliance/generate_appliance.sh`](appliance/generate_appliance.sh) `<pull_secret_file>`
 - **Config-image ISO**: [`configimage/generate_config_image.sh`](configimage/generate_config_image.sh) `<pull_secret_file>`
 
+Set `OPENPEROUTER_IMAGE` for both ISO builds to use a different image in the
+appliance config and the quadlets. It defaults to
+`quay.io/redhat-user-workloads/telco-5g-tenant/openperouter-operator-5-1:latest`.
+
 ## Configuration
 
 ### agent-config.yaml
