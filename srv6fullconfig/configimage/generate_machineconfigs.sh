@@ -51,8 +51,9 @@ if [[ -v GROUT_DATAPATH ]]; then
     compile grout-kargs-worker.bu 96-worker-grout-kargs.yaml
     compile openperouter-master-grout-hw.bu 97-master-openperouter-grout-hw.yaml
     compile openperouter-worker-grout-hw.bu 97-worker-openperouter-grout-hw.yaml
-    echo "  performance-profile.yaml"
-    cp "${SCRIPTDIR}/performance-profile.yaml" "${output_dir}/"
+    
+    cp "${SCRIPTDIR}/performance-profile-master.yaml" "${output_dir}/"
+    cp "${SCRIPTDIR}/performance-profile-worker.yaml" "${output_dir}/"
 fi
 
 echo "  set-cluster-mtu.yaml"

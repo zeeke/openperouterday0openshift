@@ -1,7 +1,7 @@
 apiVersion: performance.openshift.io/v2
 kind: PerformanceProfile
 metadata:
-  name: grout-performance
+  name: grout-perf-master
 spec:
   cpu:
     reserved: "0-3"
@@ -24,4 +24,4 @@ spec:
   - console=tty0
   - console=ttyS0,115200n8
   nodeSelector:
-    kubernetes.io/os: linux
+    node-role.kubernetes.io/master: ""
