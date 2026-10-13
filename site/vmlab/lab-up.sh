@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Usage: sudo ./srv6fullconfig/site/vmlab/lab-up.sh /path/to/appliance.iso /path/to/agentconfig.noarch.iso
+# Usage: sudo ./site/vmlab/lab-up.sh /path/to/appliance.iso /path/to/agentconfig.noarch.iso
 # The ISO pair must be built from srv6fullconfig with its current agent-config.yaml.
 
 if (( EUID != 0 )) || (( $# != 2 )); then

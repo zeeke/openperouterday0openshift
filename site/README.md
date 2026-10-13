@@ -2,25 +2,26 @@
 
 Each directory here holds the files that describe a site. Its `configimage/`
 and `extras/` folders mirror the `srv6fullconfig/` layout, so copying them over
-the repository replaces the defaults with the site configuration.
+`srv6fullconfig/` replaces the defaults with the site configuration. Run the
+commands below from the repository root.
 
 ## VM lab (`vmlab`)
 
-The defaults in `configimage/` and `extras/config/` describe the VM lab with
-the kernel datapath. After switching to another site, restore them from
-`srv6fullconfig/`. `git clean` removes the files the other site added, such as
+The defaults in `srv6fullconfig/configimage/` and
+`srv6fullconfig/extras/config/` describe the VM lab with the kernel datapath.
+After switching to another site, restore them. `git clean` removes the files the other site added, such as
 the `nfv` VF aliases, which the build would otherwise still compile:
 
 ```bash
-git checkout -- configimage extras
-git clean -f configimage extras
+git checkout -- srv6fullconfig/configimage srv6fullconfig/extras
+git clean -f srv6fullconfig/configimage srv6fullconfig/extras
 ```
 
 For the Grout datapath, also copy the `grout` variant over the defaults and
 build both ISOs with `GROUT_DATAPATH=1`:
 
 ```bash
-cp -r site/vmlab/grout/configimage .
+cp -r site/vmlab/grout/configimage srv6fullconfig/
 ```
 
 The site also holds the tooling that runs the lab on a libvirt host:
@@ -32,11 +33,11 @@ The site also holds the tooling that runs the lab on a libvirt host:
 | `externalfrr/` | External FRR container (TOR) with its FRR, dnsmasq and chrony configuration |
 | `xml/` | libvirt templates for the networks and the VMs |
 
-Build both ISOs, see the [main README](../README.md#building),
-then start the lab from the repository root:
+Build both ISOs, see the [`srv6fullconfig` README](../srv6fullconfig/README.md#building),
+then start the lab:
 
 ```bash
-sudo ./srv6fullconfig/site/vmlab/lab-up.sh <appliance.iso> <config-image.iso>
+sudo ./site/vmlab/lab-up.sh <appliance.iso> <config-image.iso>
 ```
 
 To fit another cluster or fabric, edit these files:
@@ -50,10 +51,10 @@ To fit another cluster or fabric, edit these files:
 
 ## Hardware with the Grout datapath (`nfv`)
 
-From `srv6fullconfig/`, copy the site over the repository:
+Copy the site over `srv6fullconfig/`:
 
 ```bash
-cp -r site/nfv/configimage site/nfv/extras .
+cp -r site/nfv/configimage site/nfv/extras srv6fullconfig/
 ```
 
 Then adapt the copied files to the cluster and the fabric:
@@ -70,7 +71,7 @@ Also adapt the CPU partitioning, hugepages and NUMA settings in
 `extras/config/workload-pod.yaml` refers to the master performance profile by
 name, so update it if you rename the profile.
 
-Build both ISOs with `GROUT_DATAPATH=1`, see the [main README](../README.md#building).
+Build both ISOs with `GROUT_DATAPATH=1`, see the [`srv6fullconfig` README](../srv6fullconfig/README.md#building).
 The appliance ISO embeds the master configuration, so rebuild both ISOs after
 changing the site files.
 
