@@ -66,7 +66,7 @@ enabled, and the master performance profile and CPU pinning workload are
 applied. Set `OPENPEROUTER_IMAGE` for
 both ISO builds to use a different image in the appliance config, quadlets, and
 workload pod. It defaults to
-`quay.io/redhat-user-workloads/telco-5g-tenant/openperouter-operator-edge-5-0:latest`.
+`quay.io/redhat-user-workloads/telco-5g-tenant/openperouter-operator-5-1:latest`.
 
 ## Building
 

@@ -14,6 +14,6 @@ zebra_options="-s 90000000 -M dplane_grout"
 EOF
 fi
 
-image="${OPENPEROUTER_IMAGE:-quay.io/redhat-user-workloads/telco-5g-tenant/openperouter-operator-edge-5-0:latest}"
+image="${OPENPEROUTER_IMAGE:-quay.io/redhat-user-workloads/telco-5g-tenant/openperouter-operator-5-1:latest}"
 sed -i "s|__OPENPEROUTER_IMAGE__|${image}|g" \
     "${extras_dir}"/quadlets/*.container "${extras_dir}/config/workload-pod.yaml"
