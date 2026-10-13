@@ -9,8 +9,8 @@ commands below from the repository root.
 
 The defaults in `srv6fullconfig/configimage/` and
 `srv6fullconfig/extras/config/` describe the VM lab with the kernel datapath.
-After switching to another site, restore them. `git clean` removes the files the other site added, which the
-build would otherwise still compile:
+After switching to another site, restore them. `git clean` removes the files the other site added, such as
+the `nfv` VF aliases, which the build would otherwise still compile:
 
 ```bash
 git checkout -- srv6fullconfig/
@@ -48,6 +48,34 @@ To fit another cluster or fabric, edit these files:
 | `configimage/install-config.yaml.base` | Cluster name, machine network, VIPs |
 | `extras/config/openpe_master.yaml` | OpenPERouter configuration for the masters |
 | `extras/config/openpe_worker.yaml` | OpenPERouter configuration for the workers |
+
+## Hardware with the Grout datapath (`nfv`)
+
+Copy the site over `srv6fullconfig/`:
+
+```bash
+cp -r site/nfv/configimage site/nfv/extras srv6fullconfig/
+```
+
+Then adapt the copied files to the cluster and the fabric:
+
+| File | Purpose |
+|------|---------|
+| `configimage/agent-config.yaml` | Hosts, NICs, SR-IOV VFs, IP addressing |
+| `extras/config/openpe_master.yaml`, `extras/config/openpe_worker.yaml` | OpenPERouter configuration, with the underlay on the `underlayvf` VF |
+| `configimage/openperouter-master-vf-aliases.bu`, `configimage/openperouter-worker-vf-aliases.bu` | Aliases (`underlayvf`, `trunkvf`) matching the VFs from `agent-config.yaml` |
+
+Also adapt the CPU partitioning, hugepages and NUMA settings in
+`configimage/performance-profile-master.yaml` and
+`configimage/performance-profile-worker.yaml`.
+The Grout CPU reservation pods in
+`srv6fullconfig/extras/config/pod-grout-reservation-*.yaml` refer to the
+performance profiles by name, through their runtime class, so update them if
+you rename the profiles.
+
+Build both ISOs with `GROUT_DATAPATH=1`, see the [`srv6fullconfig` README](../srv6fullconfig/README.md#building).
+The appliance ISO embeds the master configuration, so rebuild both ISOs after
+changing the site files.
 
 ## Adding a site
 

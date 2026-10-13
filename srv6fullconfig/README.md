@@ -56,7 +56,9 @@ and copies the matching YAML files.
 ## Grout DPDK Datapath
 
 Set `GROUT_DATAPATH` for both ISO builds to enable the Grout DPDK
-datapath on SR-IOV VFs. Leave it unset for the kernel datapath.
+datapath on SR-IOV VFs. Leave it unset for the kernel datapath. Before
+building, copy the [`nfv` site](../site/README.md) over the repository and
+adapt it to your hardware.
 
 When set, FRR loads `dplane_grout`, the controller runs with
 `--datapath=grout`, 1 GiB hugepages are reserved, IOMMU and VFIO are
