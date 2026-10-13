@@ -21,13 +21,19 @@ if ! command -v butane &>/dev/null; then
     exit 1
 fi
 
+# Prepare the shared files once, without modifying the source templates.
+tmpdir=$(mktemp -d)
+trap 'rm -rf "${tmpdir}"' EXIT
+cp -a "${EXTRASDIR}/." "${tmpdir}/"
+"${EXTRASDIR}/common/prepare-extras.sh" "${tmpdir}"
+
 echo "==> Generating MachineConfig manifests into ${output_dir}..."
 
 # Compile every butane file.
 for bu in "${SCRIPTDIR}"/*.bu; do
     name="$(basename "${bu}" .bu)"
     echo "  ${name}.bu"
-    butane --strict --files-dir="${EXTRASDIR}" "${bu}" -o "${output_dir}/${name}.yaml"
+    butane --strict --files-dir="${tmpdir}" "${bu}" -o "${output_dir}/${name}.yaml"
 done
 
 echo "  set-cluster-mtu.yaml"
