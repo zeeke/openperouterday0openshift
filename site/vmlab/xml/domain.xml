@@ -1,0 +1,108 @@
+<domain type='kvm'>
+  <name>$VM_NAME</name>
+  <memory unit='MiB'>$VM_MEMORY_MIB</memory>
+  <vcpu>$VM_VCPUS</vcpu>
+  <os>
+    <type arch='x86_64' machine='q35'>hvm</type>
+    <boot dev='hd'/>
+    <boot dev='cdrom'/>
+  </os>
+  <features><acpi/><apic/></features>
+  <cpu mode='host-passthrough'/>
+  <devices>
+    <iommu model='intel'>
+      <driver intremap='on' caching_mode='on' aw_bits='48'/>
+    </iommu>
+    <disk type='file' device='disk'>
+      <driver name='qemu' type='qcow2'/>
+      <source file='$VM_DISK'/>
+      <target dev='vda' bus='virtio'/>
+      <address type='pci' domain='0x0000' bus='0x04' slot='0x00' function='0x0'/>
+    </disk>
+    <disk type='file' device='cdrom'>
+      <driver name='qemu' type='raw'/>
+      <source file='$WORK_DIR/appliance.iso'/>
+      <target dev='sda' bus='sata'/>
+      <readonly/>
+    </disk>
+    <disk type='file' device='cdrom'>
+      <driver name='qemu' type='raw'/>
+      <source file='$WORK_DIR/config-image.iso'/>
+      <target dev='sdb' bus='sata'/>
+      <readonly/>
+    </disk>
+    <controller type='pci' index='0' model='pcie-root'/>
+    <!-- Keep these ports first in PCI enumeration order. Splitting them across
+         slots lets libvirt add ports at unused functions of slot 1, shifting
+         the guest bus numbers and therefore the predictable NIC names. -->
+    <controller type='pci' index='1' model='pcie-root-port'>
+      <target chassis='1' port='0x10'/>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x01' function='0x0' multifunction='on'/>
+    </controller>
+    <controller type='pci' index='2' model='pcie-root-port'>
+      <target chassis='2' port='0x11'/>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x01' function='0x1'/>
+    </controller>
+    <controller type='pci' index='3' model='pcie-root-port'>
+      <target chassis='3' port='0x12'/>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x01' function='0x2'/>
+    </controller>
+    <controller type='pci' index='4' model='pcie-root-port'>
+      <target chassis='4' port='0x13'/>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x01' function='0x3'/>
+    </controller>
+    <controller type='pci' index='5' model='pcie-root-port'>
+      <target chassis='6' port='0x15'/>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x01' function='0x6'/>
+    </controller>
+    <controller type='pci' index='6' model='pcie-root-port'>
+      <target chassis='5' port='0x14'/>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x01' function='0x5'/>
+    </controller>
+    <controller type='sata' index='0'/>
+    <interface type='network'>
+      <mac address='$IDLE_MAC'/>
+      <source network='openpe-management'/>
+      <model type='virtio'/>
+      <address type='pci' domain='0x0000' bus='0x01' slot='0x00' function='0x0'/>
+    </interface>
+    <interface type='network'>
+      <mac address='$UNDERLAY_MAC'/>
+      <source network='openpe-underlay'/>
+      <model type='virtio'/>
+      <driver name='vhost' iommu='on' ats='on'/>
+      <address type='pci' domain='0x0000' bus='0x02' slot='0x00' function='0x0'/>
+    </interface>
+    <interface type='network'>
+      <mac address='$MANAGEMENT_MAC'/>
+      <source network='openpe-management'/>
+      <model type='virtio'/>
+      <address type='pci' domain='0x0000' bus='0x03' slot='0x00' function='0x0'/>
+    </interface>
+
+    <!-- PCI bus 0x06: VLAN 42 leaves this port tagged -->
+    <interface type='bridge'>
+      <source bridge='pf-$NODE_NAME'/>
+      <vlan trunk='yes'>
+        <tag id='42'/>
+      </vlan>
+      <driver name='vhost' iommu='on' ats='on'/>
+      <model type='virtio'/>
+      <address type='pci' domain='0x0000' bus='0x06' slot='0x00' function='0x0'/>
+    </interface>
+
+    <!-- PCI bus 0x05: untagged traffic from the guest enters VLAN 42 -->
+    <interface type='bridge'>
+      <source bridge='pf-$NODE_NAME'/>
+      <vlan>
+        <tag id='42'/>
+      </vlan>
+      <model type='virtio'/>
+      <address type='pci' domain='0x0000' bus='0x05' slot='0x00' function='0x0'/>
+    </interface>
+
+    <serial type='pty'/>
+    <console type='pty'/>
+    <graphics type='vnc' autoport='yes' listen='127.0.0.1'/>
+  </devices>
+</domain>
