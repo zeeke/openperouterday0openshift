@@ -1,0 +1,71 @@
+# OpenPERouter FRR Configuration Template — EVPN Client (ISIS + SRv6)
+# Copied by generate-config.sh
+#
+# Peering model:
+#   - TOR (direct):     ipv4 vpn + ipv6 vpn  (SRv6 routes only)
+#   - EVPN-CLIENTS:     l2vpn evpn only (reflected)
+
+# TODO: align with master info.
+
+underlays:
+  - asn: 65500
+    tunnelEndpoint:
+      cidrs:
+        - fd00::/64
+    interfaces:
+    - type: NetworkDevice
+      networkDevice:
+        interfaceName: underlayvf
+        acceleratedConfig:
+          portName: underlay0
+    routerIDCIDR: 10.0.0.0/24
+    isis:
+      baseNet: "49.0001.0000.0000.0000.00"
+      level: 1
+      interfaces:
+      - name: underlay0
+        ipFamily: DualStack
+    srv6:
+      encapBehavior: "H.Encaps.Red"
+      locator:
+        basePrefix: "fd00:0:0::/48"
+        format: "usid-f3216"
+    neighbors:
+      - type: Internal
+        address: "fc00:0:14::1"
+      - type: Internal
+        address: fd2e:6f44:5dd8:c956::50
+        addressFamilies:
+          - type: evpn
+      - type: Internal
+        address: fd2e:6f44:5dd8:c956::51
+        addressFamilies:
+          - type: evpn
+      - type: Internal
+        address: fd2e:6f44:5dd8:c956::52
+        addressFamilies:
+          - type: evpn
+l2vnis:
+  - vni: 210
+    routingDomain:
+      type: L3VPN
+      l3vpn:
+        name: red
+    vxlanport: 4789
+    gatewayIPs:
+      - "192.168.110.1/24"
+      - "fd00:110::1/64"
+    # Experimental API
+    sriovVFPair:
+      netlinkName: trunkvf
+      vlan: 42   # The same as in agent-config.yaml
+      acceleratedConfig: {}
+
+l3vpns:
+  - name: red
+    vrf: red
+    rdAssignedNumber: 2
+    exportRTs:
+    - "65500:2"
+    importRTs:
+    - "65500:2"
