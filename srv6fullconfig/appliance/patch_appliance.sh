@@ -38,12 +38,16 @@ cp -a "${EXTRASDIR}" "${tmpdir}/extras"
 "${EXTRASDIR}/common/prepare-extras.sh" "${tmpdir}/extras"
 
 # The appliance only needs the OpenPERouter host stack, so it compiles the
-# openperouter-master*.bu files.
+# openperouter-master*.bu files. Grout files (*grout*) are only compiled
+# when GROUT_DATAPATH is set.
 # butane --raw on an openshift-variant .bu outputs ignition JSON directly
 # (without --raw it would produce a MachineConfig YAML wrapper)
 openperouter_ign=()
 for bu in "${CONFIGIMAGEDIR}"/openperouter-master*.bu; do
     name="$(basename "${bu}" .bu)"
+    if [[ "${name}" == *grout* && ! -v GROUT_DATAPATH ]]; then
+        continue
+    fi
     echo "  ${name}.bu"
     butane --raw --strict --files-dir="${tmpdir}/extras" "${bu}" > "${tmpdir}/${name}.ign"
     openperouter_ign+=("${tmpdir}/${name}.ign")
@@ -243,6 +247,20 @@ echo "==> Embedded OpenPERouter ignition into appliance ISO"
 # ============================================================
 if [[ -x "${SCRIPTDIR}/hackagent.sh" ]]; then
     "${SCRIPTDIR}/hackagent.sh" "${appliance_iso}"
+fi
+
+if [[ -v GROUT_DATAPATH ]]; then
+    kargs=(default_hugepagesz=1G hugepagesz=1G hugepages=8
+        console=tty0 'console=ttyS0,115200n8' iommu=pt intel_iommu=on)
+    echo "==> Adding hugepage and IOMMU kernel arguments to appliance ISO, needed for the first boot..."
+    existing_kargs=$(sudo coreos-installer iso kargs show "${appliance_iso}" 2>/dev/null || true)
+    missing_kargs=()
+    for arg in "${kargs[@]}"; do
+        [[ " ${existing_kargs} " == *" ${arg} "* ]] || missing_kargs+=(-a "$arg")
+    done
+    if (( ${#missing_kargs[@]} )); then
+        sudo coreos-installer iso kargs modify "${missing_kargs[@]}" "${appliance_iso}"
+    fi
 fi
 
 echo "==> Done! Appliance ISO patched: ${appliance_iso}"
