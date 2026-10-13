@@ -1,0 +1,4 @@
+<network>
+  <name>pf-$NODE_NAME</name>
+  <bridge name='pf-$NODE_NAME' stp='off' delay='0'/>
+</network>
