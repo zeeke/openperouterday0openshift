@@ -1,6 +1,6 @@
 #!/bin/bash
 # generate_machineconfigs.sh - Compile MachineConfig manifests from
-# butane sources (openperouter-master/worker, dns, registry).
+# all the butane sources in this directory.
 #
 # Usage: generate_machineconfigs.sh <output_dir>
 #
@@ -21,42 +21,31 @@ if ! command -v butane &>/dev/null; then
     exit 1
 fi
 
+# Prepare the shared files once, without modifying the source templates.
+tmpdir=$(mktemp -d)
+trap 'rm -rf "${tmpdir}"' EXIT
+cp -a "${EXTRASDIR}/." "${tmpdir}/"
+"${EXTRASDIR}/common/prepare-extras.sh" "${tmpdir}"
+
 echo "==> Generating MachineConfig manifests into ${output_dir}..."
+mkdir -p "${output_dir}"
+# Remove manifests left by a previous datapath selection.
+rm -f "${output_dir}"/*.yaml
 
-if [[ -f "${SCRIPTDIR}/openperouter-master.bu" ]]; then
-    echo "  openperouter-master.bu -> 99-master-openperouter.yaml"
-    butane --files-dir="${EXTRASDIR}" "${SCRIPTDIR}/openperouter-master.bu" \
-        -o "${output_dir}/99-master-openperouter.yaml"
-fi
+# Compile every butane file. Grout files (*grout*) are only compiled when
+# GROUT_DATAPATH is set.
+for bu in "${SCRIPTDIR}"/*.bu; do
+    name="$(basename "${bu}" .bu)"
+    if [[ "${name}" == *grout* && ! -v GROUT_DATAPATH ]]; then
+        continue
+    fi
+    echo "  ${name}.bu"
+    butane --strict --files-dir="${tmpdir}" "${bu}" -o "${output_dir}/${name}.yaml"
+done
 
-if [[ -f "${SCRIPTDIR}/openperouter-worker.bu" ]]; then
-    echo "  openperouter-worker.bu -> 99-worker-openperouter.yaml"
-    butane --files-dir="${EXTRASDIR}" "${SCRIPTDIR}/openperouter-worker.bu" \
-        -o "${output_dir}/99-worker-openperouter.yaml"
-fi
-
-if [[ -f "${SCRIPTDIR}/registry.bu" ]]; then
-    echo "  registry.bu -> 01-master-registry.yaml"
-    butane --files-dir="${EXTRASDIR}" "${SCRIPTDIR}/registry.bu" \
-        -o "${output_dir}/01-master-registry.yaml"
-fi
-
-if [[ -f "${SCRIPTDIR}/registry-worker.bu" ]]; then
-    echo "  registry-worker.bu -> 01-worker-registry.yaml"
-    butane --files-dir="${EXTRASDIR}" "${SCRIPTDIR}/registry-worker.bu" \
-        -o "${output_dir}/01-worker-registry.yaml"
-fi
-
-if [[ -f "${SCRIPTDIR}/if-mtu.bu" ]]; then
-    echo "  if-mtu.bu -> 01-master-if-mtu.yaml"
-    butane --files-dir="${EXTRASDIR}" "${SCRIPTDIR}/if-mtu.bu" \
-        -o "${output_dir}/99-master-if-mtu.yaml"
-fi
-
-if [[ -f "${SCRIPTDIR}/if-mtu-worker.bu" ]]; then
-    echo "  if-mtu-worker.bu -> 01-worker-if-mtu.yaml"
-    butane --files-dir="${EXTRASDIR}" "${SCRIPTDIR}/if-mtu-worker.bu" \
-        -o "${output_dir}/99-worker-if-mtu.yaml"
+if [[ -v GROUT_DATAPATH ]]; then
+    cp "${SCRIPTDIR}/performance-profile-master.yaml" "${output_dir}/"
+    cp "${SCRIPTDIR}/performance-profile-worker.yaml" "${output_dir}/"
 fi
 
 echo "  set-cluster-mtu.yaml"
