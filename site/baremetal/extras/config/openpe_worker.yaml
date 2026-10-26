@@ -1,0 +1,81 @@
+# OpenPERouter FRR Configuration Template — EVPN Client (ISIS + SRv6)
+# Copied by generate-config.sh
+#
+# Peering model:
+#   - TOR (direct):     ipv4 vpn + ipv6 vpn  (SRv6 routes only)
+#   - EVPN-CLIENTS:     l2vpn evpn only (reflected)
+
+underlays:
+  - asn: 65500
+    tunnelEndpoint:
+      cidrs:
+        - fd00::/64
+    interfaces:
+    - type: NetworkDevice
+      networkDevice:
+        interfaceName: underlayvf
+    routerIDCIDR: 10.0.0.0/24
+    isis:
+      baseNet: "49.0001.0000.0000.0000.00"
+      level: 1
+      interfaces:
+      - name: underlay0
+        ipFamily: DualStack
+    srv6:
+      encapBehavior: "H.Encaps.Red"
+      locator:
+        basePrefix: "fd00:2::/48"
+        format: "usid-f3216"
+    neighbors:
+      - type: Internal
+        address: fc00:0:20::1
+        addressFamilies:
+          - type: ipv4vpn
+          - type: ipv6vpn
+      - type: Internal
+        address: 2600:52:7:135::21
+        addressFamilies:
+          - type: evpn
+      - type: Internal
+        address: 2600:52:7:136::22
+        addressFamilies:
+          - type: evpn
+      - type: Internal
+        address: 2600:52:7:137::23
+        addressFamilies:
+          - type: evpn
+
+l2vnis:
+  - vni: 210
+    routingDomain:
+      type: L3VPN
+      l3vpn:
+        name: red
+    vxlanport: 4789
+    gatewayIPs:
+      - "192.168.110.1/24"
+      - "fd00:110::1/64"
+    sriovVFPair:
+      trunkVFName: trunkvf
+      vlan: 42
+
+l3vpns:
+  - name: red
+    vrf: red
+    rdAssignedNumber: 2
+    exportRTs:
+    - "65500:2"
+    importRTs:
+    - "65500:2"
+
+rawfrrconfigs:
+  - priority: 100
+    rawConfig: |
+      interface underlay0
+        ipv6 router isis ISIS
+        isis network point-to-point
+      exit
+
+      router isis ISIS
+        topology ipv6-unicast
+      exit
