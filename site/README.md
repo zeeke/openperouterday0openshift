@@ -77,6 +77,37 @@ Build both ISOs with `GROUT_DATAPATH=1`, see the [`srv6fullconfig` README](../sr
 The appliance ISO embeds the master configuration, so rebuild both ISOs after
 changing the site files.
 
+## Bare-metal lab (`baremetal`)
+
+Grout datapath for the physical lab that matches the kernel deployment in
+`pe_kernel` (same cluster addressing and TOR peering). Management stays on
+`bond1.16`; SR-IOV on Mellanox `eno12399np0` with onboard VF names
+(`eno12399v0` / `v1` → `underlayvf` / `trunkvf`). See
+[`baremetal/README.md`](baremetal/README.md) for hardware notes and AMD IOMMU.
+
+Restore defaults before switching sites (same as above), then copy:
+
+```bash
+cp -r site/baremetal/configimage site/baremetal/extras srv6fullconfig/
+```
+
+| File | Purpose |
+|------|---------|
+| `configimage/agent-config.yaml` | SR-IOV VFs, lab IPs, `bond1.16` management |
+| `configimage/install-config.yaml.base` | Cluster name, VIPs, worker count |
+| `configimage/openperouter-*-vf-aliases.bu` | `underlayvf` / `trunkvf` via `ID_NET_NAME_ONBOARD` |
+| `configimage/performance-profile-*.yaml` | CPU isolation, hugepages (`amd_iommu=on`) |
+| `configimage/grout-kargs-*.bu` | Install-time IOMMU and hugepage kargs (AMD) |
+| `extras/config/openpe_master.yaml`, `openpe_worker.yaml` | Grout OpenPERouter static config |
+
+Build both ISOs with `GROUT_DATAPATH=1`, see the
+[`srv6fullconfig` README](../srv6fullconfig/README.md#building). Rebuild both
+ISOs after any change under `site/baremetal/`.
+
+**Note:** `srv6fullconfig/appliance/patch_appliance.sh` still injects
+`intel_iommu=on` into the appliance ISO at build time; on AMD hosts adjust
+appliance kargs manually or patch that script when building for this site.
+
 ## Adding a site
 
 Create a directory here with `configimage/` and `extras/` folders that hold
