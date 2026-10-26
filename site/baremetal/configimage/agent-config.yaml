@@ -1,0 +1,537 @@
+# Grout bare-metal lab: Mellanox eno12399np0 SR-IOV (v0 underlay, v1 trunk, v2 host VLAN 42).
+# Management stays on bond1.16; cluster L3 on eno12399v2 (replaces kernel br0).
+apiVersion: v1alpha1
+metadata:
+  name: sno-lab
+  namespace: cluster0
+additionalNTPSources:
+- 10.100.0.1
+rendezvousIP: 192.168.110.2
+hosts:
+- hostname: master-0
+  role: master
+  interfaces:
+  - name: ens3f0np0
+    macAddress: B8:E9:24:16:09:AC
+  - name: eno12399np0
+    macAddress: B8:E9:24:8F:D8:B6
+  networkConfig:
+    interfaces:
+    - name: eno12399v2
+      type: ethernet
+      state: up
+      mtu: 1430
+      ipv4:
+        enabled: true
+        auto-dns: false
+        address:
+        - ip: 192.168.110.2
+          prefix-length: 24
+        dhcp: false
+      ipv6:
+        enabled: true
+        auto-dns: false
+        autoconf: false
+        address:
+        - ip: fd00:110::2
+          prefix-length: 64
+        dhcp: false
+    - name: nodeidx
+      type: dummy
+      state: up
+      ipv4:
+        enabled: true
+        auto-dns: false
+        address:
+        - ip: 192.0.2.2
+          prefix-length: 24
+        dhcp: false
+      ipv6:
+        enabled: false
+    - name: eno12409np1
+      type: ethernet
+      state: down
+    - name: bond1
+      state: down
+      type: bond
+      link-aggregation:
+        mode: 802.3ad
+        options: {"miimon": 100}
+        ports:
+        - ens3f0np0
+        - ens3f1np1
+    - name: ens3f0np0
+      state: down
+      type: ethernet
+    - name: ens3f1np1
+      type: ethernet
+      state: down
+    - name: bond1.16
+      state: up
+      type: vlan
+      wait-ip: ipv4
+      ipv4:
+        enabled: true
+        address:
+        - ip: 192.168.21.31
+          prefix-length: 25
+        dhcp: false
+      ipv6:
+        enabled: true
+      vlan:
+        base-iface: bond1
+        id: 16
+    - name: eno12399np0
+      type: ethernet
+      state: up
+      mtu: 1800
+      ipv4:
+        enabled: false
+      ipv6:
+        enabled: false
+      ethernet:
+        sr-iov:
+          total-vfs: 16
+          vfs:
+          - id: 0
+            vlan-id: 0
+            spoof-check: false
+            trust: true
+          - id: 1
+            vlan-id: 0
+            spoof-check: false
+            trust: true
+          - id: 2
+            vlan-id: 42
+            spoof-check: false
+            trust: true
+    - name: eno12399v0
+      type: ethernet
+      state: up
+      mtu: 1800
+      ipv4:
+        enabled: true
+        address:
+        - ip: 192.168.135.21
+          prefix-length: 25
+        dhcp: false
+      ipv6:
+        enabled: true
+        address:
+        - ip: 2600:52:7:135::21
+          prefix-length: 64
+        dhcp: false
+    - name: eno12399v1
+      type: ethernet
+      state: up
+    dns-resolver:
+      config:
+        server:
+        - 192.168.110.1
+        - fd00:110::1
+    routes:
+      config:
+      - destination: 0.0.0.0/0
+        next-hop-address: 192.168.110.1
+        next-hop-interface: eno12399v2
+        table-id: 254
+      - destination: ::/0
+        next-hop-address: fd00:110::1
+        next-hop-interface: eno12399v2
+        table-id: 254
+        metric: 100
+- hostname: master-1
+  role: master
+  interfaces:
+  - name: ens3f0np0
+    macAddress: B8:E9:24:16:0E:0C
+  - name: eno12399np0
+    macAddress: B8:E9:24:8F:DB:EC
+  networkConfig:
+    interfaces:
+    - name: eno12399v2
+      type: ethernet
+      state: up
+      mtu: 1430
+      ipv4:
+        enabled: true
+        auto-dns: false
+        address:
+        - ip: 192.168.110.3
+          prefix-length: 24
+        dhcp: false
+      ipv6:
+        enabled: true
+        auto-dns: false
+        autoconf: false
+        address:
+        - ip: fd00:110::3
+          prefix-length: 64
+        dhcp: false
+    - name: nodeidx
+      type: dummy
+      state: up
+      ipv4:
+        enabled: true
+        auto-dns: false
+        address:
+        - ip: 192.0.2.3
+          prefix-length: 24
+        dhcp: false
+      ipv6:
+        enabled: false
+    - name: eno12409np1
+      type: ethernet
+      state: down
+    - name: bond1
+      state: down
+      type: bond
+      link-aggregation:
+        mode: 802.3ad
+        options: {"miimon": 100}
+        ports:
+        - ens3f0np0
+        - ens3f1np1
+    - name: ens3f0np0
+      state: down
+      type: ethernet
+    - name: ens3f1np1
+      type: ethernet
+      state: down
+    - name: bond1.16
+      state: up
+      type: vlan
+      wait-ip: ipv4
+      ipv4:
+        enabled: true
+        address:
+        - ip: 192.168.21.32
+          prefix-length: 25
+        dhcp: false
+      ipv6:
+        enabled: true
+      vlan:
+        base-iface: bond1
+        id: 16
+    - name: eno12399np0
+      type: ethernet
+      state: up
+      mtu: 1800
+      ipv4:
+        enabled: false
+      ipv6:
+        enabled: false
+      ethernet:
+        sr-iov:
+          total-vfs: 16
+          vfs:
+          - id: 0
+            vlan-id: 0
+            spoof-check: false
+            trust: true
+          - id: 1
+            vlan-id: 0
+            spoof-check: false
+            trust: true
+          - id: 2
+            vlan-id: 42
+            spoof-check: false
+            trust: true
+    - name: eno12399v0
+      type: ethernet
+      state: up
+      mtu: 1800
+      ipv4:
+        enabled: true
+        address:
+        - ip: 192.168.136.22
+          prefix-length: 25
+        dhcp: false
+      ipv6:
+        enabled: true
+        address:
+        - ip: 2600:52:7:136::22
+          prefix-length: 64
+        dhcp: false
+    - name: eno12399v1
+      type: ethernet
+      state: up
+    dns-resolver:
+      config:
+        server:
+        - 192.168.110.1
+        - fd00:110::1
+    routes:
+      config:
+      - destination: 0.0.0.0/0
+        next-hop-address: 192.168.110.1
+        next-hop-interface: eno12399v2
+        table-id: 254
+      - destination: ::/0
+        next-hop-address: fd00:110::1
+        next-hop-interface: eno12399v2
+        table-id: 254
+        metric: 100
+- hostname: master-2
+  role: master
+  interfaces:
+  - name: ens3f0np0
+    macAddress: B8:E9:24:16:09:84
+  - name: eno12399np0
+    macAddress: B8:E9:24:8F:D8:9E
+  networkConfig:
+    interfaces:
+    - name: eno12399v2
+      type: ethernet
+      state: up
+      mtu: 1430
+      ipv4:
+        enabled: true
+        auto-dns: false
+        address:
+        - ip: 192.168.110.4
+          prefix-length: 24
+        dhcp: false
+      ipv6:
+        enabled: true
+        auto-dns: false
+        autoconf: false
+        address:
+        - ip: fd00:110::4
+          prefix-length: 64
+        dhcp: false
+    - name: nodeidx
+      type: dummy
+      state: up
+      ipv4:
+        enabled: true
+        auto-dns: false
+        address:
+        - ip: 192.0.2.4
+          prefix-length: 24
+        dhcp: false
+      ipv6:
+        enabled: false
+    - name: eno12409np1
+      type: ethernet
+      state: down
+    - name: bond1
+      state: down
+      type: bond
+      link-aggregation:
+        mode: 802.3ad
+        options: {"miimon": 100}
+        ports:
+        - ens3f0np0
+        - ens3f1np1
+    - name: ens3f0np0
+      state: down
+      type: ethernet
+    - name: ens3f1np1
+      type: ethernet
+      state: down
+    - name: bond1.16
+      state: up
+      type: vlan
+      wait-ip: ipv4
+      ipv4:
+        enabled: true
+        address:
+        - ip: 192.168.21.33
+          prefix-length: 25
+        dhcp: false
+      ipv6:
+        enabled: true
+      vlan:
+        base-iface: bond1
+        id: 16
+    - name: eno12399np0
+      type: ethernet
+      state: up
+      mtu: 1800
+      ipv4:
+        enabled: false
+      ipv6:
+        enabled: false
+      ethernet:
+        sr-iov:
+          total-vfs: 16
+          vfs:
+          - id: 0
+            vlan-id: 0
+            spoof-check: false
+            trust: true
+          - id: 1
+            vlan-id: 0
+            spoof-check: false
+            trust: true
+          - id: 2
+            vlan-id: 42
+            spoof-check: false
+            trust: true
+    - name: eno12399v0
+      type: ethernet
+      state: up
+      mtu: 1800
+      ipv4:
+        enabled: true
+        address:
+        - ip: 192.168.137.23
+          prefix-length: 25
+        dhcp: false
+      ipv6:
+        enabled: true
+        address:
+        - ip: 2600:52:7:137::23
+          prefix-length: 64
+        dhcp: false
+    - name: eno12399v1
+      type: ethernet
+      state: up
+    dns-resolver:
+      config:
+        server:
+        - 192.168.110.1
+        - fd00:110::1
+    routes:
+      config:
+      - destination: 0.0.0.0/0
+        next-hop-address: 192.168.110.1
+        next-hop-interface: eno12399v2
+        table-id: 254
+      - destination: ::/0
+        next-hop-address: fd00:110::1
+        next-hop-interface: eno12399v2
+        table-id: 254
+        metric: 100
+- hostname: worker-0
+  interfaces:
+  - name: ens3f0np0
+    macAddress: b8:e9:24:16:0d:9c
+  - name: eno12399np0
+    macAddress: b8:e9:24:8f:d7:a8
+  networkConfig:
+    interfaces:
+    - name: eno12399v2
+      type: ethernet
+      state: up
+      mtu: 1430
+      ipv4:
+        enabled: true
+        auto-dns: false
+        address:
+        - ip: 192.168.110.5
+          prefix-length: 24
+        dhcp: false
+      ipv6:
+        enabled: true
+        auto-dns: false
+        autoconf: false
+        address:
+        - ip: fd00:110::5
+          prefix-length: 64
+        dhcp: false
+    - name: nodeidx
+      type: dummy
+      state: up
+      ipv4:
+        enabled: true
+        auto-dns: false
+        address:
+        - ip: 192.0.2.5
+          prefix-length: 24
+        dhcp: false
+      ipv6:
+        enabled: false
+    - name: eno12409np1
+      type: ethernet
+      state: down
+    - name: bond1
+      state: down
+      type: bond
+      link-aggregation:
+        mode: 802.3ad
+        options: {"miimon": 100}
+        ports:
+        - ens3f0np0
+        - ens3f1np1
+    - name: ens3f0np0
+      state: down
+      type: ethernet
+    - name: ens3f1np1
+      type: ethernet
+      state: down
+    - name: bond1.16
+      state: up
+      type: vlan
+      wait-ip: ipv4
+      ipv4:
+        enabled: true
+        address:
+        - ip: 192.168.21.34
+          prefix-length: 25
+        dhcp: false
+      ipv6:
+        enabled: true
+      vlan:
+        base-iface: bond1
+        id: 16
+    - name: eno12399np0
+      type: ethernet
+      state: up
+      mtu: 1800
+      ipv4:
+        enabled: false
+      ipv6:
+        enabled: false
+      ethernet:
+        sr-iov:
+          total-vfs: 16
+          vfs:
+          - id: 0
+            vlan-id: 0
+            spoof-check: false
+            trust: true
+          - id: 1
+            vlan-id: 0
+            spoof-check: false
+            trust: true
+          - id: 2
+            vlan-id: 42
+            spoof-check: false
+            trust: true
+    - name: eno12399v0
+      type: ethernet
+      state: up
+      mtu: 1800
+      ipv4:
+        enabled: true
+        address:
+        - ip: 192.168.138.24
+          prefix-length: 25
+        dhcp: false
+      ipv6:
+        enabled: true
+        address:
+        - ip: 2600:52:7:138::24
+          prefix-length: 64
+        dhcp: false
+    - name: eno12399v1
+      type: ethernet
+      state: up
+    dns-resolver:
+      config:
+        server:
+        - 192.168.110.1
+        - fd00:110::1
+    routes:
+      config:
+      - destination: 0.0.0.0/0
+        next-hop-address: 192.168.110.1
+        next-hop-interface: eno12399v2
+        table-id: 254
+      - destination: ::/0
+        next-hop-address: fd00:110::1
+        next-hop-interface: eno12399v2
+        table-id: 254
+        metric: 100

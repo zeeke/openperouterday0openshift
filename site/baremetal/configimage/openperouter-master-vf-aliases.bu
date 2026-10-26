@@ -1,0 +1,30 @@
+variant: openshift
+version: 4.20.0
+metadata:
+  name: 97-master-baremetal-grout
+  labels:
+    machineconfiguration.openshift.io/role: master
+storage:
+  files:
+    - path: /etc/systemd/network/10-underlayvf.link
+      mode: 0644
+      overwrite: true
+      contents:
+        inline: |
+          [Match]
+          Property=ID_NET_NAME_ONBOARD=eno12399v0
+
+          [Link]
+          NamePolicy=keep kernel database onboard slot path
+          AlternativeName=underlayvf
+    - path: /etc/systemd/network/10-trunkvf.link
+      mode: 0644
+      overwrite: true
+      contents:
+        inline: |
+          [Match]
+          Property=ID_NET_NAME_ONBOARD=eno12399v1
+
+          [Link]
+          NamePolicy=keep kernel database onboard slot path
+          AlternativeName=trunkvf
