@@ -10,7 +10,7 @@ Documentation=https://github.com/openperouter
 
 [Container]
 # Container image - same as FRR container
-Image=quay.io/redhat-user-workloads/telco-5g-tenant/openperouter-operator-edge-5-0:latest
+Image=__OPENPEROUTER_IMAGE__
 
 # Pod association - runs in same pod as FRR container
 Pod=routerpod.pod
@@ -19,8 +19,7 @@ Pod=routerpod.pod
 ContainerName=reloader
 
 # Volume mounts
-# Named volume for FRR sockets - shared with FRR container
-Volume=frr-sockets.volume:/var/run/frr:Z
+Volume=/run/frr:/var/run/frr:Z
 
 # Host directory mount for FRR configuration
 # :Z = Private SELinux label
@@ -38,7 +37,7 @@ Exec=--frrconfig=/etc/perouter/frr.conf --loglevel=debug --unixsocket /etc/perou
 
 # Health check - kill container if FRR daemons stop responding,
 # systemd Restart=on-failure handles restart
-HealthCmd=wget -qO- http://127.0.0.1:9080/healthz || exit 1
+HealthCmd=curl -fsL http://127.0.0.1:9080/healthz || exit 1
 HealthInterval=20s
 HealthTimeout=5s
 HealthRetries=3

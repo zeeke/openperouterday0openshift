@@ -1,0 +1,101 @@
+# This static pod reserves isolated CPUs for grout and reapplies affinity after
+# grout restarts.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: grout-reservation-worker
+  labels:
+    app: openperouter
+    component: grout-reservation-worker
+  annotations:
+    cpu-quota.crio.io: "disable"
+    irq-load-balancing.crio.io: "disable"
+spec:
+  priorityClassName: system-node-critical
+  runtimeClassName: performance-grout-perf-worker
+  terminationGracePeriodSeconds: 10
+  hostPID: true
+  containers:
+  - name: control-shape
+    image: __OPENPEROUTER_IMAGE__
+    env:
+    - name: GROUT_SOCK_PATH
+      value: /run/grout/grout.sock
+    command: ["/bin/bash", "-xc"]
+    args:
+    - |
+      echo "Waiting for grout..."
+      until grcli -e </dev/null >/dev/null 2>&1; do
+          sleep 10
+      done
+
+      while [ ! -f /shared/datapath.txt ]; do
+        sleep 1
+      done
+      DATAPATH_TARGET=$(cat /shared/datapath.txt)
+
+      while true; do
+        sleep 60
+        CONTROL_CURRENT=$(grcli affinity cpus show | awk '$1 == "control_cpus:" {print $2}')
+        DATAPATH_CURRENT=$(grcli affinity cpus show | awk '$1 == "datapath_cpus:" {print $2}')
+        CONTROL_TARGET=$(grep -oP 'systemd\.cpu_affinity=\K\S+' /proc/cmdline)
+        if [ -z "$CONTROL_TARGET" ]; then
+          echo "No control target found in /proc/cmdline"
+          sleep 100
+          continue
+        fi
+        if [ "$CONTROL_CURRENT" != "$CONTROL_TARGET" ] || [ "$DATAPATH_CURRENT" != "$DATAPATH_TARGET" ]; then
+          nsenter -t 1 -m -u -p -- \
+            systemctl --runtime set-property grout.slice AllowedCPUs="$CONTROL_TARGET,$DATAPATH_TARGET"
+          grcli affinity cpus set control 0 datapath 1
+          grcli affinity cpus set control "$CONTROL_TARGET" datapath "$DATAPATH_TARGET"
+        fi
+      done
+    securityContext:
+      privileged: true
+    resources:
+      requests:
+        cpu: "100m"
+        memory: "100Mi"
+      limits:
+        cpu: "100m"
+        memory: "100Mi"
+    volumeMounts:
+    - name: grout-sock
+      mountPath: /run/grout
+    - name: shared-data
+      mountPath: /shared
+  - name: datapath-shape
+    image: __OPENPEROUTER_IMAGE__
+    command: ["/bin/bash", "-xc"]
+    args:
+    - |
+      CGROUP=$(cut -d: -f3 /proc/self/cgroup)
+      cat /sys/fs/cgroup"$CGROUP"/cpuset.cpus > /shared/datapath.txt
+      exec sleep infinity
+    securityContext:
+      privileged: true
+    resources:
+      requests:
+        cpu: "2"
+        memory: "2Gi"
+        hugepages-1Gi: "2Gi"
+      limits:
+        cpu: "2"
+        memory: "2Gi"
+        hugepages-1Gi: "2Gi"
+    volumeMounts:
+    - name: hugepages
+      mountPath: /dev/hugepages
+    - name: shared-data
+      mountPath: /shared
+  volumes:
+  - name: shared-data
+    emptyDir: {}
+  - name: grout-sock
+    hostPath:
+      path: /run/grout
+      type: DirectoryOrCreate
+  - name: hugepages
+    emptyDir:
+      medium: HugePages-1Gi

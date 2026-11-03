@@ -16,6 +16,10 @@ PodName=routerpod
 
 Network=ns:/var/run/netns/perouter
 
+# Shared grout socket (unused by the kernel datapath)
+Volume=/run/grout:/run/grout
+Volume=/run/frr:/run/frr
+
 # PID namespace sharing - required for FRR process management
 # The reloader needs to see FRR processes to signal configuration reloads
 # Note: Using PodmanArgs because quadlet has no native PodShare= directive
@@ -32,6 +36,9 @@ TimeoutStopSec=70
 # Create named netns if not present (- prefix = ignore failure when already exists)
 ExecStartPre=-/usr/sbin/ip netns add perouter
 ExecStartPre=/usr/sbin/ip netns exec perouter ip link set lo up
+
+ExecStartPre=/usr/bin/mkdir -p -m 775 /run/grout /run/frr
+ExecStartPre=/usr/bin/chcon -t container_file_t /run/grout /run/frr
 
 [Install]
 # Automatically enable this pod at boot
