@@ -12,13 +12,13 @@ underlay addressing/peering from the kernel deployment.
 | CPU | AMD EPYC 9654P, 1 socket, 192 logical CPUs (NUMA node 0 only) |
 | PF | `eno12399np0` (`numa_node` 0) |
 | VF 0 | `eno12399v0` → `underlayvf` (ISIS / SRv6 to TOR) |
-| VF 1 | `eno12399v1` → `trunkvf` (accelerated L2 toward perouter) |
+| VF 1 | `eno12399v1` → `trunkvf` (`L2Trunk` VF bound to Grout: `pfName: eno12399np0`, `vfIndex: 1`) |
 | VF 2 | `eno12399v2` (host / OpenShift machine network) |
 | udev match | `ID_NET_NAME_ONBOARD=eno12399v0` / `v1` (not `ens1f0v0` slot names) |
 | IOMMU | **AMD** — site profiles must use `amd_iommu=on`, not `intel_iommu=on` |
 
-VLAN **42** on the host VF is an on-node convention (agent-config + openpe
-`sriovVFPair`); TOR underlay on VF 0 stays **untagged** like the kernel PF.
+VLAN **42** on the host VF is an on-node convention (agent-config + the
+L2VNI's `trunk.vlan.tag` in openpe); TOR underlay on VF 0 stays **untagged** like the kernel PF.
 
 ## Rollout plan (one change per review)
 

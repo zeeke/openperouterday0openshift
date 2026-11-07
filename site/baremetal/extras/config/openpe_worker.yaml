@@ -45,8 +45,16 @@ underlays:
         addressFamilies:
           - type: evpn
 
+l2trunks:
+  - name: trunk
+    type: SRIOV
+    sriov:
+      pfName: eno12399np0
+      vfIndex: 1   # eno12399v1, the trunkvf alias
+
 l2vnis:
-  - vni: 210
+  - name: vni210
+    vni: 210
     routingDomain:
       type: L3VPN
       l3vpn:
@@ -55,9 +63,10 @@ l2vnis:
     gatewayIPs:
       - "192.168.110.1/24"
       - "fd00:110::1/64"
-    sriovVFPair:
-      trunkVFName: trunkvf
-      vlan: 42
+    trunk:
+      name: trunk
+      vlan:
+        tag: 42   # VLAN of the host VF in agent-config.yaml
 
 l3vpns:
   - name: red
