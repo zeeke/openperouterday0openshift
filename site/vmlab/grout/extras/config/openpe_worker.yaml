@@ -41,8 +41,17 @@ underlays:
         address: fd2e:6f44:5dd8:c956::52
         addressFamilies:
           - type: evpn
+
+l2trunks:
+  - name: trunk
+    type: SRIOV
+    sriov:
+      pfName: pf
+      vfIndex: 1   # the emulated VF pfv1, see openperouter-*-grout-emulated-vf.bu
+
 l2vnis:
-  - vni: 210
+  - name: vni210
+    vni: 210
     routingDomain:
       type: L3VPN
       l3vpn:
@@ -51,9 +60,10 @@ l2vnis:
     gatewayIPs:
       - "192.168.110.1/24"
       - "fd00:110::1/64"
-    sriovVFPair:
-      trunkVFName: enp7s0
-      vlan: 42   # The same as in agent-config.yaml
+    trunk:
+      name: trunk
+      vlan:
+        tag: 42   # VLAN of the pf-<node> bridge ports, see site/vmlab/xml/domain.xml
 l3vpns:
   - name: red
     vrf: red

@@ -1,0 +1,23 @@
+# The VM lab has no SR-IOV NIC: the L2Trunk VF is emulated by the virtio NIC
+# attached to the pf-<node> bridge with VLAN 42 tagged (enp7s0). With
+# TEST_FLAG_DO_NOT_USE_EMULATED_SRIOV_VFS set on the controller, VF <index> of
+# PF <pfName> resolves to the netdev <pfName>v<index>, so the NIC is renamed
+# to pfv1, matching pfName: pf and vfIndex: 1 in openpe_master.yaml.
+variant: openshift
+version: 4.20.0
+metadata:
+  name: 97-master-grout-emulated-vf
+  labels:
+    machineconfiguration.openshift.io/role: master
+storage:
+  files:
+    - path: /etc/systemd/network/10-pfv1.link
+      mode: 0644
+      overwrite: true
+      contents:
+        inline: |
+          [Match]
+          Property=ID_NET_NAME_PATH=enp7s0
+
+          [Link]
+          Name=pfv1
