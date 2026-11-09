@@ -13,14 +13,11 @@ underlays:
     interfaces:
     - type: NetworkDevice
       networkDevice:
-        interfaceName: underlayvf
+        interfaceName: eno12399v0
     routerIDCIDR: 10.0.0.0/24
     isis:
       baseNet: "49.0001.0000.0000.0000.00"
       level: 1
-      interfaces:
-      - name: underlay0
-        ipFamily: DualStack
     srv6:
       encapBehavior: "H.Encaps.Red"
       locator:
@@ -76,15 +73,3 @@ l3vpns:
     - "65500:2"
     importRTs:
     - "65500:2"
-
-rawfrrconfigs:
-  - priority: 100
-    rawConfig: |
-      interface underlay0
-        ipv6 router isis ISIS
-        isis network point-to-point
-      exit
-
-      router isis ISIS
-        topology ipv6-unicast
-      exit
