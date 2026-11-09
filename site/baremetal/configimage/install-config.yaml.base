@@ -1,9 +1,9 @@
 apiVersion: v1
-baseDomain: example.com
+baseDomain: vz.partnerci.bos2.lab
 compute:
 - hyperthreading: Enabled
   name: worker
-  replicas: 1
+  replicas: 0
   architecture: null
 controlPlane:
   architecture: null
@@ -12,7 +12,7 @@ controlPlane:
   replicas: 3
 fips: false
 metadata:
-  name: sno-lab
+  name: hbn
   namespace: cluster0
 networking:
   clusterNetwork:
