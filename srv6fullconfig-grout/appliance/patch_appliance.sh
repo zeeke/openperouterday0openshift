@@ -251,7 +251,7 @@ fi
 
 if [[ -v GROUT_DATAPATH ]]; then
     kargs=(default_hugepagesz=1G hugepagesz=1G hugepages=8
-        console=tty0 'console=ttyS0,115200n8' iommu=pt intel_iommu=on)
+        console=tty0 'console=ttyS0,115200n8' iommu=pt intel_iommu=on amd_iommu=on)
     echo "==> Adding hugepage and IOMMU kernel arguments to appliance ISO, needed for the first boot..."
     existing_kargs=$(sudo coreos-installer iso kargs show "${appliance_iso}" 2>/dev/null || true)
     missing_kargs=()
