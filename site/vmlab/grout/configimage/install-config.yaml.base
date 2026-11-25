@@ -1,5 +1,5 @@
 apiVersion: v1
-baseDomain: vz.partnerci.bos2.lab
+baseDomain: example.com
 compute:
 - hyperthreading: Enabled
   name: worker
@@ -12,7 +12,7 @@ controlPlane:
   replicas: 3
 fips: false
 metadata:
-  name: hbn
+  name: sno-lab
   namespace: cluster0
 networking:
   clusterNetwork:
@@ -35,5 +35,4 @@ platform:
     ingressVIPs:
     - 192.168.110.11
     - fd00:110::11
-sshKey: 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPkIQAEB6PXC8EC48b5G8D2AO93RLP92DPpGok4xtR3O dciteam@jumphost.vcp100.partnerci.bos2.lab'
 pullSecret: XXX
